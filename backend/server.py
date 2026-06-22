@@ -18,9 +18,10 @@ from seed_data import SEED_CATEGORIES, SEED_PRODUCTS, SEED_SETTINGS, BD_DISTRICT
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+from db import db, client, now_iso, effective_price
+from auth import auth_router, seed_admin, ensure_indexes
+from storage import storage_router, files_router, init_storage_safe
+from admin_routes import admin_router
 
 app = FastAPI(title="AAYNA API")
 api_router = APIRouter(prefix="/api")
@@ -31,17 +32,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def effective_price(product: dict) -> float:
-    dp = product.get("discount_price")
-    if dp is not None and dp > 0:
-        return float(dp)
-    return float(product["selling_price"])
-
-
 PHONE_RE = re.compile(r'^(?:\+?880|0)1[3-9]\d{8}$')
 
 
@@ -130,6 +120,9 @@ async def seed_database():
 @app.on_event("startup")
 async def on_startup():
     await seed_database()
+    await seed_admin()
+    await ensure_indexes()
+    init_storage_safe()
 
 
 # ---------------------------------------------------------------------------
@@ -580,6 +573,10 @@ async def track_order(req: TrackRequest):
 
 
 app.include_router(api_router)
+app.include_router(auth_router)
+app.include_router(storage_router)
+app.include_router(files_router)
+app.include_router(admin_router)
 
 app.add_middleware(
     CORSMiddleware,

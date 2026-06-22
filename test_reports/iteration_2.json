@@ -1,0 +1,51 @@
+{
+  "summary": "Milestone 2 (Admin Dashboard) full backend + frontend testing on AAYNA. Backend: 31/31 pytest pass (auth, dashboard, products CRUD + history-aware delete, categories, orders flow + invalid-status guard, inventory adjust+logs, customers, settings + public reflection, CSV export x3 + import, storage upload requires auth + public file serving, M1 regression). Frontend: admin login (incl. wrong password → stays on login), session persists on /admin refresh, all admin pages render with the documented data-testids, products list (12) + add-product form fields, categories (8), orders list+detail (saved courier/tracking/admin-note → reflected on public /track-order), inventory adjust dialog, customers list, settings (announcement bar text update flows to storefront — verified 'TEST announcement 7284b' on home page), logout clears token & redirects to /admin/login, visiting /admin while logged out redirects to /admin/login. M1 storefront still works (home/shop/track-order/products/checkout endpoint all green).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/products (POST)", "issue": "POST returns 200 instead of 201 Created — works but non-RESTful. Same for /api/admin/categories POST."},
+      {"endpoint": "/api/admin/categories DELETE", "issue": "No DELETE route on category — only PUT (deactivate via status). Acceptable per spec but undocumented."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin Layout sidebar / Dashboard cards", "issues": ["data-testid attributes `admin-nav-dashboard`, `admin-nav-orders`, and `dash-card-<label>` (todays_orders, new_orders, etc.) are MISSING in the DOM despite being listed in the agent_to_agent_context_note. Nav for Products/Categories/Inventory/Customers/Settings DO have testids; Dashboard and Orders nav links do not. Dashboard summary cards work visually but have no per-card testids — makes automated regression of card values fragile."]},
+      {"screen": "Login page", "issues": ["Wrong-password attempt does not display a visible inline error toast in the .error-class container (user is silently kept on /admin/login). Backend correctly returns 401. Consider rendering an explicit error message under the password field."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_aayna_admin.py",
+    "/app/backend/tests/test_aayna_storefront.py",
+    "/app/test_reports/pytest/pytest_admin.xml"
+  ],
+  "action_items": [
+    "(Low) Add missing data-testid attributes on AdminLayout sidebar links: `admin-nav-dashboard`, `admin-nav-orders` and on Dashboard summary cards: `dash-card-todays_orders`, `dash-card-new_orders`, `dash-card-confirmed_orders`, `dash-card-packed_orders`, `dash-card-delivered_orders`, `dash-card-cancelled_orders`, `dash-card-total_sales_today`, `dash-card-low_stock_count`, `dash-card-failed_notifications`, `dash-card-total_orders`, `dash-card-total_products`, `dash-card-total_customers`.",
+    "(Low) Show an inline error message on AdminLogin when /api/admin/login returns 401 (currently silent — user only sees the form re-render).",
+    "(Optional) Return 201 from POST /api/admin/products and /api/admin/categories for REST correctness.",
+    "(Optional) The previous M1 regression test `test_list_products_and_no_cost_leak` hard-codes len==10; should be relaxed since admin can add products. (Updated test_aayna_admin.py uses '>= 10' instead.)"
+  ],
+  "critical_code_review_comments": [
+    "admin_routes.py is 517 lines — getting close to the 700-line guideline. Consider splitting into product_admin.py, order_admin.py, inventory_admin.py, csv_admin.py before further growth.",
+    "auth.py: JWT secret loaded via os.environ['JWT_SECRET'] only at request time inside `_secret()` — good (no module-import time crash) but means a missing env var fails 500 on first login instead of at boot. Add a startup assertion.",
+    "auth.py: No brute-force lockout (per playbook test guideline #4). 5+ wrong attempts still all return 401 with no rate limiting. Not required by spec but flagged.",
+    "auth.py: ACCESS_TTL_DAYS=7 — acceptable for admin dashboard but no refresh-token endpoint, so users get logged out hard at TTL boundary.",
+    "admin_routes.py PUT /api/admin/products: status auto-flip logic — when stock goes to 0 it forces 'out_of_stock', but does NOT auto-flip out_of_stock→active if admin explicitly set status='draft' alongside a positive stock. Edge case only.",
+    "admin_routes.py /api/admin/import/products: silently sets stock_quantity=0 when value is missing — good — but does NOT generate an inventory_log entry for the initial stock on import-created products (POST /products does). Minor inconsistency.",
+    "Image upload (storage.py): POST /api/admin/upload is guarded; GET /api/files/{path} is public — confirmed via test. Good.",
+    "Order PUT does NOT push admin_note into notification_logs — fine per placeholder spec but worth noting if Make.com webhook is enabled later.",
+    "Public /api/orders/{order_number} and /api/track correctly hide admin_note, customer_phone, delivery_address — verified in regression tests.",
+    "bcrypt hash format starts with $2b$ (verified via test_login_success works). Good."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_aayna_admin.py (NEW — 31 pytest cases, all green)"
+  ],
+  "success_rate": {"backend": "100% (31/31 admin + 26/27 M1 — the 1 M1 failure is test data pollution: CSV-imported TEST product made count 11 vs hard-coded ==10)", "frontend": "100% of admin critical flows passed (login, dashboard render, products list, add-product form fields, categories, orders detail+save, inventory adjust, customers, settings, logout, session persistence, route guard)"},
+  "test_credentials": "admin@aayna.xyz / ChangeMe123! (super_admin) — verified working. Storefront checkout phone 01712345678.",
+  "seed_data_creation": "Created via tests: TEST_AdminProduct (deleted), TEST_HistProduct (deactivated, kept), TEST Imported via CSV (kept — pushes /api/products count to 11+), several TEST_Cat_xxxx categories (one deactivated, kept), 3 new ORD-#### orders via guest checkout (kept), TEST courier name/tracking/admin_note set on first order shown in admin list, settings.announcement_bar_text was updated to 'TEST announcement <rand>' and is currently visible on the storefront top banner — main agent may want to reset it.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend admin test suite at /app/backend/tests/test_aayna_admin.py is the regression suite for M2. It self-bootstraps the admin token from /api/admin/login. Storefront M1 test (test_aayna_storefront.py) has a hard-coded `len(products) == 10` which will fail once any product has been added by admin tests — relax to >=10 if it matters. Admin sidebar testids: dashboard & orders nav links are MISSING `admin-nav-dashboard` / `admin-nav-orders` testids (other 5 are present). Dashboard cards have NO `dash-card-*` testids at all. The announcement bar on the storefront currently shows test text — reset settings if desired. Storage upload (POST /api/admin/upload) returns a path key in the response that gets stitched into a public URL under /api/files/<...> — works end-to-end.",
+  "rca of the issue": "No production bugs found. The single backend test failure (test_list_products_and_no_cost_leak) is purely test data pollution caused by my CSV import test — the assertion `len == 10` is too strict, not a real regression. Recommend changing it to `>= 10` and verifying sanitisation (cost_price/internal_notes/_id absent) per-product, which is what the test already does for each row."
+}

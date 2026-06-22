@@ -15,6 +15,20 @@ import TrackOrder from "@/pages/TrackOrder";
 import Contact from "@/pages/Contact";
 import StaticPage from "@/pages/StaticPage";
 
+import { AdminAuthLayout } from "@/admin/AdminAuthContext";
+import AdminLayout, { AdminProtected } from "@/admin/AdminLayout";
+import AdminLogin from "@/admin/AdminLogin";
+import Dashboard from "@/admin/pages/Dashboard";
+import Products from "@/admin/pages/Products";
+import ProductForm from "@/admin/pages/ProductForm";
+import Categories from "@/admin/pages/Categories";
+import Orders from "@/admin/pages/Orders";
+import OrderDetail from "@/admin/pages/OrderDetail";
+import Inventory from "@/admin/pages/Inventory";
+import Customers from "@/admin/pages/Customers";
+import CustomerDetail from "@/admin/pages/CustomerDetail";
+import Settings from "@/admin/pages/Settings";
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -30,6 +44,7 @@ function App() {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
+            {/* Storefront */}
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route path="/shop" element={<Shop />} />
@@ -44,6 +59,26 @@ function App() {
               <Route path="/returns" element={<StaticPage pageKey="returns" />} />
               <Route path="/privacy" element={<StaticPage pageKey="privacy" />} />
               <Route path="/terms" element={<StaticPage pageKey="terms" />} />
+            </Route>
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminAuthLayout />}>
+              <Route path="login" element={<AdminLogin />} />
+              <Route element={<AdminProtected />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="products" element={<Products />} />
+                  <Route path="products/new" element={<ProductForm />} />
+                  <Route path="products/:id" element={<ProductForm />} />
+                  <Route path="categories" element={<Categories />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="orders/:orderNumber" element={<OrderDetail />} />
+                  <Route path="inventory" element={<Inventory />} />
+                  <Route path="customers" element={<Customers />} />
+                  <Route path="customers/:id" element={<CustomerDetail />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>
