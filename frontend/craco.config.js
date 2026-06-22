@@ -61,6 +61,21 @@ let webpackConfig = {
 };
 
 webpackConfig.devServer = (devServerConfig) => {
+  // webpack-dev-server v5 removed these v4-only hooks injected by react-scripts.
+  // Strip them so the dev server can start (visual-edits provides setupMiddlewares).
+  delete devServerConfig.onBeforeSetupMiddleware;
+  delete devServerConfig.onAfterSetupMiddleware;
+
+  // Map the v4 `https` option to the v5 `server` option.
+  if (devServerConfig.https !== undefined) {
+    const https = devServerConfig.https;
+    delete devServerConfig.https;
+    if (https) {
+      devServerConfig.server =
+        typeof https === "object" ? { type: "https", options: https } : "https";
+    }
+  }
+
   // Add health check endpoints if enabled
   if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
     const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
