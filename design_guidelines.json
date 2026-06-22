@@ -1,0 +1,145 @@
+{
+  "project_info": {
+    "name": "AAYNA",
+    "domain": "Women's accessories e-commerce website (Bangladesh)",
+    "tagline": "Reflect your everyday style.",
+    "milestone": "1 (Storefront only)",
+    "design_feeling": "Modern, feminine, warm, premium, clean, social-media-friendly, not childish, not overly pink, not luxury-expensive."
+  },
+  "theme_and_archetype": {
+    "theme": "light",
+    "archetype": "Archetype 1 (Organic & Earthy) blended with soft premium retail styling",
+    "rationale": "Client explicitly requested warm, modern feminine feel with a specific dusty rose and cream palette. Adapting E1 Organic Archetype to fit this exact spec."
+  },
+  "colors": {
+    "primary": "#9A4F5F",
+    "background": {
+      "main": "#FFF8F2",
+      "soft_section": "#F7E7E9",
+      "card": "#FFFFFF"
+    },
+    "accent": "#C6A15B",
+    "text": {
+      "main": "#2F2623",
+      "muted": "#7B6A63",
+      "price": "#9A4F5F"
+    },
+    "border": "#EADDD4",
+    "usage_rules": {
+      "buttons": "Dusty Rose (#9A4F5F) background with white text.",
+      "prices": "Dusty Rose (#9A4F5F) bold font.",
+      "old_prices": "Warm Taupe (#7B6A63) with strikethrough.",
+      "discount_badges": "Antique Gold (#C6A15B) background with Espresso Charcoal (#2F2623) text.",
+      "accent_restriction": "Antique Gold must only be used for small accents (badges, stars, thin borders), NEVER large backgrounds."
+    }
+  },
+  "typography": {
+    "font_families": {
+      "headings": "Playfair Display, serif",
+      "body": "Inter, sans-serif",
+      "bangla": "Noto Sans Bengali, sans-serif"
+    },
+    "rules": {
+      "logo": "Playfair Display, font-weight 700/800, tracking -1% to -2%",
+      "headings": "Playfair Display, font-weight 600/700, tracking -1% to -2%",
+      "buttons_and_ui": "Inter, font-weight 600. NEVER use Playfair Display for buttons.",
+      "hero_h1_desktop": "48-56px",
+      "hero_h1_mobile": "34-40px",
+      "body_text": "16px (1rem) desktop, 14px (0.875rem) mobile."
+    }
+  },
+  "layout_and_spacing": {
+    "philosophy": "Mobile-first, premium retail spacing. Generous whitespace around product images.",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "mobile_specifics": {
+      "tap_targets": "Minimum 44px height for all interactive elements.",
+      "checkout": "Strictly single-column stacked layout on mobile.",
+      "product_grid": "2 columns on mobile, 3-4 on desktop.",
+      "sticky_cart": "Fixed/sticky bottom 'Add to Cart' button on product detail pages."
+    },
+    "grid_patterns": {
+      "product_listing": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6",
+      "category_featured": "grid grid-cols-2 md:grid-cols-3 gap-4"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#9A4F5F] text-[#FFFFFF] font-semibold font-['Inter'] rounded-none hover:bg-[#834351] transition-colors h-11 px-6 flex items-center justify-center",
+      "secondary": "border border-[#9A4F5F] text-[#9A4F5F] font-semibold font-['Inter'] rounded-none hover:bg-[#F7E7E9] transition-colors h-11 px-6 flex items-center justify-center"
+    },
+    "product_cards": {
+      "container": "bg-[#FFFFFF] border border-[#EADDD4] flex flex-col group overflow-hidden",
+      "image_wrapper": "aspect-square w-full overflow-hidden bg-[#FFF8F2]",
+      "image": "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+      "content": "p-3 md:p-4 flex flex-col gap-1 md:gap-2",
+      "title": "font-['Inter'] text-[#2F2623] text-sm md:text-base truncate",
+      "price_row": "flex items-center gap-2",
+      "current_price": "font-bold text-[#9A4F5F]",
+      "old_price": "text-[#7B6A63] line-through text-xs md:text-sm"
+    },
+    "badges": {
+      "discount": "absolute top-2 left-2 bg-[#C6A15B] text-[#2F2623] text-xs font-bold px-2 py-1 z-10",
+      "trust": "flex flex-col items-center text-center p-4 bg-[#F7E7E9] gap-2 rounded-sm border border-[#EADDD4]"
+    },
+    "inputs": {
+      "text": "h-11 border border-[#EADDD4] bg-[#FFFFFF] px-3 font-['Inter'] text-[#2F2623] focus:border-[#9A4F5F] focus:ring-1 focus:ring-[#9A4F5F] outline-none w-full"
+    },
+    "floating_whatsapp": "fixed bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center text-white shadow-lg z-50 hover:scale-110 transition-transform"
+  },
+  "motion_and_interactions": {
+    "hover": "Subtle scale-up (1.05) on product images. Button background color darkening.",
+    "gallery": "Swipeable image gallery on Product Detail Page for mobile users.",
+    "transitions": "All state changes should use transition-all duration-300 ease-in-out."
+  },
+  "instructions_to_main_agent": [
+    "No customer login functionality. Checkout must be guest-only.",
+    "No online payment gateway integrations. Provide COD, bKash, and Nagad as static options (instructions/radio buttons).",
+    "Build the following pages: Homepage, Shop page, Category page, Product Detail page, Cart slider/page, Checkout, Order Confirmation, and Static pages.",
+    "Seed dummy product data using the styling guidelines.",
+    "Ensure all interactive elements have data-testid attributes for testing.",
+    "Integrate lucide-react or similar for icons (search, cart, user, whatsapp, menu).",
+    "Use standard HTML/Tailwind for structural marketing sections, Shadcn for complex forms/dialogs.",
+    "Product images MUST be square (aspect-square).",
+    "Ensure you use .js/.jsx extensions instead of .tsx since this is a JS-based project."
+  ],
+  "testing": {
+    "attributes": "All buttons, inputs, links, and forms MUST include data-testid. Examples: data-testid='add-to-cart-button', data-testid='checkout-form-name'."
+  },
+  "media": {
+    "hero": [
+      {
+        "url": "https://images.unsplash.com/photo-1620656798579-1984d9e87df7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd29tYW4lMjB3ZWFyaW5nJTIwZ29sZCUyMG5lY2tsYWNlJTIwamV3ZWxyeXxlbnwwfHx8fDE3ODIxNDg0NTV8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Elegant woman wearing gold necklace (Hero option 1)"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1611652022419-a9419f74343d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHwyfHxlbGVnYW50JTIwd29tYW4lMjB3ZWFyaW5nJTIwZ29sZCUyMG5lY2tsYWNlJTIwamV3ZWxyeXxlbnwwfHx8fDE3ODIxNDg0NTV8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Elegant woman wearing silver necklace (Hero option 2)"
+      }
+    ],
+    "products": [
+      {
+        "url": "https://images.unsplash.com/photo-1626784215021-2e39ccf971cd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHw0fHxnb2xkJTIwZWFycmluZ3MlMjBqZXdlbHJ5JTIwaXNvbGF0ZWR8ZW58MHx8fHwxNzgyMTQ4NDc1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Gold and silver ring on dark surface"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1615655114865-4cc1bda5901e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxnb2xkJTIwZWFycmluZ3MlMjBqZXdlbHJ5JTIwaXNvbGF0ZWR8ZW58MHx8fHwxNzgyMTQ4NDc1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Silver and gold rings"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1731586249471-82bb9b2f769a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwyfHxnb2xkJTIwcmluZ3MlMjBzdGFjayUyMG1pbmltYWxpc3R8ZW58MHx8fHwxNzgyMTQ4NDU1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Gold ring stack on white sheet"
+      },
+      {
+        "url": "https://images.pexels.com/photos/8093082/pexels-photo-8093082.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Woman ear close up adorned with earring"
+      },
+      {
+        "url": "https://images.pexels.com/photos/32070653/pexels-photo-32070653.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Stylish gold earring with red accents"
+      }
+    ],
+    "placeholders": {
+      "categories": "Use cropped square portions of the product/hero images for category thumbnails."
+    }
+  }
+}
