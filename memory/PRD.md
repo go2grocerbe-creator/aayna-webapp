@@ -59,6 +59,14 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **Docs:** README adds Production env checklist (table), Production safety validation, Health check, non-destructive smoke test, and Production Launch QA manual checklist. Added `scripts/smoke_test.sh` (read-only).
 - **Verified:** 102/102 backend tests pass (+11 health/config); `/api/health` + smoke script green live; frontend compiles. No new storefront features / no redesign.
 
+## Implemented — Milestone 4B (2026-06-25)
+- **Readiness probe:** `GET /api/health/ready` — pings MongoDB + (in prod) re-validates config; 200 `{status:ready}` or 503 `{status:not_ready}`. Safe fields only.
+- **Liveness kept lightweight:** `GET /api/health` unchanged, no DB touch.
+- **Version info:** `GET /api/health/version` → `{app, environment, version}` (version from optional `APP_VERSION`, default 1.0.0).
+- **Smoke test:** `scripts/smoke_test.sh` now also checks `/api/health/ready` (still read-only/non-destructive).
+- **Docs:** README liveness-vs-readiness section.
+- **Verified:** 107/107 backend tests pass (+5, deterministic across reruns); endpoints confirmed live (ready=200); frontend compiles. No new storefront/admin features, no redesign, no secrets exposed/committed.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.
