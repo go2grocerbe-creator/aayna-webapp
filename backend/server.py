@@ -6,6 +6,9 @@ from pymongo import ReturnDocument
 import os
 import re
 import uuid
+import json
+import hmac
+import hashlib
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -300,68 +303,81 @@ async def next_order_number() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Notification (non-blocking, never cancels an order)
+# Order notification webhook (non-blocking, never cancels an order)
 # ---------------------------------------------------------------------------
-async def send_order_notification(order: dict):
-    webhook_url = os.environ.get("MAKE_WEBHOOK_URL", "")
-    payload = {
-        "order_id": order["order_number"],
+def _webhook_enabled() -> bool:
+    return str(os.environ.get("ORDER_WEBHOOK_ENABLED", "false")).strip().lower() in ("1", "true", "yes", "on")
+
+
+def build_order_webhook_payload(order: dict) -> dict:
+    """Clean, operations-only payload. No cost_price, internal_notes, secrets, or DB _id."""
+    return {
+        "order_id": order.get("id"),
+        "order_number": order.get("order_number"),
         "customer_name": order["customer_name"],
-        "phone": order["customer_phone"],
-        "email": order.get("customer_email") or "",
-        "address": order["delivery_address"],
+        "customer_phone": order["customer_phone"],
         "district": order["district"],
+        "delivery_address": order["delivery_address"],
         "payment_method": order["payment_method"],
+        "order_total": order["total_amount"],
+        "delivery_fee": order["delivery_charge"],
+        "order_status": order["order_status"],
+        "created_at": order["created_at"],
         "items": [
             {
                 "product_name": it["product_name_snapshot"],
-                "sku": it["sku_snapshot"],
                 "quantity": it["quantity"],
                 "unit_price": it["unit_price"],
-                "total_price": it["total_price"],
+                "subtotal": it["total_price"],
             }
-            for it in order["items"]
+            for it in order.get("items", [])
         ],
-        "subtotal": order["subtotal"],
-        "delivery_charge": order["delivery_charge"],
-        "total": order["total_amount"],
-        "order_status": order["order_status"],
-        "created_at": order["created_at"],
     }
+
+
+async def send_order_notification(order: dict):
+    """Fire the order webhook if enabled. Always safe: never raises, never blocks order creation."""
+    if not _webhook_enabled():
+        return  # webhook disabled -> no call attempted, nothing logged
+    webhook_url = (os.environ.get("ORDER_WEBHOOK_URL") or "").strip()
+    if not webhook_url:
+        logger.info("ORDER_WEBHOOK_ENABLED is true but ORDER_WEBHOOK_URL is empty — skipping.")
+        return
+
+    payload = build_order_webhook_payload(order)
+    body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+    headers = {"Content-Type": "application/json"}
+    secret = (os.environ.get("ORDER_WEBHOOK_SECRET") or "").strip()
+    if secret:
+        signature = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+        headers["X-AAYNA-Signature"] = f"sha256={signature}"
 
     log = {
         "id": str(uuid.uuid4()),
-        "order_id": order["order_number"],
-        "notification_type": "admin_webhook",
-        "recipient": webhook_url or "MAKE_WEBHOOK_URL",
+        "order_id": order.get("order_number") or order.get("id"),
+        "notification_type": "order_created",
         "message": payload,
-        "status": "pending",
+        "status": "failed",
+        "response_code": None,
         "error_message": None,
-        "sent_at": None,
         "created_at": now_iso(),
     }
-
-    if not webhook_url or webhook_url.strip().lower() == "placeholder":
-        log["status"] = "failed"
-        log["error_message"] = "MAKE_WEBHOOK_URL not configured (placeholder)"
-        await db.notification_logs.insert_one(log)
-        logger.warning("Notification skipped for %s: webhook not configured", order["order_number"])
-        return
-
     try:
         async with httpx.AsyncClient(timeout=10) as cli:
-            resp = await cli.post(webhook_url, json=payload)
+            resp = await cli.post(webhook_url, content=body, headers=headers)
+        log["response_code"] = resp.status_code
         if resp.status_code < 300:
-            log["status"] = "sent"
-            log["sent_at"] = now_iso()
+            log["status"] = "success"
         else:
             log["status"] = "failed"
-            log["error_message"] = f"Webhook responded {resp.status_code}"
+            log["error_message"] = f"Webhook responded with HTTP {resp.status_code}"
+            logger.warning("Order webhook failed for %s: HTTP %s", log["order_id"], resp.status_code)
     except Exception as exc:  # noqa: BLE001
+        # Store only the exception type — never the URL or secret.
         log["status"] = "failed"
-        log["error_message"] = str(exc)
-        logger.warning("Notification failed for %s: %s", order["order_number"], exc)
-
+        log["error_message"] = f"Connection error: {type(exc).__name__}"
+        logger.warning("Order webhook error for %s: %s", log["order_id"], type(exc).__name__)
     await db.notification_logs.insert_one(log)
 
 
