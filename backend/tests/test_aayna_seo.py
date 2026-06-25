@@ -104,18 +104,43 @@ class TestSitemap:
 
 
 # ---------------- backend root paths (reachable when CDN/host rewrites to backend) ----------------
+class _FakeCursor:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def to_list(self, n):
+        async def _coro():
+            return self._docs
+        return _coro()
+
+
+class _FakeColl:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def find(self, *a, **k):
+        return _FakeCursor(self._docs)
+
+
+class _FakeDB:
+    categories = _FakeColl([{"slug": "earrings", "updated_at": "2026-01-01T00:00:00+00:00"}])
+    products = _FakeColl([{"slug": "gold-hoop", "updated_at": "2026-01-01T00:00:00+00:00"}])
+
+
 class TestBackendRootSeoPaths:
-    def test_backend_serves_root_sitemap(self):
+    def test_backend_serves_root_sitemap(self, monkeypatch):
         from fastapi.testclient import TestClient
-        client = TestClient(server.app)
-        r = client.get("/sitemap.xml")
+        monkeypatch.setattr(server, "db", _FakeDB())  # decouple from live Mongo/event loop
+        c = TestClient(server.app)
+        r = c.get("/sitemap.xml")
         assert r.status_code == 200
         assert "<urlset" in r.text and r.text.strip().startswith("<?xml")
+        assert "/product/gold-hoop" in r.text and "/category/earrings" in r.text
 
     def test_backend_serves_root_robots(self):
         from fastapi.testclient import TestClient
-        client = TestClient(server.app)
-        r = client.get("/robots.txt")
+        c = TestClient(server.app)
+        r = c.get("/robots.txt")
         assert r.status_code == 200
         assert "Sitemap:" in r.text and "Disallow: /admin" in r.text
 

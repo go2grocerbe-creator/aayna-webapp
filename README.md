@@ -277,6 +277,12 @@ Development (`APP_ENV=development`) keeps simple local fallbacks and skips these
 ### Health check
 `GET /api/health` → `{"status":"ok","app":"aayna","environment":"production|development"}`. Returns safe status only — no secrets, DB URL, admin email, webhook URL, or internal config.
 
+### Liveness vs readiness (Milestone 4B)
+- **`GET /api/health` (liveness):** fast, does **not** touch MongoDB. Confirms the process is up. Use for liveness probes.
+- **`GET /api/health/ready` (readiness):** checks the process is up, **pings MongoDB**, and (in production) re-validates required config. Returns **200** `{"status":"ready",...}` when ready, or **503** `{"status":"not_ready",...}` when the DB is unreachable or config is invalid. Hosting platforms should use this to decide whether the backend should receive traffic (and to restart/hold a pod when not ready).
+- **`GET /api/health/version`:** safe build info only — `{app, environment, version}` (version from optional `APP_VERSION`, default `1.0.0`).
+- None of these endpoints expose secrets, the MongoDB URL, admin email, webhook URL/secret, storage keys, or stack traces.
+
 ### Smoke test (non-destructive)
 Read-only checks of public endpoints (does **not** place orders):
 ```bash

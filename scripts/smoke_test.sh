@@ -30,6 +30,7 @@ check() {
 }
 
 check "health"        "$API/health"        200
+check "ready"         "$API/health/ready"  200
 check "products"      "$API/products"      200
 check "categories"    "$API/categories"    200
 check "settings"      "$API/settings"      200

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -140,11 +140,45 @@ async def root():
 
 @api_router.get("/health")
 async def health():
-    """Public health check. Returns safe status only — no secrets or internal config."""
+    """Public liveness check. Fast and safe — does NOT touch the database."""
     return {
         "status": "ok",
         "app": "aayna",
         "environment": (os.environ.get("APP_ENV", "development") or "development").strip().lower(),
+    }
+
+
+def _current_env() -> str:
+    return (os.environ.get("APP_ENV", "development") or "development").strip().lower()
+
+
+@api_router.get("/health/ready")
+async def health_ready():
+    """Readiness check: process up + MongoDB reachable + production config valid.
+    Returns 200 when ready, 503 otherwise. Never exposes secrets or internal config."""
+    ready = True
+    try:
+        await client.admin.command("ping")
+    except Exception:
+        ready = False
+    if ready:
+        try:
+            validate_security_config()
+        except Exception:
+            ready = False
+    payload = {"status": "ready" if ready else "not_ready", "app": "aayna", "environment": _current_env()}
+    if not ready:
+        return JSONResponse(status_code=503, content=payload)
+    return payload
+
+
+@api_router.get("/health/version")
+async def health_version():
+    """Safe build info only — no secrets."""
+    return {
+        "app": "aayna",
+        "environment": _current_env(),
+        "version": (os.environ.get("APP_VERSION") or "1.0.0").strip(),
     }
 
 

@@ -98,3 +98,64 @@ def test_dev_skips_validation(monkeypatch):
     monkeypatch.delenv("PUBLIC_SITE_URL", raising=False)
     monkeypatch.delenv("JWT_SECRET", raising=False)
     auth.validate_security_config()  # must not raise in development
+
+
+# ---------------- /api/health/ready (Milestone 4B) ----------------
+class _FakeAdmin:
+    async def command(self, *a, **k):
+        raise RuntimeError("db unreachable")
+
+
+class _FakeClient:
+    admin = _FakeAdmin()
+
+
+class _OkAdmin:
+    async def command(self, *a, **k):
+        return {"ok": 1}
+
+
+class _OkClient:
+    admin = _OkAdmin()
+
+
+def test_ready_returns_200_when_db_and_config_ok(monkeypatch):
+    monkeypatch.setattr(server, "client", _OkClient())
+    r = client.get("/api/health/ready")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["status"] == "ready"
+    assert d["app"] == "aayna" and "environment" in d
+    assert set(d.keys()) == {"status", "app", "environment"}
+
+
+def test_ready_returns_503_when_db_ping_fails(monkeypatch):
+    monkeypatch.setattr(server, "client", _FakeClient())
+    r = client.get("/api/health/ready")
+    assert r.status_code == 503
+    assert r.json()["status"] == "not_ready"
+
+
+def test_ready_returns_503_when_config_invalid(monkeypatch):
+    def _boom():
+        raise RuntimeError("bad prod config")
+    monkeypatch.setattr(server, "validate_security_config", _boom)
+    r = client.get("/api/health/ready")
+    assert r.status_code == 503
+    assert r.json()["status"] == "not_ready"
+
+
+def test_ready_does_not_leak_secrets(monkeypatch):
+    monkeypatch.setattr(server, "client", _FakeClient())
+    raw = client.get("/api/health/ready").text.lower()
+    for bad in ["jwt", "secret", "password", "mongodb://", "mongo_url",
+                "webhook", "admin@", "sk-emergent", "token", "traceback"]:
+        assert bad not in raw, f"readiness leaked {bad}"
+
+
+def test_version_endpoint_safe():
+    r = client.get("/api/health/version")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["app"] == "aayna" and "version" in d and "environment" in d
+    assert set(d.keys()) == {"app", "environment", "version"}
