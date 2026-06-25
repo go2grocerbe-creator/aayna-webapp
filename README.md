@@ -219,9 +219,13 @@ After editing `frontend/.env`, rebuild/restart the frontend so the new values ar
 - [ ] Confirm `.env` files are NOT committed (only `.env.example` is).
 
 **Storefront content**
-- [ ] Update WhatsApp / bKash / Nagad numbers and social links in Admin → Settings.
+- [ ] Replace placeholder **announcement bar text**, **WhatsApp / bKash / Nagad numbers**, **support email**, and social links in Admin → Settings (the Settings page shows a warning while placeholders remain).
 - [ ] Replace placeholder product/category/hero images via the admin dashboard.
 - [ ] Review delivery charges (Dhaka / outside Dhaka) in Settings.
+
+**Test data cleanup (manual — do NOT run destructive scripts)**
+- [ ] Before going live, remove test products, test orders, and test customers via the admin dashboard.
+- [ ] ⚠️ Manually review any realistic-looking customer records before deleting — do not bulk-delete customer/order data automatically.
 
 **Notifications**
 - [ ] Set `ORDER_WEBHOOK_URL` + `ORDER_WEBHOOK_ENABLED=true` (and optionally `ORDER_WEBHOOK_SECRET`).

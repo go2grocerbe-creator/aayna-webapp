@@ -82,7 +82,7 @@ export default function OrderConfirmation() {
         <Link to="/shop" className="flex-1 h-12 bg-aayna-rose text-white font-semibold flex items-center justify-center hover:bg-aayna-rose-dark transition-colors">
           Continue Shopping
         </Link>
-        <Link to="/track-order" className="flex-1 h-12 border border-aayna-rose text-aayna-rose font-semibold flex items-center justify-center hover:bg-aayna-mist transition-colors">
+        <Link to={`/track-order?order=${encodeURIComponent(order.order_number)}`} className="flex-1 h-12 border border-aayna-rose text-aayna-rose font-semibold flex items-center justify-center hover:bg-aayna-mist transition-colors">
           Track This Order
         </Link>
       </div>

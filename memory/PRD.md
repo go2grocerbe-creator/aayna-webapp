@@ -72,6 +72,15 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **Verified pre-launch:** 107/107 backend tests pass; frontend compiles; `scripts/smoke_test.sh` green live (health, ready, products, categories, settings, sitemap, robots). No real `.env` tracked (only `backend/.env.example`). Tags `m4b-...` and `m4c-deployment-runbook-complete`.
 - No new features / no redesign.
 
+## Implemented — Milestone 4E (2026-06-25)
+- **404 page:** friendly `NotFound` with header/footer + Home/Shop links; catch-all `*` route. ("Categories" nav is a dropdown button, not a dead `/categories` link — no fix needed.)
+- **Track order privacy:** `/api/track` now requires order_number **AND** matching customer_phone; generic error on mismatch; phone-only/empty rejected. Frontend adds phone field + privacy note; Order Confirmation deep-link prefills `?order=` only (no auto-track).
+- **Public field hygiene:** `low_stock_alert` now hidden in public product responses (cost_price/internal_notes already hidden).
+- **Placeholder protection:** backend `detect_placeholder_warnings` helper + admin Settings banner when announcement/WhatsApp/bKash/Nagad/support-email still look like placeholders.
+- **Maintenance mode (Option A):** when `maintenance_mode` is ON the public storefront shows a maintenance screen; admin dashboard + health endpoints stay accessible. Settings label updated.
+- **Docs:** README launch checklist — replace placeholders + manual test-data cleanup note; APP_ENV=production already enforced.
+- **Verified:** 118/118 backend tests pass (+ updated existing track tests for new contract); frontend compiles; 404 + track-order UI verified via screenshots; smoke green.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.

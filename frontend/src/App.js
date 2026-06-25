@@ -15,6 +15,7 @@ import OrderConfirmation from "@/pages/OrderConfirmation";
 import TrackOrder from "@/pages/TrackOrder";
 import Contact from "@/pages/Contact";
 import StaticPage from "@/pages/StaticPage";
+import NotFound from "@/pages/NotFound";
 
 import { AdminAuthLayout } from "@/admin/AdminAuthContext";
 import AdminLayout, { AdminProtected } from "@/admin/AdminLayout";
@@ -61,6 +62,7 @@ function App() {
               <Route path="/returns" element={<StaticPage pageKey="returns" />} />
               <Route path="/privacy" element={<StaticPage pageKey="privacy" />} />
               <Route path="/terms" element={<StaticPage pageKey="terms" />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
 
             {/* Admin */}

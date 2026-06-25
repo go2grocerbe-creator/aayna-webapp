@@ -297,7 +297,7 @@ class TestOrders:
         assert d["admin_note"] == "Test note"
 
         # Reflected on public track
-        track = requests.post(f"{API}/track", json={"order_number": test_order_number}, timeout=30).json()
+        track = requests.post(f"{API}/track", json={"order_number": test_order_number, "phone": "01712345678"}, timeout=30).json()
         assert any(o["order_status"] == "Confirmed" for o in track)
 
     def test_update_order_invalid_status(self, admin, test_order_number):

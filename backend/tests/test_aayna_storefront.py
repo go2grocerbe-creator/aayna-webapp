@@ -315,7 +315,7 @@ class TestCheckout:
 class TestTrack:
     def test_track_by_order_number(self, session):
         order_number = getattr(pytest, "shared_order_number", "ORD-1001")
-        r = session.post(f"{API}/track", json={"order_number": order_number}, timeout=30)
+        r = session.post(f"{API}/track", json={"order_number": order_number, "phone": "01712345678"}, timeout=30)
         assert r.status_code == 200, r.text
         orders = r.json()
         assert any(o["order_number"] == order_number for o in orders)
@@ -323,14 +323,18 @@ class TestTrack:
             assert "admin_note" not in o
             assert "customer_phone" not in o
 
-    def test_track_by_phone(self, session):
+    def test_track_phone_only_rejected(self, session):
+        # Phone alone (without order number) must be rejected — privacy requires both.
         r = session.post(f"{API}/track", json={"phone": "01712345678"}, timeout=30)
-        assert r.status_code == 200
-        assert isinstance(r.json(), list)
-        assert len(r.json()) >= 1
+        assert r.status_code == 400
+
+    def test_track_wrong_phone_fails(self, session):
+        order_number = getattr(pytest, "shared_order_number", "ORD-1001")
+        r = session.post(f"{API}/track", json={"order_number": order_number, "phone": "01999999999"}, timeout=30)
+        assert r.status_code == 404
 
     def test_track_invalid(self, session):
-        r = session.post(f"{API}/track", json={"order_number": "ORD-9999999"}, timeout=30)
+        r = session.post(f"{API}/track", json={"order_number": "ORD-9999999", "phone": "01712345678"}, timeout=30)
         assert r.status_code == 404
 
     def test_track_empty_input(self, session):

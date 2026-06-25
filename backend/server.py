@@ -51,7 +51,7 @@ def normalize_phone(phone: str) -> Optional[str]:
     return '+880' + digits  # +8801XXXXXXXXX
 
 
-PUBLIC_PRODUCT_HIDE = {"_id": 0, "cost_price": 0, "internal_notes": 0}
+PUBLIC_PRODUCT_HIDE = {"_id": 0, "cost_price": 0, "internal_notes": 0, "low_stock_alert": 0}
 
 PAYMENT_MAP = {
     "cod": "Cash on Delivery",
@@ -64,7 +64,33 @@ def public_product(p: dict) -> dict:
     p.pop("_id", None)
     p.pop("cost_price", None)
     p.pop("internal_notes", None)
+    p.pop("low_stock_alert", None)
     return p
+
+
+# Storefront settings that must be real (not placeholders) before launch.
+PLACEHOLDER_SETTING_FIELDS = {
+    "announcement_bar_text": "Announcement bar text",
+    "whatsapp_number": "WhatsApp number",
+    "bkash_number": "bKash number",
+    "nagad_number": "Nagad number",
+    "support_email": "Support email",
+}
+
+
+def _looks_placeholder(value: str) -> bool:
+    v = (value or "").strip().lower()
+    if not v:
+        return True
+    if v.startswith("test"):
+        return True
+    return any(m in v for m in ("xxxx", "example.com", "changeme", "placeholder"))
+
+
+def detect_placeholder_warnings(settings: dict) -> list:
+    """Return human labels for storefront settings still holding placeholder values."""
+    return [label for key, label in PLACEHOLDER_SETTING_FIELDS.items()
+            if _looks_placeholder(str(settings.get(key, "")))]
 
 
 # ---------------------------------------------------------------------------
@@ -648,37 +674,41 @@ async def get_order_confirmation(order_number: str):
 
 @api_router.post("/track")
 async def track_order(req: TrackRequest):
-    query = {}
-    if req.order_number:
-        query["order_number"] = req.order_number.strip().upper()
-    elif req.phone:
-        phone = normalize_phone(req.phone)
-        if not phone:
-            raise HTTPException(status_code=400, detail="Please enter a valid order ID or phone number")
-        query["customer_phone"] = phone
-    else:
-        raise HTTPException(status_code=400, detail="Enter an Order ID or phone number")
+    # Public order lookup requires BOTH the order number AND the matching phone,
+    # so sequential order numbers cannot be guessed to reveal order data.
+    order_number = (req.order_number or "").strip().upper()
+    phone = normalize_phone(req.phone or "")
+    if not order_number or not phone:
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter your Order ID and the phone number used for the order.",
+        )
 
-    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(20)
-    if not orders:
-        raise HTTPException(status_code=404, detail="No order found. Please check your details.")
+    order = await db.orders.find_one(
+        {"order_number": order_number, "customer_phone": phone}, {"_id": 0}
+    )
+    if not order:
+        # Generic message — never reveal whether the order number or phone was wrong.
+        raise HTTPException(
+            status_code=404,
+            detail="No matching order found. Please check your Order ID and phone number.",
+        )
 
     return [
         {
-            "order_number": o["order_number"],
-            "order_status": o["order_status"],
-            "payment_method": o["payment_method"],
-            "payment_status": o["payment_status"],
-            "total_amount": o["total_amount"],
-            "courier_name": o.get("courier_name"),
-            "courier_tracking_code": o.get("courier_tracking_code"),
-            "created_at": o["created_at"],
+            "order_number": order["order_number"],
+            "order_status": order["order_status"],
+            "payment_method": order["payment_method"],
+            "payment_status": order["payment_status"],
+            "total_amount": order["total_amount"],
+            "courier_name": order.get("courier_name"),
+            "courier_tracking_code": order.get("courier_tracking_code"),
+            "created_at": order["created_at"],
             "items": [
                 {"product_name": it["product_name_snapshot"], "quantity": it["quantity"]}
-                for it in o["items"]
+                for it in order["items"]
             ],
         }
-        for o in orders
     ]
 
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, Package, Search } from "lucide-react";
 import { trackOrder } from "@/lib/api";
@@ -8,27 +9,26 @@ import { useSeo } from "@/lib/seo";
 const STATUS_STEPS = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered"];
 
 export default function TrackOrder() {
-  useSeo({ title: "Track Your Order", description: "Track your AAYNA order using your Order ID or phone number." });
-  const [value, setValue] = useState("");
+  useSeo({ title: "Track Your Order", description: "Track your AAYNA order using your Order ID and phone number." });
+  const [params] = useSearchParams();
+  const [orderNumber, setOrderNumber] = useState(params.get("order") || "");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
 
-  const isPhone = /^[0-9+]/.test(value.trim());
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!value.trim()) {
-      toast.error("Enter your Order ID or phone number");
+    if (!orderNumber.trim() || !phone.trim()) {
+      toast.error("Enter your Order ID and the phone number used for the order");
       return;
     }
     setLoading(true);
     setResults(null);
     try {
-      const payload = isPhone ? { phone: value.trim() } : { order_number: value.trim() };
-      const data = await trackOrder(payload);
+      const data = await trackOrder({ order_number: orderNumber.trim(), phone: phone.trim() });
       setResults(data);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "No order found. Please check your details.");
+      toast.error(err?.response?.data?.detail || "No matching order found. Please check your details.");
       setResults([]);
     } finally {
       setLoading(false);
@@ -42,22 +42,32 @@ export default function TrackOrder() {
           <Package className="h-7 w-7 text-aayna-rose" />
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal">Track Your Order</h1>
-        <p className="text-aayna-taupe mt-2">Enter your Order ID (e.g. ORD-1001) or the phone number you used.</p>
+        <p className="text-aayna-taupe mt-2">Enter your Order ID (e.g. ORD-1001) and the phone number you used at checkout.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <input
-          data-testid="track-input"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="ORD-1001 or 01712345678"
-          className="flex-1 h-12 border border-aayna-beige bg-white px-4 outline-none focus:border-aayna-rose text-aayna-charcoal"
+          data-testid="track-order-number"
+          value={orderNumber}
+          onChange={(e) => setOrderNumber(e.target.value)}
+          placeholder="Order ID (e.g. ORD-1001)"
+          className="w-full h-12 border border-aayna-beige bg-white px-4 outline-none focus:border-aayna-rose text-aayna-charcoal"
         />
-        <button data-testid="track-submit" type="submit" disabled={loading} className="h-12 px-6 bg-aayna-rose text-white font-semibold flex items-center gap-2 hover:bg-aayna-rose-dark transition-colors disabled:opacity-60">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          Track
-        </button>
+        <div className="flex gap-2">
+          <input
+            data-testid="track-phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number (e.g. 01712345678)"
+            className="flex-1 h-12 border border-aayna-beige bg-white px-4 outline-none focus:border-aayna-rose text-aayna-charcoal"
+          />
+          <button data-testid="track-submit" type="submit" disabled={loading} className="h-12 px-6 bg-aayna-rose text-white font-semibold flex items-center gap-2 hover:bg-aayna-rose-dark transition-colors disabled:opacity-60">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            Track
+          </button>
+        </div>
       </form>
+      <p className="text-xs text-aayna-taupe mt-2">For your privacy, we verify both your Order ID and phone number.</p>
 
       {results && results.length === 0 && (
         <p data-testid="track-no-results" className="text-center text-aayna-taupe mt-8">No order found. Please check your details.</p>

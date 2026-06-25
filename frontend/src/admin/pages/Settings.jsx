@@ -24,6 +24,21 @@ const NUMBER_FIELDS = [
   ["delivery_charge_outside_dhaka", "Delivery Outside Dhaka (৳)"],
 ];
 
+const PLACEHOLDER_FIELDS = [
+  ["announcement_bar_text", "Announcement bar text"],
+  ["whatsapp_number", "WhatsApp number"],
+  ["bkash_number", "bKash number"],
+  ["nagad_number", "Nagad number"],
+  ["support_email", "Support email"],
+];
+
+const looksPlaceholder = (v) => {
+  const s = String(v || "").trim().toLowerCase();
+  if (!s) return true;
+  if (s.startsWith("test")) return true;
+  return ["xxxx", "example.com", "changeme", "placeholder"].some((m) => s.includes(m));
+};
+
 export default function Settings() {
   const { data, isLoading } = useQuery({ queryKey: ["admin-settings"], queryFn: getAdminSettings });
   const [form, setForm] = useState({});
@@ -55,9 +70,18 @@ export default function Settings() {
 
   const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose text-sm";
 
+  const placeholderWarnings = PLACEHOLDER_FIELDS.filter(([k]) => looksPlaceholder(form[k])).map(([, l]) => l);
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-aayna-charcoal mb-6">Website Settings</h1>
+
+      {placeholderWarnings.length > 0 && (
+        <div data-testid="settings-placeholder-warning" className="mb-6 border border-amber-300 bg-amber-50 text-amber-900 rounded-lg p-4 text-sm">
+          <p className="font-semibold mb-1">⚠️ Replace placeholder values before launch</p>
+          <p>These still look like placeholders: {placeholderWarnings.join(", ")}. Update them with your real details so customers see correct information.</p>
+        </div>
+      )}
 
       <div className="space-y-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -104,7 +128,7 @@ export default function Settings() {
               <Switch data-testid="set-cod" checked={Boolean(form.cod_available)} onCheckedChange={(v) => set("cod_available", v)} />
             </div>
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium text-gray-700">Maintenance Mode</p><p className="text-xs text-gray-400">Flag for taking the store offline (storefront still visible in this version)</p></div>
+              <div><p className="text-sm font-medium text-gray-700">Maintenance Mode</p><p className="text-xs text-gray-400">When ON, the public storefront shows a maintenance page. The admin dashboard stays accessible.</p></div>
               <Switch data-testid="set-maintenance" checked={Boolean(form.maintenance_mode)} onCheckedChange={(v) => set("maintenance_mode", v)} />
             </div>
           </div>
