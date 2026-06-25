@@ -77,7 +77,7 @@ class TestProducts:
         r = session.get(f"{API}/products", timeout=30)
         assert r.status_code == 200
         products = r.json()
-        assert len(products) == 10
+        assert len(products) >= 10  # 10 seeded; admin may add more in M2
         for p in products:
             assert "cost_price" not in p
             assert "internal_notes" not in p

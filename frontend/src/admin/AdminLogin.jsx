@@ -10,6 +10,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (user) navigate("/admin", { replace: true });
@@ -17,6 +18,7 @@ export default function AdminLogin() {
 
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
     setBusy(true);
     try {
       await login(email.trim(), password);
@@ -24,7 +26,9 @@ export default function AdminLogin() {
       navigate("/admin", { replace: true });
     } catch (err) {
       const detail = err?.response?.data?.detail;
-      toast.error(typeof detail === "string" ? detail : "Login failed");
+      const message = typeof detail === "string" ? detail : "Invalid email or password";
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -44,7 +48,7 @@ export default function AdminLogin() {
             data-testid="admin-login-email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); setError(""); }}
             placeholder="admin@aayna.xyz"
             className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose mb-4"
             required
@@ -54,11 +58,16 @@ export default function AdminLogin() {
             data-testid="admin-login-password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); setError(""); }}
             placeholder="••••••••"
-            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose mb-6"
+            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose mb-4"
             required
           />
+          {error && (
+            <p data-testid="admin-login-error" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4">
+              {error}
+            </p>
+          )}
           <button
             data-testid="admin-login-submit"
             type="submit"
