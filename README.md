@@ -112,10 +112,21 @@ external automation tool (e.g. **Make.com**, Zapier, n8n). This is **off by defa
   "created_at": "2026-06-22T17:30:00+00:00",
   "items": [
     { "product_name": "Gold Pearl Hoop Earrings", "quantity": 2, "unit_price": 400, "subtotal": 800 }
-  ]
+  ],
+  "items_summary": "Gold Pearl Hoop Earrings x2",
+  "admin_message": "New AAYNA order received: ORD-1037. Customer: Ayesha Rahman, Phone: +8801712345678, District: Dhaka. Address: House 12, Road 5, Dhanmondi. Payment: Cash on Delivery. Total: ৳880. Items: Gold Pearl Hoop Earrings x2. Please check the admin dashboard and confirm the order.",
+  "customer_message": "Thank you for your order from AAYNA. Your order ORD-1037 has been received. Total: ৳880. Payment: Cash on Delivery. Delivery district: Dhaka. Our team will contact you soon to confirm the order."
 }
 ```
 The payload deliberately **excludes** `cost_price`, `internal_notes`, DB `_id`, JWT tokens, admin data, and secrets.
+
+### Ready-to-use message templates (Milestone 3C)
+The payload includes three ready-made text fields so Blackbox AI / Make.com can forward them without building strings:
+- **`items_summary`** — readable item list, e.g. `"Gold Pearl Hoop Earrings x2, Heart Pendant Necklace x1"`.
+- **`admin_message`** — short operational alert (order number, customer name + phone, district, address, payment, total, items, and a "check the admin dashboard" reminder). Route this to your admin WhatsApp/Telegram/email in Make.com.
+- **`customer_message`** — polite brand-friendly confirmation (order number, total, payment, delivery district, "we'll confirm soon"). It intentionally **omits the phone and address**. Route this to the customer's SMS/WhatsApp in Make.com.
+
+> The app **does not send any SMS, WhatsApp, or email itself** — it only includes these message strings in the webhook payload. Blackbox/Make.com decides where each message goes.
 
 ### Signature verification (optional)
 If `ORDER_WEBHOOK_SECRET` is set, the request includes:

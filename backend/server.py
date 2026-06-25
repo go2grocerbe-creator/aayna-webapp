@@ -309,8 +309,37 @@ def _webhook_enabled() -> bool:
     return str(os.environ.get("ORDER_WEBHOOK_ENABLED", "false")).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _items_summary(items: list) -> str:
+    """Turn order items into readable text, e.g. 'Gold Pearl Hoop Earrings x2, Heart Pendant Necklace x1'."""
+    parts = [f"{it['product_name_snapshot']} x{it['quantity']}" for it in items]
+    return ", ".join(parts)
+
+
+def _money(amount) -> str:
+    return f"৳{amount:g}"
+
+
 def build_order_webhook_payload(order: dict) -> dict:
     """Clean, operations-only payload. No cost_price, internal_notes, secrets, or DB _id."""
+    items = order.get("items", [])
+    items_text = _items_summary(items)
+
+    admin_message = (
+        f"New AAYNA order received: {order['order_number']}. "
+        f"Customer: {order['customer_name']}, Phone: {order['customer_phone']}, "
+        f"District: {order['district']}. Address: {order['delivery_address']}. "
+        f"Payment: {order['payment_method']}. Total: {_money(order['total_amount'])}. "
+        f"Items: {items_text}. Please check the admin dashboard and confirm the order."
+    )
+
+    customer_message = (
+        f"Thank you for your order from AAYNA. "
+        f"Your order {order['order_number']} has been received. "
+        f"Total: {_money(order['total_amount'])}. Payment: {order['payment_method']}. "
+        f"Delivery district: {order['district']}. "
+        f"Our team will contact you soon to confirm the order."
+    )
+
     return {
         "order_id": order.get("id"),
         "order_number": order.get("order_number"),
@@ -330,8 +359,11 @@ def build_order_webhook_payload(order: dict) -> dict:
                 "unit_price": it["unit_price"],
                 "subtotal": it["total_price"],
             }
-            for it in order.get("items", [])
+            for it in items
         ],
+        "items_summary": items_text,
+        "admin_message": admin_message,
+        "customer_message": customer_message,
     }
 
 

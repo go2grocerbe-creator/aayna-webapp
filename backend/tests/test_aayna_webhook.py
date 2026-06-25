@@ -159,6 +159,57 @@ def test_webhook_payload_has_no_sensitive_data(monkeypatch):
     assert '"_id"' not in raw  # no raw DB id key
 
 
+def test_items_summary_helper():
+    items = [
+        {"product_name_snapshot": "Gold Pearl Hoop Earrings", "quantity": 2},
+        {"product_name_snapshot": "Heart Pendant Necklace", "quantity": 1},
+    ]
+    assert server._items_summary(items) == "Gold Pearl Hoop Earrings x2, Heart Pendant Necklace x1"
+
+
+def test_webhook_message_templates(monkeypatch):
+    _setup(monkeypatch, enabled=True, secret="topsecret")
+    order = make_order()
+    run(server.send_order_notification(order))
+    payload = json.loads(FakeClient.calls[0]["content"])
+
+    # Both message fields present
+    assert "admin_message" in payload and "customer_message" in payload
+    assert "items_summary" in payload
+    assert payload["items_summary"] == "Gold Pearl Hoop Earrings x2"
+
+    admin_msg = payload["admin_message"]
+    customer_msg = payload["customer_message"]
+
+    # Admin message: operational details
+    assert order["order_number"] in admin_msg
+    assert order["customer_name"] in admin_msg
+    assert order["customer_phone"] in admin_msg
+    assert order["district"] in admin_msg
+    assert "৳880" in admin_msg
+    assert "Gold Pearl Hoop Earrings x2" in admin_msg
+    assert "admin dashboard" in admin_msg.lower()
+
+    # Customer message: polite, includes order number/total/payment/district
+    assert "Thank you" in customer_msg
+    assert order["order_number"] in customer_msg
+    assert "৳880" in customer_msg
+    assert order["payment_method"] in customer_msg
+    assert order["district"] in customer_msg
+    # Customer message must NOT expose the phone/address
+    assert order["customer_phone"] not in customer_msg
+
+
+def test_webhook_messages_have_no_sensitive_data(monkeypatch):
+    _setup(monkeypatch, enabled=True, secret="topsecret")
+    run(server.send_order_notification(make_order()))
+    payload = json.loads(FakeClient.calls[0]["content"])
+    blob = (payload["admin_message"] + " " + payload["customer_message"]).lower()
+    for bad in ["cost_price", "internal_notes", "password", "token", "jwt",
+                "secret", "api_key", "topsecret", "160"]:  # 160 = the cost_price value
+        assert bad not in blob, f"message leaked {bad}"
+
+
 def test_webhook_failure_http_still_logged(monkeypatch):
     fake_db = _setup(monkeypatch, enabled=True, code=500)
     # Must not raise even though the webhook returns 500
