@@ -1,7 +1,9 @@
 import { STATIC_PAGES } from "@/data/staticPages";
+import { useSeo } from "@/lib/seo";
 
 export default function StaticPage({ pageKey }) {
   const page = STATIC_PAGES[pageKey];
+  useSeo({ title: page?.title, description: page?.intro });
   if (!page) return null;
 
   return (

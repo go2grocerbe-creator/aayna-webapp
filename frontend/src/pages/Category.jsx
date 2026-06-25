@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { getProducts, getCategory } from "@/lib/api";
 import ProductGrid from "@/components/ProductGrid";
+import { useSeo } from "@/lib/seo";
 import {
   Select,
   SelectContent,
@@ -30,6 +31,14 @@ export default function Category() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", "category", slug, sort],
     queryFn: () => getProducts({ category: slug, sort }),
+  });
+
+  useSeo({
+    title: category?.name || "Category",
+    description:
+      category?.description ||
+      `Shop ${category?.name || "accessories"} at AAYNA — trendy women's accessories in Bangladesh.`,
+    image: category?.image_url,
   });
 
   return (

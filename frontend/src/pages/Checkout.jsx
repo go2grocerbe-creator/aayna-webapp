@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useSeo } from "@/lib/seo";
 
 const PHONE_RE = /^(?:\+?880|0)1[3-9]\d{8}$/;
 
@@ -47,6 +48,8 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  useSeo({ title: "Checkout", description: "Complete your AAYNA order securely.", noindex: true });
 
   const set = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));

@@ -1,8 +1,10 @@
 import { MessageCircle, Phone, Mail, Instagram, Facebook } from "lucide-react";
 import { useSettings } from "@/hooks/useStore";
+import { useSeo } from "@/lib/seo";
 
 export default function Contact() {
   const { data: settings } = useSettings();
+  useSeo({ title: "Contact Us", description: "Get in touch with AAYNA via WhatsApp, phone or email for orders, sizing and styling help." });
   const waDigits = (settings?.whatsapp_number || "").replace(/[^0-9]/g, "");
 
   const cards = [

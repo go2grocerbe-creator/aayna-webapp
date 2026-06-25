@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/CartContext";
 import Layout from "@/components/Layout";
+import Analytics from "@/components/Analytics";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import Category from "@/pages/Category";
@@ -43,6 +44,7 @@ function App() {
       <CartProvider>
         <BrowserRouter>
           <ScrollToTop />
+          <Analytics />
           <Routes>
             {/* Storefront */}
             <Route element={<Layout />}>

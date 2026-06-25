@@ -4,9 +4,11 @@ import { ShoppingBag, Minus, Plus, Trash2, AlertCircle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { validateCart } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
+import { useSeo } from "@/lib/seo";
 
 export default function Cart() {
   const { items, updateQty, removeItem, subtotal } = useCart();
+  useSeo({ title: "Your Cart", description: "Review the items in your AAYNA shopping cart.", noindex: true });
 
   const { data: validation } = useQuery({
     queryKey: ["cart-validate", items.map((i) => `${i.product_id}:${i.quantity}`).join(",")],

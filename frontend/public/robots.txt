@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /cart
+Disallow: /order-confirmation
+
+# Replace the domain below with your live domain before launch.
+Sitemap: https://www.aayna.com.bd/sitemap.xml

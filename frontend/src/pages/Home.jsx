@@ -5,6 +5,7 @@ import { getProducts } from "@/lib/api";
 import { useSettings, useCategories } from "@/hooks/useStore";
 import ProductGrid from "@/components/ProductGrid";
 import TrustBadges from "@/components/TrustBadges";
+import { useSeo } from "@/lib/seo";
 
 function SectionHeading({ title, subtitle, link, linkLabel }) {
   return (
@@ -32,6 +33,12 @@ export default function Home() {
   const { data: bestSellers = [], isLoading: loadingBest } = useQuery({
     queryKey: ["products", "best"],
     queryFn: () => getProducts({ best_seller: true, limit: 8 }),
+  });
+
+  useSeo({
+    description:
+      settings?.hero_subtitle ||
+      "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
   });
 
   return (

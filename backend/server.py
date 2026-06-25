@@ -309,6 +309,16 @@ def _webhook_enabled() -> bool:
     return str(os.environ.get("ORDER_WEBHOOK_ENABLED", "false")).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _router_name() -> str:
+    """Logical name of the notification router (e.g. 'generic_webhook', 'make', 'blackbox')."""
+    return (os.environ.get("NOTIFICATION_ROUTER_NAME") or "").strip() or "generic_webhook"
+
+
+def _router_mode() -> str:
+    """Delivery mode of the notification router. Currently webhook-only."""
+    return (os.environ.get("NOTIFICATION_ROUTER_MODE") or "").strip() or "webhook"
+
+
 def _items_summary(items: list) -> str:
     """Turn order items into readable text, e.g. 'Gold Pearl Hoop Earrings x2, Heart Pendant Necklace x1'."""
     parts = [f"{it['product_name_snapshot']} x{it['quantity']}" for it in items]
@@ -389,12 +399,18 @@ async def send_order_notification(order: dict):
         "id": str(uuid.uuid4()),
         "order_id": order.get("order_number") or order.get("id"),
         "notification_type": "order_created",
+        "router_name": _router_name(),
+        "router_mode": _router_mode(),
         "message": payload,
         "status": "failed",
         "response_code": None,
         "error_message": None,
         "created_at": now_iso(),
     }
+    logger.info(
+        "Dispatching order notification order=%s router=%s mode=%s",
+        log["order_id"], log["router_name"], log["router_mode"],
+    )
     try:
         async with httpx.AsyncClient(timeout=10) as cli:
             resp = await cli.post(webhook_url, content=body, headers=headers)

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { getOrder } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
+import { useSeo } from "@/lib/seo";
 
 export default function OrderConfirmation() {
   const { orderNumber } = useParams();
@@ -11,6 +12,7 @@ export default function OrderConfirmation() {
     queryFn: () => getOrder(orderNumber),
     retry: 1,
   });
+  useSeo({ title: "Order Confirmed", description: "Your AAYNA order has been placed.", noindex: true });
 
   if (isLoading) {
     return (

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getProducts } from "@/lib/api";
 import { useCategories } from "@/hooks/useStore";
 import ProductGrid from "@/components/ProductGrid";
+import { useSeo } from "@/lib/seo";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,11 @@ export default function Shop() {
         ...(category !== "all" ? { category } : {}),
         ...(search ? { search } : {}),
       }),
+  });
+
+  useSeo({
+    title: search ? `Search: ${search}` : "Shop All",
+    description: "Browse the full AAYNA collection of women's accessories — earrings, necklaces, rings and more.",
   });
 
   const updateParam = (key, value) => {

@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/hooks/useStore";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
+import { useSeo } from "@/lib/seo";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -20,6 +21,12 @@ export default function ProductDetail() {
   const { data, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => getProduct(slug),
+  });
+
+  useSeo({
+    title: data?.product?.name,
+    description: data?.product?.description || data?.product?.short_description,
+    image: data?.product?.images?.[0],
   });
 
   if (isLoading) {

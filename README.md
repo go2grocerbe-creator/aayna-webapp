@@ -85,6 +85,8 @@ external automation tool (e.g. **Make.com**, Zapier, n8n). This is **off by defa
 | `ORDER_WEBHOOK_ENABLED` | `true` to send webhooks, `false` (default) to disable |
 | `ORDER_WEBHOOK_URL` | The destination URL that receives the POST |
 | `ORDER_WEBHOOK_SECRET` | Optional. If set, an HMAC-SHA256 signature header is added |
+| `NOTIFICATION_ROUTER_NAME` | Logical router name recorded in logs (default `generic_webhook`) |
+| `NOTIFICATION_ROUTER_MODE` | Delivery mode recorded in logs (default `webhook`) |
 
 ### Enable / disable
 - **Enable:** set `ORDER_WEBHOOK_ENABLED=true` **and** `ORDER_WEBHOOK_URL=<your-url>`, then restart the backend.
@@ -140,6 +142,64 @@ where `<hex> = HMAC_SHA256(secret, raw_request_body)`. The receiver recomputes t
 2. Put that URL in `ORDER_WEBHOOK_URL` and set `ORDER_WEBHOOK_ENABLED=true`; restart the backend.
 3. Place a test order — Make.com receives the JSON above and you can map fields to Google Sheets, email, SMS, etc.
 4. (Optional) Set `ORDER_WEBHOOK_SECRET` and add a Make.com filter/module that verifies the `X-AAYNA-Signature` HMAC before processing.
+
+### Notification router metadata (Milestone 3D)
+The app stays **webhook-only** — it never bundles SMS/WhatsApp/email SDKs. `ORDER_WEBHOOK_URL` is the single outbound endpoint and can point to any router (Make.com, Blackbox AI, n8n, Zapier). For traceability, every `notification_logs` entry records:
+- `router_name` — from `NOTIFICATION_ROUTER_NAME` (default `generic_webhook`).
+- `router_mode` — from `NOTIFICATION_ROUTER_MODE` (default `webhook`).
+
+These are logs/metadata only and never appear in the outbound payload or leak secrets.
+
+---
+
+## SEO & Analytics (Milestone 3E)
+
+### SEO
+- Every storefront page sets its own `<title>`, `meta description`, Open Graph and Twitter card tags, and a canonical URL (via the dependency-free `useSeo` hook in `src/lib/seo.js`).
+- Cart / Checkout / Order-confirmation pages are marked `noindex` (transactional, not for search engines).
+- `public/robots.txt` allows the storefront and disallows `/admin`, `/cart`, `/checkout`, `/order-confirmation`.
+- `public/sitemap.xml` lists the main public pages.
+- ⚠️ **Before launch, replace `https://www.aayna.com.bd` in both `robots.txt` and `sitemap.xml` with your real domain.**
+
+### Analytics pixels (config/env-based)
+Pixels are loaded **only** when their public ID is provided, and **never** on `/admin` routes. Set these in `frontend/.env` (public, build-time — pixel IDs are public identifiers, **never put secret keys here**):
+
+| Variable | Purpose |
+|---|---|
+| `REACT_APP_GA4_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXX`). Empty ⇒ GA4 not loaded. |
+| `REACT_APP_META_PIXEL_ID` | Meta/Facebook Pixel ID. Empty ⇒ Meta Pixel not loaded. |
+| `REACT_APP_TIKTOK_PIXEL_ID` | TikTok Pixel ID. Empty ⇒ TikTok Pixel not loaded. |
+
+After editing `frontend/.env`, rebuild/restart the frontend so the new values are picked up.
+
+---
+
+## 🚀 Launch checklist
+
+**Security**
+- [ ] Set `APP_ENV=production` in `backend/.env`.
+- [ ] Set a strong unique `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and a 64-char random `JWT_SECRET`.
+- [ ] Set `CORS_ORIGINS` to your real frontend domain (not `*`).
+- [ ] Confirm `.env` files are NOT committed (only `.env.example` is).
+
+**Storefront content**
+- [ ] Update WhatsApp / bKash / Nagad numbers and social links in Admin → Settings.
+- [ ] Replace placeholder product/category/hero images via the admin dashboard.
+- [ ] Review delivery charges (Dhaka / outside Dhaka) in Settings.
+
+**Notifications**
+- [ ] Set `ORDER_WEBHOOK_URL` + `ORDER_WEBHOOK_ENABLED=true` (and optionally `ORDER_WEBHOOK_SECRET`).
+- [ ] (Optional) Set `NOTIFICATION_ROUTER_NAME` / `NOTIFICATION_ROUTER_MODE`.
+- [ ] Place a test order and confirm the router (Make.com/Blackbox) receives it.
+
+**SEO & analytics**
+- [ ] Replace `https://www.aayna.com.bd` in `public/robots.txt` and `public/sitemap.xml` with the live domain.
+- [ ] Add `REACT_APP_GA4_ID` / `REACT_APP_META_PIXEL_ID` / `REACT_APP_TIKTOK_PIXEL_ID` if tracking is desired; rebuild the frontend.
+- [ ] Verify pixels do **not** fire on `/admin` routes.
+
+**Final**
+- [ ] Run the backend test suite (`pytest`) — all green.
+- [ ] Smoke-test full guest flow: browse → cart → checkout → confirmation → track.
 
 ---
 

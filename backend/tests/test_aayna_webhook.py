@@ -228,3 +228,57 @@ def test_webhook_failure_exception_does_not_leak_url(monkeypatch):
     # error message must not expose the URL or secret
     err = log.get("error_message") or ""
     assert "example.com" not in err and "topsecret" not in err
+
+
+
+# ---------------------------------------------------------------------------
+# Milestone 3D — notification router readiness
+# ---------------------------------------------------------------------------
+def test_router_helper_defaults(monkeypatch):
+    monkeypatch.delenv("NOTIFICATION_ROUTER_NAME", raising=False)
+    monkeypatch.delenv("NOTIFICATION_ROUTER_MODE", raising=False)
+    assert server._router_name() == "generic_webhook"
+    assert server._router_mode() == "webhook"
+
+
+def test_router_helper_blank_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("NOTIFICATION_ROUTER_NAME", "   ")
+    monkeypatch.setenv("NOTIFICATION_ROUTER_MODE", "")
+    assert server._router_name() == "generic_webhook"
+    assert server._router_mode() == "webhook"
+
+
+def test_router_helper_custom(monkeypatch):
+    monkeypatch.setenv("NOTIFICATION_ROUTER_NAME", "blackbox")
+    monkeypatch.setenv("NOTIFICATION_ROUTER_MODE", "webhook")
+    assert server._router_name() == "blackbox"
+    assert server._router_mode() == "webhook"
+
+
+def test_router_metadata_logged_with_defaults(monkeypatch):
+    monkeypatch.delenv("NOTIFICATION_ROUTER_NAME", raising=False)
+    monkeypatch.delenv("NOTIFICATION_ROUTER_MODE", raising=False)
+    fake_db = _setup(monkeypatch, enabled=True, secret="topsecret")
+    run(server.send_order_notification(make_order()))
+    log = fake_db.notification_logs.docs[0]
+    assert log["router_name"] == "generic_webhook"
+    assert log["router_mode"] == "webhook"
+
+
+def test_router_metadata_logged_custom(monkeypatch):
+    fake_db = _setup(monkeypatch, enabled=True)
+    monkeypatch.setenv("NOTIFICATION_ROUTER_NAME", "make")
+    monkeypatch.setenv("NOTIFICATION_ROUTER_MODE", "webhook")
+    run(server.send_order_notification(make_order()))
+    log = fake_db.notification_logs.docs[0]
+    assert log["router_name"] == "make"
+    assert log["router_mode"] == "webhook"
+
+
+def test_router_metadata_never_leaks_secrets(monkeypatch):
+    fake_db = _setup(monkeypatch, enabled=True, secret="topsecret")
+    run(server.send_order_notification(make_order()))
+    log = fake_db.notification_logs.docs[0]
+    blob = (str(log.get("router_name")) + str(log.get("router_mode"))).lower()
+    for bad in ["topsecret", "example.com", "http"]:
+        assert bad not in blob

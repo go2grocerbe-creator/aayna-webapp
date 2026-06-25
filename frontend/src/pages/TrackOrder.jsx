@@ -3,10 +3,12 @@ import { toast } from "sonner";
 import { Loader2, Package, Search } from "lucide-react";
 import { trackOrder } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
+import { useSeo } from "@/lib/seo";
 
 const STATUS_STEPS = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered"];
 
 export default function TrackOrder() {
+  useSeo({ title: "Track Your Order", description: "Track your AAYNA order using your Order ID or phone number." });
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
