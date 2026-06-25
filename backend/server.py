@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.responses import Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -635,6 +636,85 @@ async def track_order(req: TrackRequest):
         }
         for o in orders
     ]
+
+
+# ---------------------------------------------------------------------------
+# SEO — dynamic robots.txt + sitemap.xml (Milestone 3G)
+# Served under /api (externally reachable) AND at root paths for direct/
+# deployment-level routing. Absolute URLs come from PUBLIC_SITE_URL.
+# ---------------------------------------------------------------------------
+SITEMAP_STATIC_PATHS = [
+    "/", "/shop", "/contact", "/track-order",
+    "/delivery-policy", "/returns", "/privacy", "/terms",
+]
+
+
+def _public_site_url() -> str:
+    return (os.environ.get("PUBLIC_SITE_URL") or "http://localhost:3000").strip().rstrip("/")
+
+
+def _xml_escape(s: str) -> str:
+    return (
+        str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        .replace('"', "&quot;").replace("'", "&apos;")
+    )
+
+
+async def _collect_sitemap_urls() -> list:
+    base = _public_site_url()
+    urls = [base + p for p in SITEMAP_STATIC_PATHS]
+    cats = await db.categories.find({"status": "active"}, {"_id": 0, "slug": 1}).to_list(1000)
+    urls += [f"{base}/category/{c['slug']}" for c in cats if c.get("slug")]
+    prods = await db.products.find(
+        {"status": {"$in": ["active", "out_of_stock"]}}, {"_id": 0, "slug": 1}
+    ).to_list(5000)
+    urls += [f"{base}/product/{p['slug']}" for p in prods if p.get("slug")]
+    return urls
+
+
+async def _render_sitemap() -> str:
+    urls = await _collect_sitemap_urls()
+    rows = "".join(f"  <url><loc>{_xml_escape(u)}</loc></url>\n" for u in urls)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{rows}</urlset>\n"
+    )
+
+
+def _render_robots() -> str:
+    base = _public_site_url()
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin\n"
+        "Disallow: /cart\n"
+        "Disallow: /checkout\n"
+        "Disallow: /order-confirmation\n"
+        "Disallow: /api/admin\n"
+        "Disallow: /api/auth\n\n"
+        f"Sitemap: {base}/sitemap.xml\n"
+    )
+
+
+@api_router.get("/sitemap.xml")
+async def api_sitemap_xml():
+    return Response(content=await _render_sitemap(), media_type="application/xml")
+
+
+@api_router.get("/robots.txt")
+async def api_robots_txt():
+    return Response(content=_render_robots(), media_type="text/plain")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def root_sitemap_xml():
+    return Response(content=await _render_sitemap(), media_type="application/xml")
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def root_robots_txt():
+    return Response(content=_render_robots(), media_type="text/plain")
 
 
 app.include_router(api_router)

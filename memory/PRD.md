@@ -37,6 +37,14 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **Verified:** 76/76 backend tests pass; SEO titles/meta verified live; robots.txt + sitemap.xml return 200.
 - ⚠️ Before launch: replace placeholder domain `https://www.aayna.com.bd` in robots.txt & sitemap.xml.
 
+## Implemented — Milestone 3G (2026-06-25)
+- **PUBLIC_SITE_URL config:** `PUBLIC_SITE_URL` (backend) + `REACT_APP_PUBLIC_SITE_URL` (frontend) drive all absolute SEO URLs (canonical, OG, robots sitemap ref, sitemap entries). Local fallback `http://localhost:3000`.
+- **Dynamic robots.txt + sitemap.xml:** served by backend at `/api/robots.txt` & `/api/sitemap.xml` (and root `/robots.txt`,`/sitemap.xml`). Sitemap is DB-driven: 8 static pages + all active categories + active/out_of_stock products (32 URLs seeded). Excludes /admin, /cart, /checkout, /order-confirmation, /api. robots disallows /admin, /api/admin, /api/auth + advertises sitemap.
+- **Product/category SEO:** product title `Name | AAYNA`, desc w/ name+category+short+price, OG image, canonical; category title + women's-accessories-in-Bangladesh desc + canonical.
+- **Product JSON-LD:** `@type Product` (name, images, desc, brand AAYNA, category, price, BDT, stock-based availability). No cost_price/internal_notes/IDs/secrets.
+- **Verified:** 87/87 backend tests pass (+11 SEO); endpoints + product JSON-LD verified live; frontend compiles. Storefront/checkout/admin/webhook/track unaffected.
+- ⚠️ Routing note: clean root `/sitemap.xml` `/robots.txt` need a host rule → backend; `/api/...` versions work today.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.

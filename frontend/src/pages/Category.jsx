@@ -35,9 +35,9 @@ export default function Category() {
 
   useSeo({
     title: category?.name || "Category",
-    description:
-      category?.description ||
-      `Shop ${category?.name || "accessories"} at AAYNA — trendy women's accessories in Bangladesh.`,
+    description: category?.description
+      ? `${category.description} Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`
+      : `Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`,
     image: category?.image_url,
   });
 

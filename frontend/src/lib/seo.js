@@ -1,9 +1,14 @@
 import { useEffect } from "react";
 
 const SITE_NAME = "AAYNA";
+const SITE_URL = (process.env.REACT_APP_PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
 const DEFAULT_TITLE = "AAYNA — Reflect your everyday style.";
 const DEFAULT_DESC =
   "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
+
+function siteOrigin() {
+  return SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+}
 
 function upsertMeta(attr, key, content) {
   if (!content) return;
@@ -32,7 +37,7 @@ export function useSeo({ title, description, image, noindex } = {}) {
   const desc = description || DEFAULT_DESC;
 
   useEffect(() => {
-    const url = window.location.origin + window.location.pathname;
+    const url = siteOrigin() + window.location.pathname;
     document.title = fullTitle;
     upsertMeta("name", "description", desc);
     upsertMeta("name", "robots", noindex ? "noindex,nofollow" : "index,follow");
@@ -51,4 +56,28 @@ export function useSeo({ title, description, image, noindex } = {}) {
 
     upsertCanonical(url);
   }, [fullTitle, desc, image, noindex]);
+}
+
+// Injects/updates/removes a JSON-LD <script> tag. Pass null to remove.
+export function useJsonLd(id, data) {
+  const json = data ? JSON.stringify(data) : null;
+  useEffect(() => {
+    const selector = `script[data-seo-jsonld="${id}"]`;
+    let el = document.head.querySelector(selector);
+    if (!json) {
+      if (el) el.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement("script");
+      el.setAttribute("type", "application/ld+json");
+      el.setAttribute("data-seo-jsonld", id);
+      document.head.appendChild(el);
+    }
+    el.textContent = json;
+    return () => {
+      const cur = document.head.querySelector(selector);
+      if (cur) cur.remove();
+    };
+  }, [id, json]);
 }

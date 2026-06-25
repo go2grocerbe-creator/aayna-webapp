@@ -8,7 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/hooks/useStore";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
-import { useSeo } from "@/lib/seo";
+import { useSeo, useJsonLd } from "@/lib/seo";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -23,11 +23,39 @@ export default function ProductDetail() {
     queryFn: () => getProduct(slug),
   });
 
+  const product = data?.product;
+
   useSeo({
-    title: data?.product?.name,
-    description: data?.product?.description || data?.product?.short_description,
-    image: data?.product?.images?.[0],
+    title: product?.product_name,
+    description: product
+      ? `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
+      : undefined,
+    image: product?.images?.[0]?.image_url,
   });
+
+  useJsonLd(
+    "product",
+    product
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.product_name,
+          image: (product.images || []).map((i) => i.image_url).filter(Boolean),
+          description: product.short_description || product.full_description || product.product_name,
+          sku: product.sku,
+          brand: { "@type": "Brand", name: "AAYNA" },
+          category: product.category_name,
+          offers: {
+            "@type": "Offer",
+            price: String(effectivePrice(product) ?? product.selling_price ?? 0),
+            priceCurrency: "BDT",
+            availability: isOutOfStock(product)
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
+          },
+        }
+      : null
+  );
 
   if (isLoading) {
     return (
@@ -48,7 +76,6 @@ export default function ProductDetail() {
     return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-aayna-taupe">Product not found.</div>;
   }
 
-  const product = data.product;
   const images = product.images?.length ? product.images : [{ image_url: "", alt_text: product.product_name }];
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);
