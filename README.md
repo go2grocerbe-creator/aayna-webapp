@@ -319,6 +319,105 @@ curl -s https://your-domain.com/api/robots.txt
 
 ---
 
+## 🚀 Deployment runbook (Milestone 4C)
+
+Step-by-step to take AAYNA from this repo to a live production deployment.
+
+### 1. Database
+- Provision a production MongoDB (Atlas or self-hosted). Create a database and a user with read/write on it.
+- Set `MONGO_URL` and `DB_NAME` in `backend/.env`. On first boot the app seeds categories, products, settings, and the admin account.
+
+### 2. Backend production env (`backend/.env`)
+- `APP_ENV=production`
+- `JWT_SECRET` = 64-char random (`python -c "import secrets;print(secrets.token_hex(32))"`)
+- `ADMIN_EMAIL` + `ADMIN_PASSWORD` (strong, unique — never the dev default)
+- `CORS_ORIGINS` = your real frontend origin(s), comma-separated (never `*`)
+- `PUBLIC_SITE_URL` = your live domain (never empty/localhost)
+- Webhook (optional): `ORDER_WEBHOOK_ENABLED=true` + `ORDER_WEBHOOK_URL` (+ optional `ORDER_WEBHOOK_SECRET`, `NOTIFICATION_ROUTER_NAME`, `NOTIFICATION_ROUTER_MODE`)
+- Object storage (optional, for admin image uploads): `EMERGENT_LLM_KEY`
+> The backend **refuses to start** if production config is missing/unsafe (see "Production safety validation").
+
+### 3. Frontend production env (`frontend/.env`)
+- `REACT_APP_BACKEND_URL` = backend public URL
+- `REACT_APP_PUBLIC_SITE_URL` = your live domain
+- Analytics (optional): `REACT_APP_GA_MEASUREMENT_ID`, `REACT_APP_META_PIXEL_ID`, `REACT_APP_TIKTOK_PIXEL_ID`
+- Rebuild the frontend after changing any `REACT_APP_*` value (they are inlined at build time).
+
+### 4. Admin credentials
+- Set `ADMIN_EMAIL`/`ADMIN_PASSWORD` before first boot; log in at `/admin/login`.
+
+### 5. SEO routing rule (host/CDN)
+Add a rewrite so the clean root paths map to the backend's dynamic endpoints:
+```
+/sitemap.xml  →  backend /api/sitemap.xml
+/robots.txt   →  backend /api/robots.txt
+```
+Then submit `{PUBLIC_SITE_URL}/sitemap.xml` to Google Search Console. Until the rewrite exists, submit `/api/sitemap.xml` directly.
+
+### 6. Probes (hosting platform)
+- Liveness → `GET /api/health`
+- Readiness → `GET /api/health/ready` (gates traffic; 503 when DB/config not ready)
+
+### Production env template (no real values)
+| Variable | Side | Required | Example placeholder | Sensitive |
+|---|---|---|---|---|
+| `APP_ENV` | backend | ✅ | `production` | no |
+| `MONGO_URL` | backend | ✅ | `mongodb+srv://user:***@cluster/db` | 🔒 yes |
+| `DB_NAME` | backend | ✅ | `aayna_prod` | no |
+| `JWT_SECRET` | backend | ✅ | `<64-char hex>` | 🔒 yes |
+| `ADMIN_EMAIL` | backend | ✅ | `owner@your-domain.com` | 🔒 yes |
+| `ADMIN_PASSWORD` | backend | ✅ | `<strong-unique-password>` | 🔒 yes |
+| `CORS_ORIGINS` | backend | ✅ | `https://your-domain.com` | no |
+| `PUBLIC_SITE_URL` | backend | ✅ | `https://your-domain.com` | no |
+| `ORDER_WEBHOOK_ENABLED` | backend | optional | `false` | no |
+| `ORDER_WEBHOOK_URL` | backend | conditional | `https://hooks.make.com/xxxxx` | 🔒 yes |
+| `ORDER_WEBHOOK_SECRET` | backend | optional | `<random-string>` | 🔒 yes |
+| `NOTIFICATION_ROUTER_NAME` | backend | optional | `generic_webhook` | no |
+| `NOTIFICATION_ROUTER_MODE` | backend | optional | `webhook` | no |
+| `EMERGENT_LLM_KEY` | backend | optional | `<key>` | 🔒 yes |
+| `APP_VERSION` | backend | optional | `1.0.0` | no |
+| `REACT_APP_BACKEND_URL` | frontend | ✅ | `https://api.your-domain.com` | no |
+| `REACT_APP_PUBLIC_SITE_URL` | frontend | ✅ | `https://your-domain.com` | no |
+| `REACT_APP_GA_MEASUREMENT_ID` | frontend | optional | `G-XXXXXXXXXX` | no (public ID) |
+| `REACT_APP_META_PIXEL_ID` | frontend | optional | `123456789012345` | no (public ID) |
+| `REACT_APP_TIKTOK_PIXEL_ID` | frontend | optional | `CXXXXXXXXXXXXXXXXXXX` | no (public ID) |
+> Keep all 🔒 values in environment variables only — never in code or git. Only `backend/.env.example` (placeholders) is committed.
+
+### Final QA script
+`scripts/smoke_test.sh` is **read-only** (no orders, no stock changes, no admin login). Run against the live domain:
+```bash
+BASE_URL=https://your-live-domain.com ./scripts/smoke_test.sh
+```
+It checks `/api/health`, `/api/health/ready`, products, categories, settings, `/api/sitemap.xml`, `/api/robots.txt`.
+
+### Final manual launch checklist
+- [ ] Home loads
+- [ ] Shop loads
+- [ ] Category page loads
+- [ ] Product detail loads
+- [ ] Add to cart works
+- [ ] Checkout works
+- [ ] Order confirmation appears
+- [ ] Track order works
+- [ ] Admin login works
+- [ ] Wrong admin login fails (generic error)
+- [ ] Product CRUD works (create / edit / deactivate)
+- [ ] Order status update reflects on the track page
+- [ ] Inventory stock reduces after a test order
+- [ ] Webhook notification logs success
+- [ ] Failed webhook logs appear safely (no URL/secret leaked)
+- [ ] `/api/health` works
+- [ ] `/api/health/ready` works (200 ready)
+- [ ] `/api/health/version` works
+- [ ] `/api/sitemap.xml` works
+- [ ] `/api/robots.txt` works
+- [ ] Root `/sitemap.xml` and `/robots.txt` work after the host rewrite
+- [ ] Mobile layout checked (storefront + checkout)
+- [ ] Analytics only loads when IDs are configured
+- [ ] Admin routes are **not** tracked
+
+---
+
 ## Running tests
 
 ```bash
