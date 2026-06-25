@@ -73,7 +73,7 @@ class TestSitemap:
 
     def test_sitemap_excludes_private_routes(self):
         body = requests.get(f"{API}/sitemap.xml", timeout=30).text
-        for bad in ["/admin", "/cart", "/checkout", "/order-confirmation", "/api/"]:
+        for bad in ["/admin", "/cart", "/checkout", "/order-confirmation", "/api/", "/auth"]:
             assert bad not in body, f"sitemap must not expose {bad}"
 
     def test_sitemap_uses_public_site_url(self):
@@ -83,6 +83,41 @@ class TestSitemap:
         assert locs
         for loc in locs:
             assert loc.startswith(base), f"{loc} does not use configured PUBLIC_SITE_URL {base}"
+
+    def test_sitemap_is_valid_xml(self):
+        import xml.etree.ElementTree as ET
+        body = requests.get(f"{API}/sitemap.xml", timeout=30).text
+        root = ET.fromstring(body)  # raises on invalid XML
+        assert root.tag.endswith("urlset")
+
+    def test_sitemap_has_lastmod_for_products(self):
+        body = requests.get(f"{API}/sitemap.xml", timeout=30).text
+        prods = requests.get(f"{API}/products", timeout=30).json()
+        base = _sitemap_base()
+        # at least one product entry should carry a <lastmod> (updated_at exists in seed)
+        assert "<lastmod>" in body
+        slug = prods[0]["slug"]
+        block = re.search(
+            rf"<url><loc>{re.escape(base)}/product/{re.escape(slug)}</loc>(.*?)</url>", body
+        )
+        assert block and "<lastmod>" in block.group(1)
+
+
+# ---------------- backend root paths (reachable when CDN/host rewrites to backend) ----------------
+class TestBackendRootSeoPaths:
+    def test_backend_serves_root_sitemap(self):
+        from fastapi.testclient import TestClient
+        client = TestClient(server.app)
+        r = client.get("/sitemap.xml")
+        assert r.status_code == 200
+        assert "<urlset" in r.text and r.text.strip().startswith("<?xml")
+
+    def test_backend_serves_root_robots(self):
+        from fastapi.testclient import TestClient
+        client = TestClient(server.app)
+        r = client.get("/robots.txt")
+        assert r.status_code == 200
+        assert "Sitemap:" in r.text and "Disallow: /admin" in r.text
 
 
 # ---------------- PUBLIC_SITE_URL helper (unit) ----------------

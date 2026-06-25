@@ -45,6 +45,13 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **Verified:** 87/87 backend tests pass (+11 SEO); endpoints + product JSON-LD verified live; frontend compiles. Storefront/checkout/admin/webhook/track unaffected.
 - ⚠️ Routing note: clean root `/sitemap.xml` `/robots.txt` need a host rule → backend; `/api/...` versions work today.
 
+## Implemented — Milestone 3H (2026-06-25)
+- **Sitemap `<lastmod>`:** product & category `<url>` entries now carry `<lastmod>` from their `updated_at` (ISO 8601); static pages omit it. Valid XML, no private fields exposed.
+- **Root SEO routing:** backend serves `/sitemap.xml` & `/robots.txt` at root **and** `/api/...`. Attempted a dev-server proxy for clean root paths, but CRACO + visual-edits override the wds middleware hook, so root-at-ingress isn't feasible at the app layer — documented exact CDN/host rewrite (`/sitemap.xml`→`/api/sitemap.xml`, `/robots.txt`→`/api/robots.txt`). `/api` endpoints work today.
+- **Cleanup confirmed:** sitemap includes only public pages + active categories + active/out_of_stock products + policy pages; excludes admin/cart/checkout/confirmation/api/auth. robots references `{PUBLIC_SITE_URL}/sitemap.xml`, no localhost when configured.
+- **README:** added "SEO production routing" steps (set domains, CDN rewrite, submit to Search Console, re-submit after updates).
+- **Verified:** 91/91 backend tests pass (+4 SEO: lastmod, XML validity, backend root paths); lastmod confirmed live; frontend compiles; storefront + admin login render.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.

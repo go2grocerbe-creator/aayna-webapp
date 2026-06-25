@@ -661,20 +661,27 @@ def _xml_escape(s: str) -> str:
 
 
 async def _collect_sitemap_urls() -> list:
+    """Returns (loc, lastmod) tuples. lastmod is None for static pages."""
     base = _public_site_url()
-    urls = [base + p for p in SITEMAP_STATIC_PATHS]
-    cats = await db.categories.find({"status": "active"}, {"_id": 0, "slug": 1}).to_list(1000)
-    urls += [f"{base}/category/{c['slug']}" for c in cats if c.get("slug")]
+    urls = [(base + p, None) for p in SITEMAP_STATIC_PATHS]
+    cats = await db.categories.find(
+        {"status": "active"}, {"_id": 0, "slug": 1, "updated_at": 1}
+    ).to_list(1000)
+    urls += [(f"{base}/category/{c['slug']}", c.get("updated_at")) for c in cats if c.get("slug")]
     prods = await db.products.find(
-        {"status": {"$in": ["active", "out_of_stock"]}}, {"_id": 0, "slug": 1}
+        {"status": {"$in": ["active", "out_of_stock"]}}, {"_id": 0, "slug": 1, "updated_at": 1}
     ).to_list(5000)
-    urls += [f"{base}/product/{p['slug']}" for p in prods if p.get("slug")]
+    urls += [(f"{base}/product/{p['slug']}", p.get("updated_at")) for p in prods if p.get("slug")]
     return urls
 
 
 async def _render_sitemap() -> str:
-    urls = await _collect_sitemap_urls()
-    rows = "".join(f"  <url><loc>{_xml_escape(u)}</loc></url>\n" for u in urls)
+    rows = ""
+    for loc, lastmod in await _collect_sitemap_urls():
+        if lastmod:
+            rows += f"  <url><loc>{_xml_escape(loc)}</loc><lastmod>{_xml_escape(str(lastmod))}</lastmod></url>\n"
+        else:
+            rows += f"  <url><loc>{_xml_escape(loc)}</loc></url>\n"
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
