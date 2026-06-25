@@ -52,6 +52,13 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **README:** added "SEO production routing" steps (set domains, CDN rewrite, submit to Search Console, re-submit after updates).
 - **Verified:** 91/91 backend tests pass (+4 SEO: lastmod, XML validity, backend root paths); lastmod confirmed live; frontend compiles; storefront + admin login render.
 
+## Implemented — Milestone 4A (2026-06-25)
+- **Production safety validation:** startup (`auth.validate_security_config`) now also fails fast in production when `PUBLIC_SITE_URL` is empty/localhost, `CORS_ORIGINS` is empty/`*`, or `ORDER_WEBHOOK_ENABLED=true` without `ORDER_WEBHOOK_URL` (on top of JWT/admin defaults). Dev stays simple.
+- **Health endpoint:** `GET /api/health` → `{status, app, environment}` only; no secret/config leakage (tested).
+- **Analytics env rename:** GA reads `REACT_APP_GA_MEASUREMENT_ID` (legacy `REACT_APP_GA4_ID` still accepted).
+- **Docs:** README adds Production env checklist (table), Production safety validation, Health check, non-destructive smoke test, and Production Launch QA manual checklist. Added `scripts/smoke_test.sh` (read-only).
+- **Verified:** 102/102 backend tests pass (+11 health/config); `/api/health` + smoke script green live; frontend compiles. No new storefront features / no redesign.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.

@@ -69,6 +69,17 @@ def validate_security_config():
     if os.environ.get("JWT_SECRET") == _DEV_FALLBACK_SECRET:
         raise RuntimeError("Refusing to start in production with the development JWT_SECRET. Set a strong JWT_SECRET.")
 
+    # Milestone 4A — additional production safety checks.
+    site_url = (os.environ.get("PUBLIC_SITE_URL") or "").strip()
+    if not site_url or "localhost" in site_url or "127.0.0.1" in site_url:
+        raise RuntimeError("PUBLIC_SITE_URL must be set to your real domain in production (not empty or localhost).")
+    cors = (os.environ.get("CORS_ORIGINS") or "").strip()
+    if cors in ("", "*"):
+        raise RuntimeError("CORS_ORIGINS must be restricted to your real frontend origin(s) in production, not '*'.")
+    webhook_enabled = str(os.environ.get("ORDER_WEBHOOK_ENABLED", "")).strip().lower() in ("1", "true", "yes", "on")
+    if webhook_enabled and not (os.environ.get("ORDER_WEBHOOK_URL") or "").strip():
+        raise RuntimeError("ORDER_WEBHOOK_ENABLED is true but ORDER_WEBHOOK_URL is not set.")
+
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

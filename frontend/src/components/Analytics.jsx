@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 // Public, build-time analytics IDs. Empty => the corresponding pixel is never loaded.
 // Pixel IDs are public identifiers — never put secret keys here.
-const GA4_ID = (process.env.REACT_APP_GA4_ID || "").trim();
+const GA4_ID = (process.env.REACT_APP_GA_MEASUREMENT_ID || process.env.REACT_APP_GA4_ID || "").trim();
 const META_PIXEL_ID = (process.env.REACT_APP_META_PIXEL_ID || "").trim();
 const TIKTOK_PIXEL_ID = (process.env.REACT_APP_TIKTOK_PIXEL_ID || "").trim();
 

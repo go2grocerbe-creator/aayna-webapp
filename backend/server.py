@@ -138,6 +138,16 @@ async def root():
     return {"service": "AAYNA API", "status": "ok"}
 
 
+@api_router.get("/health")
+async def health():
+    """Public health check. Returns safe status only — no secrets or internal config."""
+    return {
+        "status": "ok",
+        "app": "aayna",
+        "environment": (os.environ.get("APP_ENV", "development") or "development").strip().lower(),
+    }
+
+
 @api_router.get("/settings")
 async def get_settings():
     docs = await db.website_settings.find({}, {"_id": 0}).to_list(200)

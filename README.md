@@ -202,7 +202,7 @@ Pixels are loaded **only** when their public ID is provided, and **never** on `/
 
 | Variable | Purpose |
 |---|---|
-| `REACT_APP_GA4_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXX`). Empty ⇒ GA4 not loaded. |
+| `REACT_APP_GA_MEASUREMENT_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXX`). Empty ⇒ GA4 not loaded. (Legacy `REACT_APP_GA4_ID` is also accepted.) |
 | `REACT_APP_META_PIXEL_ID` | Meta/Facebook Pixel ID. Empty ⇒ Meta Pixel not loaded. |
 | `REACT_APP_TIKTOK_PIXEL_ID` | TikTok Pixel ID. Empty ⇒ TikTok Pixel not loaded. |
 
@@ -231,12 +231,85 @@ After editing `frontend/.env`, rebuild/restart the frontend so the new values ar
 **SEO & analytics**
 - [ ] Set `PUBLIC_SITE_URL` (`backend/.env`) and `REACT_APP_PUBLIC_SITE_URL` (`frontend/.env`) to the live domain; rebuild the frontend.
 - [ ] (Optional) Add a host/CDN rule so `/sitemap.xml` and `/robots.txt` route to the backend; otherwise submit `{PUBLIC_SITE_URL}/api/sitemap.xml` to Search Console.
-- [ ] Add `REACT_APP_GA4_ID` / `REACT_APP_META_PIXEL_ID` / `REACT_APP_TIKTOK_PIXEL_ID` if tracking is desired; rebuild the frontend.
+- [ ] Add `REACT_APP_GA_MEASUREMENT_ID` / `REACT_APP_META_PIXEL_ID` / `REACT_APP_TIKTOK_PIXEL_ID` if tracking is desired; rebuild the frontend.
 - [ ] Verify pixels do **not** fire on `/admin` routes.
 
 **Final**
 - [ ] Run the backend test suite (`pytest`) — all green.
 - [ ] Smoke-test full guest flow: browse → cart → checkout → confirmation → track.
+
+---
+
+## Production deployment (Milestone 4A)
+
+### Production environment checklist
+Set these before deploying. The backend **refuses to start in production** if the critical ones are missing or unsafe (see "Production safety validation" below).
+
+| Variable | Where | Required | Notes |
+|---|---|---|---|
+| `APP_ENV` | backend | ✅ | Set to `production`. |
+| `ADMIN_EMAIL` | backend | ✅ | Seeded admin login email. |
+| `ADMIN_PASSWORD` | backend | ✅ | Strong, unique. Must NOT be the dev default. |
+| `JWT_SECRET` | backend | ✅ | 64-char random (`python -c "import secrets;print(secrets.token_hex(32))"`). |
+| `MONGO_URL` | backend | ✅ | Production MongoDB connection string. |
+| `DB_NAME` | backend | ✅ | Production database name. |
+| `CORS_ORIGINS` | backend | ✅ | Real frontend origin(s), comma-separated. Must NOT be `*`. |
+| `PUBLIC_SITE_URL` | backend | ✅ | Live domain. Must NOT be empty or `localhost`. |
+| `REACT_APP_PUBLIC_SITE_URL` | frontend | ✅ | Same live domain (build-time). |
+| `ORDER_WEBHOOK_ENABLED` | backend | optional | `true`/`false`. If `true`, `ORDER_WEBHOOK_URL` is required. |
+| `ORDER_WEBHOOK_URL` | backend | conditional | Required when webhook is enabled. |
+| `ORDER_WEBHOOK_SECRET` | backend | optional | Adds HMAC signature header. |
+| `REACT_APP_GA_MEASUREMENT_ID` | frontend | optional | GA4 ID. Empty ⇒ not loaded. |
+| `REACT_APP_META_PIXEL_ID` | frontend | optional | Meta Pixel ID. Empty ⇒ not loaded. |
+| `REACT_APP_TIKTOK_PIXEL_ID` | frontend | optional | TikTok Pixel ID. Empty ⇒ not loaded. |
+| `EMERGENT_LLM_KEY` | backend | optional | Object storage for image uploads (admin). |
+
+### Production safety validation
+On startup with `APP_ENV=production`, the backend fails fast (refuses to boot) when:
+- `JWT_SECRET`, `ADMIN_EMAIL`, or `ADMIN_PASSWORD` is missing.
+- `ADMIN_PASSWORD` is still the dev default, or `JWT_SECRET` is the dev fallback.
+- `PUBLIC_SITE_URL` is empty or points at `localhost` / `127.0.0.1`.
+- `CORS_ORIGINS` is empty or `*`.
+- `ORDER_WEBHOOK_ENABLED=true` but `ORDER_WEBHOOK_URL` is empty.
+
+Development (`APP_ENV=development`) keeps simple local fallbacks and skips these checks.
+
+### Health check
+`GET /api/health` → `{"status":"ok","app":"aayna","environment":"production|development"}`. Returns safe status only — no secrets, DB URL, admin email, webhook URL, or internal config.
+
+### Smoke test (non-destructive)
+Read-only checks of public endpoints (does **not** place orders):
+```bash
+BASE_URL=https://your-domain.com ./scripts/smoke_test.sh
+```
+Or by hand:
+```bash
+curl -s https://your-domain.com/api/health
+curl -s https://your-domain.com/api/products
+curl -s https://your-domain.com/api/categories
+curl -s https://your-domain.com/api/sitemap.xml
+curl -s https://your-domain.com/api/robots.txt
+```
+
+### Production Launch QA (manual)
+- [ ] Home loads
+- [ ] Shop loads
+- [ ] Category page loads
+- [ ] Product detail loads
+- [ ] Add to cart works
+- [ ] Checkout works
+- [ ] Order confirmation appears
+- [ ] Track order works
+- [ ] Admin login works
+- [ ] Wrong admin password fails (generic error)
+- [ ] Product stock reduces after an order
+- [ ] Admin order status update reflects on the track page
+- [ ] Webhook notification logs success/failure (Admin → notifications / `notification_logs`)
+- [ ] `robots.txt` reachable (root via CDN rewrite, or `/api/robots.txt`)
+- [ ] `sitemap.xml` reachable, or `/api/sitemap.xml` submitted to Search Console
+- [ ] Analytics scripts load **only** when IDs are set
+- [ ] Admin pages are **not** tracked by analytics
+- [ ] Mobile layout checked (storefront + checkout)
 
 ---
 
