@@ -1,0 +1,40 @@
+{
+  "summary": "Milestone 4E pre-launch QA frontend verification on AAYNA. All 6 scenarios PASSED: (1) 404 NotFound page renders with header+footer+both CTA links (Back to Home & Continue Shopping) at /no-such-page — NOT a blank page. (2) Storefront routes / /shop /category/earrings /product/gold-stack-ring-set all render with header/footer and no 404. (3) Track Order privacy: empty phone → error toast 'Enter your Order ID and the phone number used for the order' and NO order data returned; valid order+correct phone (01712345678) → 1 result rendered; same order with WRONG phone (01999999999) → 0 results plus generic 'No matching order found' toast AND no-results UI text — no leakage. (4) Order Confirmation deep link: after placing ORD-1129, the 'Track This Order' button correctly targets /track-order?order=ORD-1129; on landing, order-number field is PREFILLED with 'ORD-1129', phone field is EMPTY, NO auto-track fired (0 result blocks). (5) Admin login OK with admin@aayna.xyz / ChangeMe123!; on /admin/settings the data-testid='settings-placeholder-warning' banner is visible and correctly lists Announcement bar text, WhatsApp number, bKash number, Nagad number as placeholders; saving settings works (toast 'Settings saved'). (6) Maintenance Mode: toggled ON in Settings + saved, fresh tab to / showed data-testid='maintenance-screen', and /admin remained fully accessible (dashboard nav visible, no maintenance overlay). Restored OFF and verified storefront is back online (header visible, no maintenance screen). Test order ORD-1129 created with COD as the only side effect.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Announcement bar (storefront)", "issues": ["Top announcement bar still shows leftover test text 'TEST announcement bbbee' from a previous M2 test run. Not a 4E regression but should be reset before launch (cleanup of test seed data)."]},
+      {"screen": "ProductDetail / Cart drawer", "issues": ["React console warning: empty string ('') passed to the `src` attribute on an <img> when a product/cart item lacks an image. Cosmetic only — page still renders. Suggest rendering null/placeholder if `image` is falsy."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_3.json"
+  ],
+  "action_items": [
+    "(Optional / launch hygiene) Replace placeholder values now flagged by the settings banner: announcement_bar_text, whatsapp_number, bkash_number, nagad_number. The banner itself is working as designed.",
+    "(Optional) Reset the announcement_bar_text from 'TEST announcement bbbee' to the real launch copy.",
+    "(Optional) Guard <img src={...} /> against empty strings in ProductDetail and the cart drawer to silence the React warning."
+  ],
+  "critical_code_review_comments": [
+    "TrackOrder.jsx correctly enforces both order_number AND phone client-side (toast on empty phone) and the backend POST /api/track enforces the same — verified end-to-end: wrong phone returns a generic 'no matching order' with no order payload. Good privacy posture.",
+    "OrderConfirmation.jsx uses encodeURIComponent on the order number when building the /track-order?order= deep link — safe.",
+    "TrackOrder.jsx prefills order_number from ?order= but intentionally leaves phone empty and does NOT auto-submit on mount — correct privacy behaviour, matches spec.",
+    "Settings.jsx looksPlaceholder() is fairly permissive (treats anything starting with 'test' as placeholder). This is fine for launch QA but could false-positive a real brand whose copy starts with 'Test...'. Acceptable.",
+    "Layout.jsx maintenance gate only wraps the storefront <Outlet/> — admin routes live outside this Layout, so /admin stays accessible during maintenance as required. Verified.",
+    "useSettings() polls on every page mount — fine, but maintenance toggle takes effect only on a fresh navigation/page-load (existing tabs may need a route change to pick it up). Acceptable for an emergency switch.",
+    "NotFound.jsx is mounted INSIDE the storefront Layout via the catch-all '*' route, which is why header + footer + WhatsApp float all render around it. Good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "100% (6/6 scenarios passed)"},
+  "test_credentials": "admin@aayna.xyz / ChangeMe123! (verified). Storefront test phone 01712345678 (verified).",
+  "seed_data_creation": "1 new test order created: ORD-1129 (1× Gold Stack Ring Set, district Dhaka, COD, customer 'QA Test Buyer' / 01712345678). Maintenance Mode was flipped ON during the test and reverted to OFF + saved at the end — storefront verified back online (header visible, no maintenance screen).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All M4E scenarios green on the preview domain. The storefront still has 18 test-imported products from earlier M2 runs (slugs prefixed test-imported-*) plus 10 real seed products — buyable seed product used here was 'gold-stack-ring-set'. Most other seed products are marked Out of Stock. The announcement bar currently reads 'TEST announcement bbbee' (carryover from M2). Test order ORD-1129 left in DB. data-testids that matter: not-found-page, notfound-home-link, notfound-shop-link, track-order-number, track-phone, track-submit, track-no-results, track-result-<ORD-XXXX>, confirmation-order-number, settings-placeholder-warning, set-maintenance, settings-save, maintenance-screen — all present and working.",
+  "rca of the issue": "No bugs found in M4E scope. The only React console warning observed (img src='' warning) is unrelated cosmetic noise from optional product images — does not affect functionality."
+}
