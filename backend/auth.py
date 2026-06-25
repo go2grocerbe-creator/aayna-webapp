@@ -1,22 +1,73 @@
 import os
+import time
 import uuid
 import bcrypt
 import jwt
+import logging
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 
 from db import db, now_iso
 
+logger = logging.getLogger("aayna.auth")
+
 JWT_ALGORITHM = "HS256"
 ACCESS_TTL_DAYS = 7
 ADMIN_ROLES = {"super_admin", "admin", "order_manager", "product_manager"}
 
+APP_ENV = os.environ.get("APP_ENV", "development").strip().lower()
+IS_PRODUCTION = APP_ENV in ("production", "prod")
+_DEV_FALLBACK_SECRET = "dev-only-insecure-secret-do-not-use-in-production"
+_DEV_FALLBACK_ADMIN = ("admin@aayna.xyz", "ChangeMe123!")
+
+# --- Simple in-memory login rate limiting (single instance) ---
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_SECONDS = 15 * 60       # block for 15 minutes after too many failures
+ATTEMPT_WINDOW_SECONDS = 15 * 60  # failures older than this are forgotten
+_failed_logins = {}  # "ip:email" -> {count, first_ts, locked_until}
+
 auth_router = APIRouter(prefix="/api/admin")
 
 
+def get_jwt_secret() -> str:
+    """JWT secret must come from the environment. Fail fast in production; allow a dev fallback locally."""
+    secret = os.environ.get("JWT_SECRET")
+    if secret:
+        return secret
+    if IS_PRODUCTION:
+        raise RuntimeError("JWT_SECRET environment variable is required in production but is not set.")
+    logger.warning("JWT_SECRET is not set — using an INSECURE development fallback. Set JWT_SECRET before deploying.")
+    return _DEV_FALLBACK_SECRET
+
+
 def _secret() -> str:
-    return os.environ["JWT_SECRET"]
+    return get_jwt_secret()
+
+
+def get_admin_credentials():
+    """Admin credentials come from ADMIN_EMAIL / ADMIN_PASSWORD. No insecure default is created in production."""
+    email = os.environ.get("ADMIN_EMAIL")
+    password = os.environ.get("ADMIN_PASSWORD")
+    if email and password:
+        return email.strip().lower(), password
+    if IS_PRODUCTION:
+        return None, None
+    logger.warning("ADMIN_EMAIL/ADMIN_PASSWORD not set — using local dev defaults. Set them before deploying.")
+    return _DEV_FALLBACK_ADMIN[0], _DEV_FALLBACK_ADMIN[1]
+
+
+def validate_security_config():
+    """Called on startup. In production, refuse to start with missing or default secrets."""
+    if not IS_PRODUCTION:
+        return
+    missing = [k for k in ("JWT_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD") if not os.environ.get(k)]
+    if missing:
+        raise RuntimeError(f"Missing required production environment variables: {', '.join(missing)}")
+    if os.environ.get("ADMIN_PASSWORD") == _DEV_FALLBACK_ADMIN[1]:
+        raise RuntimeError("Refusing to start in production with the default ADMIN_PASSWORD. Set a strong ADMIN_PASSWORD.")
+    if os.environ.get("JWT_SECRET") == _DEV_FALLBACK_SECRET:
+        raise RuntimeError("Refusing to start in production with the development JWT_SECRET. Set a strong JWT_SECRET.")
 
 
 def hash_password(password: str) -> str:
@@ -76,14 +127,59 @@ class LoginRequest(BaseModel):
     password: str
 
 
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("X-Forwarded-For")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _rl_key(ip: str, email: str) -> str:
+    # Keyed by email so lockout is reliable even behind a load balancer that
+    # rotates client IPs. (IP is still captured for logging.)
+    return email
+
+
+def check_login_allowed(ip: str, email: str):
+    """Raise 429 if this IP+email is temporarily locked out."""
+    rec = _failed_logins.get(_rl_key(ip, email))
+    if not rec:
+        return
+    now = time.time()
+    if rec["locked_until"] > now:
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Please try again in a few minutes.")
+    if now - rec["first_ts"] > ATTEMPT_WINDOW_SECONDS:
+        _failed_logins.pop(_rl_key(ip, email), None)
+
+
+def record_failed_login(ip: str, email: str):
+    key = _rl_key(ip, email)
+    now = time.time()
+    rec = _failed_logins.get(key)
+    if not rec or now - rec["first_ts"] > ATTEMPT_WINDOW_SECONDS:
+        rec = {"count": 0, "first_ts": now, "locked_until": 0}
+    rec["count"] += 1
+    if rec["count"] >= MAX_FAILED_ATTEMPTS:
+        rec["locked_until"] = now + LOCKOUT_SECONDS
+    _failed_logins[key] = rec
+
+
+def clear_failed_logins(ip: str, email: str):
+    _failed_logins.pop(_rl_key(ip, email), None)
+
+
 @auth_router.post("/login")
-async def login(body: LoginRequest):
+async def login(body: LoginRequest, request: Request):
     email = body.email.strip().lower()
+    ip = _client_ip(request)
+    check_login_allowed(ip, email)
     user = await db.users.find_one({"email": email})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    # Generic error — never reveal whether the email or the password was wrong.
+    if not user or not verify_password(body.password, user["password_hash"]) or user.get("status") != "active":
+        record_failed_login(ip, email)
+        logger.warning("Failed admin login for %s from %s", email, ip)
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    if user.get("status") != "active":
-        raise HTTPException(status_code=403, detail="This account is inactive")
+    clear_failed_logins(ip, email)
     token = create_access_token(user)
     return {"token": token, "user": public_user(user)}
 
@@ -99,8 +195,13 @@ async def logout(current=Depends(get_current_admin)):
 
 
 async def seed_admin():
-    email = os.environ.get("ADMIN_LOGIN_EMAIL", "admin@aayna.xyz").strip().lower()
-    password = os.environ.get("ADMIN_LOGIN_PASSWORD", "ChangeMe123!")
+    email, password = get_admin_credentials()
+    if not email or not password:
+        logger.warning(
+            "ADMIN_EMAIL/ADMIN_PASSWORD are not set in production — skipping admin seeding. "
+            "Set them and restart to create the admin account."
+        )
+        return
     existing = await db.users.find_one({"email": email})
     if not existing:
         await db.users.insert_one({

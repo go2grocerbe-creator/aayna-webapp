@@ -11,6 +11,12 @@ import csv
 import pytest
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv("/app/backend/.env")
+except Exception:
+    pass
+
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL")
 if not BASE_URL:
     with open("/app/frontend/.env") as f:
@@ -21,8 +27,9 @@ if not BASE_URL:
 BASE_URL = BASE_URL.rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = "admin@aayna.xyz"
-ADMIN_PASSWORD = "ChangeMe123!"
+# Read admin credentials from the environment (no hardcoded production secrets).
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@aayna.xyz").strip().lower()
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ChangeMe123!")
 
 
 @pytest.fixture(scope="module")
@@ -69,6 +76,25 @@ class TestAdminAuth:
     def test_login_unknown_email(self, session):
         r = session.post(f"{API}/admin/login", json={"email": "nobody@aayna.xyz", "password": "x"}, timeout=30)
         assert r.status_code == 401
+
+    def test_login_generic_error_message(self, session):
+        # Must not reveal whether the email or the password was wrong.
+        r1 = session.post(f"{API}/admin/login", json={"email": ADMIN_EMAIL, "password": "definitely-wrong"}, timeout=30)
+        r2 = session.post(f"{API}/admin/login", json={"email": f"ghost-{uuid.uuid4().hex}@x.com", "password": "y"}, timeout=30)
+        assert r1.status_code == 401 and r2.status_code == 401
+        assert r1.json().get("detail") == r2.json().get("detail")
+
+    def test_login_rate_limit_lockout(self, session):
+        # Use a unique email so we don't lock out the real admin account.
+        email = f"bruteforce-{uuid.uuid4().hex}@example.com"
+        last = None
+        for _ in range(5):
+            last = session.post(f"{API}/admin/login", json={"email": email, "password": "wrong"}, timeout=30)
+            assert last.status_code == 401
+        # After 5 failures the next attempt is temporarily blocked.
+        blocked = session.post(f"{API}/admin/login", json={"email": email, "password": "wrong"}, timeout=30)
+        assert blocked.status_code == 429
+        assert "try again" in blocked.json().get("detail", "").lower()
 
     def test_me_requires_auth(self, session):
         r = session.get(f"{API}/admin/me", timeout=30)
