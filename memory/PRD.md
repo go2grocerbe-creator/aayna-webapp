@@ -67,6 +67,11 @@ Hard constraints (Version 1): No customer login, no online payment gateway, no s
 - **Docs:** README liveness-vs-readiness section.
 - **Verified:** 107/107 backend tests pass (+5, deterministic across reruns); endpoints confirmed live (ready=200); frontend compiles. No new storefront/admin features, no redesign, no secrets exposed/committed.
 
+## Implemented — Milestone 4C (2026-06-25)
+- **Deployment runbook (docs only):** README "🚀 Deployment runbook" with step-by-step DB/backend/frontend/CORS/admin/webhook/analytics/SEO-routing setup, a production env template table (variable / side / required / example placeholder / sensitivity), read-only smoke-test usage, and a 24-item final manual launch checklist.
+- **Verified pre-launch:** 107/107 backend tests pass; frontend compiles; `scripts/smoke_test.sh` green live (health, ready, products, categories, settings, sitemap, robots). No real `.env` tracked (only `backend/.env.example`). Tags `m4b-...` and `m4c-deployment-runbook-complete`.
+- No new features / no redesign.
+
 ## Backlog / Next Milestones
 **P0 (Milestone 2 — Admin):** Admin auth (login), dashboard summary, orders management (status updates, courier tracking, resend notification), products CRUD + image upload, category management, inventory, customers, notification logs, homepage content + website settings editor.
 **P1:** Real Make.com webhook + email/SMS notifications; editable static pages from admin; CSV export (orders/customers/products) + product CSV import.
