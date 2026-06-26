@@ -209,8 +209,12 @@ class CategoryPayload(BaseModel):
 @admin_router.get("/categories")
 async def list_categories():
     cats = await db.categories.find({}, {"_id": 0}).sort("sort_order", 1).to_list(200)
+    counts = await db.products.aggregate(
+        [{"$group": {"_id": "$category_slug", "count": {"$sum": 1}}}]
+    ).to_list(length=None)
+    count_map = {c["_id"]: c["count"] for c in counts}
     for c in cats:
-        c["product_count"] = await db.products.count_documents({"category_slug": c["slug"]})
+        c["product_count"] = count_map.get(c["slug"], 0)
     return cats
 
 
@@ -369,9 +373,19 @@ async def list_customers(search: Optional[str] = None):
             {"email": {"$regex": search, "$options": "i"}},
         ]
     customers = await db.customers.find(q, {"_id": 0}).sort("updated_at", -1).to_list(1000)
+    customer_ids = [c["id"] for c in customers]
+    last_map = {}
+    if customer_ids:
+        last_orders = await db.orders.aggregate(
+            [
+                {"$match": {"customer_id": {"$in": customer_ids}}},
+                {"$sort": {"created_at": -1}},
+                {"$group": {"_id": "$customer_id", "created_at": {"$first": "$created_at"}}},
+            ]
+        ).to_list(length=None)
+        last_map = {o["_id"]: o["created_at"] for o in last_orders}
     for c in customers:
-        last = await db.orders.find_one({"customer_id": c["id"]}, {"_id": 0, "created_at": 1, "order_number": 1}, sort=[("created_at", -1)])
-        c["last_order_date"] = last["created_at"] if last else None
+        c["last_order_date"] = last_map.get(c["id"])
     return customers
 
 
