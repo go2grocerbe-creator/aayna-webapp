@@ -225,10 +225,15 @@ async def get_districts():
 @api_router.get("/categories")
 async def list_categories():
     cats = await db.categories.find({"status": "active"}, {"_id": 0}).sort("sort_order", 1).to_list(100)
-    # attach product counts
+    counts = await db.products.aggregate(
+        [
+            {"$match": {"status": "active"}},
+            {"$group": {"_id": "$category_slug", "count": {"$sum": 1}}},
+        ]
+    ).to_list(length=None)
+    count_map = {c["_id"]: c["count"] for c in counts}
     for c in cats:
-        c["product_count"] = await db.products.count_documents(
-            {"category_slug": c["slug"], "status": "active"})
+        c["product_count"] = count_map.get(c["slug"], 0)
     return cats
 
 
