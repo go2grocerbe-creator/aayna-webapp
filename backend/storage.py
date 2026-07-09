@@ -107,10 +107,18 @@ async def upload_image(file: UploadFile = File(...), current=Depends(get_current
 
 @files_router.get("/files/{path:path}")
 async def serve_file(path: str):
+    # Only serve objects this app itself uploaded (recorded in db.files) so the
+    # public endpoint can't be used to fetch arbitrary keys from the shared
+    # object store (M3). Also guards against a bare prefix check being bypassed
+    # by path traversal segments.
+    if not path.startswith(f"{APP_NAME}/uploads/") or ".." in path.split("/"):
+        raise HTTPException(status_code=404, detail="File not found")
     record = await db.files.find_one({"storage_path": path, "is_deleted": False})
+    if not record:
+        raise HTTPException(status_code=404, detail="File not found")
     try:
         data, content_type = get_object(path)
     except Exception:
         raise HTTPException(status_code=404, detail="File not found")
-    media = record.get("content_type") if record else content_type
+    media = record.get("content_type") or content_type
     return Response(content=data, media_type=media, headers={"Cache-Control": "public, max-age=86400"})

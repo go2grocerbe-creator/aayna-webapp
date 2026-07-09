@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useSeo } from "@/lib/seo";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -64,6 +65,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
 }
 
 export function AdminProtected() {
+  useSeo({ title: "Admin", noindex: true });
   const { user } = useAdminAuth();
   if (user === null) {
     return (

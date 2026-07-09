@@ -95,9 +95,10 @@ async def list_products(category: Optional[str] = None, status: Optional[str] = 
     if status:
         q["status"] = status
     if search:
+        pattern = re.escape(search)
         q["$or"] = [
-            {"product_name": {"$regex": search, "$options": "i"}},
-            {"sku": {"$regex": search, "$options": "i"}},
+            {"product_name": {"$regex": pattern, "$options": "i"}},
+            {"sku": {"$regex": pattern, "$options": "i"}},
         ]
     items = await db.products.find(q, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
@@ -271,10 +272,11 @@ async def list_orders(status: Optional[str] = None, search: Optional[str] = None
     if status and status != "all":
         q["order_status"] = status
     if search:
+        pattern = re.escape(search)
         q["$or"] = [
-            {"order_number": {"$regex": search, "$options": "i"}},
-            {"customer_name": {"$regex": search, "$options": "i"}},
-            {"customer_phone": {"$regex": search, "$options": "i"}},
+            {"order_number": {"$regex": pattern, "$options": "i"}},
+            {"customer_name": {"$regex": pattern, "$options": "i"}},
+            {"customer_phone": {"$regex": pattern, "$options": "i"}},
         ]
     orders = await db.orders.find(q, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return orders
@@ -367,10 +369,11 @@ async def inventory_logs(product_id: str):
 async def list_customers(search: Optional[str] = None):
     q = {}
     if search:
+        pattern = re.escape(search)
         q["$or"] = [
-            {"full_name": {"$regex": search, "$options": "i"}},
-            {"phone": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
+            {"full_name": {"$regex": pattern, "$options": "i"}},
+            {"phone": {"$regex": pattern, "$options": "i"}},
+            {"email": {"$regex": pattern, "$options": "i"}},
         ]
     customers = await db.customers.find(q, {"_id": 0}).sort("updated_at", -1).to_list(1000)
     customer_ids = [c["id"] for c in customers]

@@ -18,8 +18,26 @@ ADMIN_ROLES = {"super_admin", "admin", "order_manager", "product_manager"}
 
 APP_ENV = os.environ.get("APP_ENV", "development").strip().lower()
 IS_PRODUCTION = APP_ENV in ("production", "prod")
+_KNOWN_LOCAL_ENVS = {"development", "dev", "local", "test", "testing"}
 _DEV_FALLBACK_SECRET = "dev-only-insecure-secret-do-not-use-in-production"
 _DEV_FALLBACK_ADMIN = ("admin@aayna.xyz", "ChangeMe123!")
+
+# Hosting-platform env vars that indicate this process is running on a real
+# deployment target rather than a developer's machine.
+_HOST_PLATFORM_MARKERS = (
+    "RENDER", "RAILWAY_ENVIRONMENT", "FLY_APP_NAME", "DYNO",
+    "KUBERNETES_SERVICE_HOST", "WEBSITE_SITE_NAME", "K_SERVICE",
+    "AWS_LAMBDA_FUNCTION_NAME", "VERCEL",
+)
+
+
+def _looks_like_non_local_deployment() -> bool:
+    if any(os.environ.get(marker) for marker in _HOST_PLATFORM_MARKERS):
+        return True
+    site_url = (os.environ.get("PUBLIC_SITE_URL") or "").strip().lower()
+    if site_url and "localhost" not in site_url and "127.0.0.1" not in site_url:
+        return True
+    return False
 
 # --- Simple in-memory login rate limiting (single instance) ---
 MAX_FAILED_ATTEMPTS = 5
@@ -60,6 +78,22 @@ def get_admin_credentials():
 def validate_security_config():
     """Called on startup. In production, refuse to start with missing or default secrets."""
     if not IS_PRODUCTION:
+        if APP_ENV not in _KNOWN_LOCAL_ENVS and _looks_like_non_local_deployment():
+            using_dev_secret = not os.environ.get("JWT_SECRET")
+            using_default_admin = not (os.environ.get("ADMIN_EMAIL") and os.environ.get("ADMIN_PASSWORD"))
+            if using_dev_secret or using_default_admin:
+                raise RuntimeError(
+                    f"APP_ENV={APP_ENV!r} is not recognized as production, but this deployment "
+                    "looks non-local (hosting platform or PUBLIC_SITE_URL detected) and is missing "
+                    "JWT_SECRET and/or ADMIN_EMAIL+ADMIN_PASSWORD. Refusing to boot with dev "
+                    "defaults. Set APP_ENV=production and configure real secrets/credentials."
+                )
+            logger.critical(
+                "APP_ENV=%r is not recognized as 'production' but this deployment looks non-local "
+                "(hosting platform or PUBLIC_SITE_URL detected). Set APP_ENV=production to enable "
+                "full production safety checks (CORS_ORIGINS, PUBLIC_SITE_URL, webhook config).",
+                APP_ENV,
+            )
         return
     missing = [k for k in ("JWT_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD") if not os.environ.get(k)]
     if missing:
@@ -146,9 +180,10 @@ def _client_ip(request: Request) -> str:
 
 
 def _rl_key(ip: str, email: str) -> str:
-    # Keyed by email so lockout is reliable even behind a load balancer that
-    # rotates client IPs. (IP is still captured for logging.)
-    return email
+    # Keyed by IP+email so an attacker hammering one email from a single
+    # source cannot lock the real admin out from their own IP (H2). A load
+    # balancer rotating a legitimate user's IP just resets their own counter.
+    return f"{ip}:{email}"
 
 
 def check_login_allowed(ip: str, email: str):

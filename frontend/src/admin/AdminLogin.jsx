@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
+import { useSeo } from "@/lib/seo";
 
 export default function AdminLogin() {
+  useSeo({ title: "Admin Login", noindex: true });
   const { user, login } = useAdminAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
