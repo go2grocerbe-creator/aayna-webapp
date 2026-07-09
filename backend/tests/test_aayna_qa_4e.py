@@ -1,4 +1,5 @@
 """Milestone 4E — pre-launch QA blocker tests (track privacy, public fields, placeholder detection)."""
+import asyncio
 import os
 import uuid
 
@@ -89,6 +90,59 @@ class TestPublicProductFields:
         prod = requests.get(f"{API}/products/{slug}", timeout=30).json()["product"]
         assert "low_stock_alert" not in prod
         assert "cost_price" not in prod and "internal_notes" not in prod
+
+    def test_public_product_whitelist_hides_unknown_internal_fields(self):
+        # Simulates a future BuyOS field landing on the product document — the
+        # public API must hide it by default (whitelist), not rely on knowing its name.
+        pid = str(uuid.uuid4())
+        slug = f"test-whitelist-{pid[:8]}"
+        poisoned_fields = {
+            "supplier_url": "https://supplier.example/secret-listing",
+            "supplier_price": 42,
+            "cost_price": 40,
+            "landed_cost": 45,
+            "purchase_cost": 41,
+            "margin": 60,
+            "internal_notes": "do not expose",
+            "sourcing_notes": "private sourcing detail",
+            "private_scoring_notes": "private score",
+            "low_stock_alert": 3,
+        }
+
+        async def _run():
+            await server.db.products.insert_one({
+                "id": pid, "sku": "TESTWL-0001", "slug": slug,
+                "product_name": "TEST Whitelist Product",
+                "category_name": "Earrings", "category_slug": "earrings",
+                "selling_price": 100, "discount_price": None, "stock_quantity": 5,
+                "status": "active", "images": [],
+                "short_description": "x", "full_description": "x",
+                "is_featured": False, "is_best_seller": False, "is_new_arrival": False,
+                "tags": [], "created_at": server.now_iso(), "updated_at": server.now_iso(),
+                **poisoned_fields,
+            })
+            try:
+                listed = requests.get(f"{API}/products", timeout=30).json()
+                match = next(p for p in listed if p["slug"] == slug)
+                for field in poisoned_fields:
+                    assert field not in match, f"list endpoint leaked {field}"
+
+                detail = requests.get(f"{API}/products/{slug}", timeout=30).json()["product"]
+                for field in poisoned_fields:
+                    assert field not in detail, f"detail endpoint leaked {field}"
+
+                cart = requests.post(
+                    f"{API}/cart/validate",
+                    json={"items": [{"product_id": pid, "quantity": 1}], "district": "Dhaka"},
+                    timeout=30,
+                ).json()
+                raw = str(cart).lower()
+                for field in poisoned_fields:
+                    assert field.replace("_", "") not in raw.replace("_", ""), f"cart/validate leaked {field}"
+            finally:
+                await server.db.products.delete_one({"id": pid})
+
+        asyncio.run(_run())
 
 
 # ---------------- Placeholder detection (unit) ----------------

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Query
 from fastapi.responses import Response, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -10,6 +10,7 @@ import uuid
 import json
 import hmac
 import hashlib
+import secrets
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -51,21 +52,25 @@ def normalize_phone(phone: str) -> Optional[str]:
     return '+880' + digits  # +8801XXXXXXXXX
 
 
-PUBLIC_PRODUCT_HIDE = {"_id": 0, "cost_price": 0, "internal_notes": 0, "low_stock_alert": 0}
+# Explicit whitelist of safe public product fields (not a blacklist) so any new
+# internal/BuyOS field (supplier_url, cost_price, margin, ...) is private by default.
+PUBLIC_PRODUCT_FIELDS = {
+    "_id": 0,
+    "id": 1, "sku": 1, "slug": 1,
+    "product_name": 1, "category_name": 1, "category_slug": 1,
+    "selling_price": 1, "discount_price": 1, "images": 1,
+    "short_description": 1, "full_description": 1,
+    "material": 1, "color": 1, "size": 1, "weight": 1,
+    "status": 1, "stock_quantity": 1,
+    "is_featured": 1, "is_best_seller": 1, "is_new_arrival": 1,
+    "tags": 1,
+}
 
 PAYMENT_MAP = {
     "cod": "Cash on Delivery",
     "bkash": "bKash Manual",
     "nagad": "Nagad Manual",
 }
-
-
-def public_product(p: dict) -> dict:
-    p.pop("_id", None)
-    p.pop("cost_price", None)
-    p.pop("internal_notes", None)
-    p.pop("low_stock_alert", None)
-    return p
 
 
 # Storefront settings that must be real (not placeholders) before launch.
@@ -274,7 +279,7 @@ async def list_products(
             {"tags": {"$regex": search, "$options": "i"}},
         ]
 
-    cursor = db.products.find(query, PUBLIC_PRODUCT_HIDE)
+    cursor = db.products.find(query, PUBLIC_PRODUCT_FIELDS)
 
     sort_map = {
         "newest": ("created_at", -1),
@@ -291,14 +296,14 @@ async def list_products(
 
 @api_router.get("/products/{slug}")
 async def get_product(slug: str):
-    product = await db.products.find_one({"slug": slug}, PUBLIC_PRODUCT_HIDE)
+    product = await db.products.find_one({"slug": slug}, PUBLIC_PRODUCT_FIELDS)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     related = await db.products.find(
         {"category_slug": product["category_slug"], "slug": {"$ne": slug},
          "status": {"$in": ["active", "out_of_stock"]}},
-        PUBLIC_PRODUCT_HIDE,
+        PUBLIC_PRODUCT_FIELDS,
     ).limit(4).to_list(4)
 
     return {"product": product, "related": related}
@@ -325,7 +330,7 @@ async def validate_cart(req: CartValidateRequest):
     subtotal = 0.0
     has_issue = False
     for line in req.items:
-        product = await db.products.find_one({"id": line.product_id}, PUBLIC_PRODUCT_HIDE)
+        product = await db.products.find_one({"id": line.product_id}, PUBLIC_PRODUCT_FIELDS)
         if not product:
             lines.append({"product_id": line.product_id, "available": False,
                           "reason": "Product no longer available", "quantity": line.quantity})
@@ -592,9 +597,14 @@ async def checkout(req: CheckoutRequest):
     order_number = await next_order_number()
     payment_method_display = PAYMENT_MAP[req.payment_method]
     payment_status = "COD_pending" if req.payment_method == "cod" else "pending"
+    # Random confirmation token: only its hash is stored, so a DB read alone
+    # (or a leaked order_number) can never reveal the order-confirmation page.
+    confirmation_token = secrets.token_urlsafe(32)
+    confirmation_token_hash = hashlib.sha256(confirmation_token.encode()).hexdigest()
     order = {
         "id": str(uuid.uuid4()),
         "order_number": order_number,
+        "order_confirmation_token_hash": confirmation_token_hash,
         "client_request_id": req.client_request_id,
         "customer_id": customer_id,
         "customer_name": req.customer_name,
@@ -645,18 +655,26 @@ async def checkout(req: CheckoutRequest):
     except Exception as exc:  # noqa: BLE001
         logger.warning("Notification error for %s: %s", order_number, exc)
 
-    # 15. Return confirmation
-    return {"order_number": order_number, "duplicate": False}
+    # 15. Return confirmation (raw token is returned once, never stored)
+    return {"order_number": order_number, "order_confirmation_token": confirmation_token, "duplicate": False}
 
 
 # ---------------------------------------------------------------------------
 # Order confirmation (public-safe: no phone/address)
+# Requires the confirmation token issued at checkout — order_number alone is
+# sequential and guessable, so it must never be sufficient to read an order.
 # ---------------------------------------------------------------------------
 @api_router.get("/orders/{order_number}")
-async def get_order_confirmation(order_number: str):
-    order = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
+async def get_order_confirmation(order_number: str, token: Optional[str] = Query(None)):
+    not_found = HTTPException(status_code=404, detail="Order not found")
+    if not token:
+        raise not_found
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    order = await db.orders.find_one(
+        {"order_number": order_number, "order_confirmation_token_hash": token_hash}, {"_id": 0}
+    )
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise not_found
     return {
         "order_number": order["order_number"],
         "customer_name": order["customer_name"],

@@ -276,12 +276,28 @@ class TestCheckout:
         prod_after = session.get(f"{API}/products/{p['slug']}", timeout=30).json()["product"]
         assert prod_after["stock_quantity"] == initial_stock - 1
 
-        # Order confirmation does NOT leak phone/address
-        conf = session.get(f"{API}/orders/{order_number}", timeout=30)
+        # Checkout must return a confirmation token (order_number alone is guessable)
+        token = d.get("order_confirmation_token")
+        assert token
+
+        # No token at all -> 404, order_number alone must not be enough
+        no_token = session.get(f"{API}/orders/{order_number}", timeout=30)
+        assert no_token.status_code == 404
+
+        # Wrong token -> 404 (does not reveal that the order exists)
+        wrong_token = session.get(
+            f"{API}/orders/{order_number}", params={"token": "not-the-real-token"}, timeout=30
+        )
+        assert wrong_token.status_code == 404
+
+        # Correct token -> 200, and does NOT leak phone/address/token itself
+        conf = session.get(f"{API}/orders/{order_number}", params={"token": token}, timeout=30)
         assert conf.status_code == 200
         cd = conf.json()
         assert "customer_phone" not in cd
         assert "delivery_address" not in cd
+        assert "order_confirmation_token" not in cd
+        assert "order_confirmation_token_hash" not in cd
         # backend recalculated totals — Dhaka delivery=80
         assert cd["delivery_charge"] == 80
         expected_price = p.get("discount_price") or p["selling_price"]
@@ -305,8 +321,11 @@ class TestCheckout:
         }
         r = session.post(f"{API}/checkout", json=payload, timeout=60)
         assert r.status_code == 200, r.text
-        order_number = r.json()["order_number"]
-        conf = session.get(f"{API}/orders/{order_number}", timeout=30).json()
+        rd = r.json()
+        order_number = rd["order_number"]
+        conf = session.get(
+            f"{API}/orders/{order_number}", params={"token": rd["order_confirmation_token"]}, timeout=30
+        ).json()
         assert conf["delivery_charge"] == 130
         assert "bKash" in conf["payment_method"] or "bkash" in conf["payment_method"].lower()
 
