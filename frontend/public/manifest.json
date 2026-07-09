@@ -1,0 +1,15 @@
+{
+  "short_name": "AAYNA",
+  "name": "AAYNA - Women's Accessories Bangladesh",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#e11d48",
+  "background_color": "#ffffff"
+}

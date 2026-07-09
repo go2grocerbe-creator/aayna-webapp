@@ -11,6 +11,10 @@ def _img(url, alt):
     return [{"image_url": url, "alt_text": alt, "is_main": True, "sort_order": 0}]
 
 
+# TODO (launch blocker): these are Emergent-scaffold placeholder image URLs,
+# not real AAYNA product photography. Do NOT replace with other fake/stock
+# URLs - replace via the admin dashboard (product/category image upload) with
+# real photos before launch. See README "Launch checklist > Storefront content".
 _BASE = "https://static.prod-images.emergentagent.com/jobs/eb037f34-a12d-4a9a-95b9-7a0c51c7ca66/images"
 
 # ---------------------------------------------------------------------------
