@@ -27,7 +27,7 @@ export default function Orders() {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-          <input data-testid="order-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order ID, name or phone" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-rose" />
+          <input data-testid="order-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order ID, name or phone" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
         </div>
         <select data-testid="order-status-filter" value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 px-3 border border-gray-300 rounded-md text-sm bg-white">
           <option value="all">All statuses</option>
@@ -52,7 +52,7 @@ export default function Orders() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={8} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-rose mx-auto" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">No orders found.</td></tr>
               ) : orders.map((o) => (
@@ -60,12 +60,12 @@ export default function Orders() {
                   <td className="px-4 py-3 font-semibold text-aayna-charcoal">{o.order_number}</td>
                   <td className="px-4 py-3"><div className="text-aayna-charcoal">{o.customer_name}</div><div className="text-xs text-gray-400">{o.customer_phone}</div></td>
                   <td className="px-4 py-3 text-gray-500">{o.district}</td>
-                  <td className="px-4 py-3 font-medium text-aayna-rose">{formatBDT(o.total_amount)}</td>
+                  <td className="px-4 py-3 font-medium text-aayna-burgundy">{formatBDT(o.total_amount)}</td>
                   <td className="px-4 py-3 text-gray-500">{o.payment_method}</td>
                   <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(o.order_status)}`}>{o.order_status}</span></td>
                   <td className="px-4 py-3 text-gray-500">{fmtDate(o.created_at)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/orders/${o.order_number}`} data-testid={`view-order-${o.order_number}`} className="p-2 inline-flex text-gray-500 hover:text-aayna-rose"><Eye className="h-4 w-4" /></Link>
+                    <Link to={`/admin/orders/${o.order_number}`} data-testid={`view-order-${o.order_number}`} className="p-2 inline-flex text-gray-500 hover:text-aayna-burgundy"><Eye className="h-4 w-4" /></Link>
                   </td>
                 </tr>
               ))}

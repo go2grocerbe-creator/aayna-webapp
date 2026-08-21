@@ -9,19 +9,25 @@ module.exports = {
     extend: {
       fontFamily: {
         display: ['Playfair Display', 'Georgia', 'serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
-        bangla: ['Noto Sans Bengali', 'Inter', 'sans-serif'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
+        bangla: ['Noto Sans Bengali', 'DM Sans', 'sans-serif'],
       },
       colors: {
+        // AAYNA Brand Book 2026 palette. burgundy/blue/coral are research-defined;
+        // cream/mist/gold/charcoal/taupe/beige keep their original key names (from
+        // the Milestone-1 design system) but now carry the Brand Book's hex values,
+        // so every component using them inherits the new identity automatically.
         aayna: {
-          rose: '#9A4F5F',
-          'rose-dark': '#834351',
-          cream: '#FFF8F2',
-          mist: '#F7E7E9',
-          gold: '#C6A15B',
-          charcoal: '#2F2623',
-          taupe: '#7B6A63',
-          beige: '#EADDD4',
+          burgundy: '#5A0E1A',
+          'burgundy-dark': '#3B0811',
+          blue: '#1A365D',
+          coral: '#E06D53',
+          cream: '#F8F3EC',
+          mist: '#F4E8EA',
+          gold: '#C9A66B',
+          charcoal: '#211A1C',
+          taupe: '#796D70',
+          beige: '#EAD9DA',
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

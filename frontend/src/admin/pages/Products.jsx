@@ -60,7 +60,7 @@ export default function Products() {
             {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
           </button>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Link to="/admin/products/new" data-testid="add-product-btn" className="h-10 px-4 bg-aayna-rose text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-rose-dark">
+          <Link to="/admin/products/new" data-testid="add-product-btn" className="h-10 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark">
             <Plus className="h-4 w-4" /> Add Product
           </Link>
         </div>
@@ -69,7 +69,7 @@ export default function Products() {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-          <input data-testid="product-search" value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="Search name or SKU" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-rose" />
+          <input data-testid="product-search" value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="Search name or SKU" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
         </div>
         <select value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))} className="h-10 px-3 border border-gray-300 rounded-md text-sm bg-white">
           <option value="">All categories</option>
@@ -100,7 +100,7 @@ export default function Products() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-rose mx-auto" /></td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
               ) : products.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No products found.</td></tr>
               ) : products.map((p) => (
@@ -118,11 +118,11 @@ export default function Products() {
                   <td className="px-4 py-3 text-gray-500">{p.sku}</td>
                   <td className="px-4 py-3 text-gray-500">{p.category_name}</td>
                   <td className="px-4 py-3">{p.stock_quantity}</td>
-                  <td className="px-4 py-3 font-medium text-aayna-rose">{formatBDT(effectivePrice(p))}</td>
+                  <td className="px-4 py-3 font-medium text-aayna-burgundy">{formatBDT(effectivePrice(p))}</td>
                   <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} className="p-2 text-gray-500 hover:text-aayna-rose" title="Edit"><Pencil className="h-4 w-4" /></Link>
+                      <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} className="p-2 text-gray-500 hover:text-aayna-burgundy" title="Edit"><Pencil className="h-4 w-4" /></Link>
                       <button onClick={() => { if (window.confirm(`Delete/deactivate ${p.product_name}?`)) del.mutate(p.id); }} className="p-2 text-gray-500 hover:text-red-600" title="Delete"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>

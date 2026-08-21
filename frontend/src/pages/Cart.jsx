@@ -27,14 +27,14 @@ export default function Cart() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
         <div className="h-20 w-20 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-6">
-          <ShoppingBag className="h-9 w-9 text-aayna-rose" />
+          <ShoppingBag className="h-9 w-9 text-aayna-burgundy" />
         </div>
         <h1 className="font-display text-3xl font-bold text-aayna-charcoal">Your cart is empty</h1>
         <p className="text-aayna-taupe mt-2">Looks like you haven't added anything yet.</p>
         <Link
           to="/shop"
           data-testid="empty-cart-shop-button"
-          className="inline-flex items-center justify-center h-12 px-8 bg-aayna-rose text-white font-semibold mt-6 hover:bg-aayna-rose-dark transition-colors"
+          className="inline-flex items-center justify-center h-12 px-8 bg-aayna-burgundy text-white font-semibold mt-6 hover:bg-aayna-burgundy-dark transition-colors"
         >
           Start Shopping
         </Link>
@@ -62,7 +62,7 @@ export default function Cart() {
                 </Link>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between gap-3">
-                    <Link to={`/product/${item.slug}`} className="font-medium text-aayna-charcoal hover:text-aayna-rose line-clamp-2">
+                    <Link to={`/product/${item.slug}`} className="font-medium text-aayna-charcoal hover:text-aayna-burgundy line-clamp-2">
                       {item.name}
                     </Link>
                     <button
@@ -99,7 +99,7 @@ export default function Cart() {
                         <Plus className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <span className="font-bold text-aayna-rose">{formatBDT(item.unit_price * item.quantity)}</span>
+                    <span className="font-bold text-aayna-burgundy">{formatBDT(item.unit_price * item.quantity)}</span>
                   </div>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export default function Cart() {
             <div className="border-t border-aayna-beige my-4" />
             <div className="flex justify-between items-baseline">
               <span className="font-semibold text-aayna-charcoal">Total</span>
-              <span className="font-bold text-aayna-rose text-xl">{formatBDT(subtotal)}</span>
+              <span className="font-bold text-aayna-burgundy text-xl">{formatBDT(subtotal)}</span>
             </div>
 
             {hasIssue && (
@@ -139,12 +139,12 @@ export default function Cart() {
               className={`mt-4 w-full h-12 flex items-center justify-center font-semibold transition-colors ${
                 hasIssue
                   ? "bg-aayna-beige text-aayna-taupe pointer-events-none"
-                  : "bg-aayna-rose text-white hover:bg-aayna-rose-dark"
+                  : "bg-aayna-burgundy text-white hover:bg-aayna-burgundy-dark"
               }`}
             >
               Proceed to Checkout
             </Link>
-            <Link to="/shop" className="mt-3 block text-center text-sm text-aayna-rose hover:underline">
+            <Link to="/shop" className="mt-3 block text-center text-sm text-aayna-burgundy hover:underline">
               Continue Shopping
             </Link>
           </div>

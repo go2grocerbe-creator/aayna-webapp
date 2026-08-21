@@ -25,7 +25,7 @@ export default function Dashboard() {
   const { data, isLoading } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getDashboard });
 
   if (isLoading || !data) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-rose" /></div>;
+    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
   }
 
   return (
@@ -35,7 +35,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card testid="dash-card-todays_orders" icon={ShoppingCart} label="Today's Orders" value={data.todays_orders} accent="bg-blue-100 text-blue-700" to="/admin/orders" />
-        <Card testid="dash-card-total_sales_today" icon={TrendingUp} label="Sales Today" value={formatBDT(data.total_sales_today)} accent="bg-aayna-mist text-aayna-rose" />
+        <Card testid="dash-card-total_sales_today" icon={TrendingUp} label="Sales Today" value={formatBDT(data.total_sales_today)} accent="bg-aayna-mist text-aayna-burgundy" />
         <Card testid="dash-card-new_orders" icon={Clock} label="New / Pending" value={data.new_orders} accent="bg-amber-100 text-amber-700" to="/admin/orders" />
         <Card testid="dash-card-confirmed_orders" icon={CheckCircle2} label="Confirmed" value={data.confirmed_orders} accent="bg-indigo-100 text-indigo-700" to="/admin/orders" />
         <Card testid="dash-card-delivered_orders" icon={Truck} label="Delivered" value={data.delivered_orders} accent="bg-green-100 text-green-700" to="/admin/orders" />

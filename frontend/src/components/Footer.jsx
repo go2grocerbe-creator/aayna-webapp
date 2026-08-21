@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <span className="font-display text-2xl font-extrabold text-aayna-cream tracking-tight">AAYNA</span>
             <p className="mt-3 text-sm text-aayna-beige/80 leading-relaxed max-w-xs">
-              {settings?.tagline || "Reflect your everyday style."} Affordable, trendy and feminine
+              {settings?.tagline || "Reflect Your Aura."} Affordable, trendy and feminine
               accessories delivered across Bangladesh.
             </p>
             <div className="flex items-center gap-3 mt-5">

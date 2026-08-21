@@ -25,7 +25,7 @@ export default function OrderDetail() {
   }, [order]);
 
   if (isLoading || !order) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-rose" /></div>;
+    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
   }
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -44,11 +44,11 @@ export default function OrderDetail() {
     }
   };
 
-  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose text-sm";
+  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy text-sm";
 
   return (
     <div className="max-w-4xl">
-      <Link to="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-rose mb-4"><ArrowLeft className="h-4 w-4" /> Back to orders</Link>
+      <Link to="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-burgundy mb-4"><ArrowLeft className="h-4 w-4" /> Back to orders</Link>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-aayna-charcoal">{order.order_number}</h1>
@@ -92,7 +92,7 @@ export default function OrderDetail() {
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatBDT(order.subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Delivery</span><span>{formatBDT(order.delivery_charge)}</span></div>
               {order.discount_amount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-{formatBDT(order.discount_amount)}</span></div>}
-              <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-aayna-rose">{formatBDT(order.total_amount)}</span></div>
+              <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-aayna-burgundy">{formatBDT(order.total_amount)}</span></div>
               <div className="flex justify-between pt-1"><span className="text-gray-500">Payment</span><span>{order.payment_method} · {order.payment_status}</span></div>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function OrderDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Internal Admin Note</label>
               <textarea rows={3} data-testid="order-admin-note" className={`${field} h-auto py-2 resize-none`} value={form.admin_note} onChange={(e) => set("admin_note", e.target.value)} />
             </div>
-            <button data-testid="order-save" onClick={save} disabled={saving} className="w-full h-11 bg-aayna-rose text-white rounded-md font-semibold hover:bg-aayna-rose-dark disabled:opacity-60 flex items-center justify-center gap-2">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save Changes</button>
+            <button data-testid="order-save" onClick={save} disabled={saving} className="w-full h-11 bg-aayna-burgundy text-white rounded-md font-semibold hover:bg-aayna-burgundy-dark disabled:opacity-60 flex items-center justify-center gap-2">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save Changes</button>
           </div>
         </div>
       </div>

@@ -1,23 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+/* Brand fonts are loaded once via <link> in public/index.html (avoids a
+   second, duplicate font fetch from an @import here). */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-    --aayna-rose: #9A4F5F;
-    --aayna-rose-dark: #834351;
-    --aayna-cream: #FFF8F2;
-    --aayna-mist: #F7E7E9;
-    --aayna-gold: #C6A15B;
-    --aayna-charcoal: #2F2623;
-    --aayna-taupe: #7B6A63;
-    --aayna-beige: #EADDD4;
+    /* AAYNA Brand Book 2026. burgundy/blue/coral are research-defined;
+       cream/mist/gold/charcoal/taupe/beige are the same tokens as before
+       (Milestone-1 design system) with corrected Brand Book values. */
+    --aayna-burgundy: #5A0E1A;
+    --aayna-burgundy-dark: #3B0811;
+    --aayna-blue: #1A365D;
+    --aayna-coral: #E06D53;
+    --aayna-cream: #F8F3EC;
+    --aayna-mist: #F4E8EA;
+    --aayna-gold: #C9A66B;
+    --aayna-charcoal: #211A1C;
+    --aayna-taupe: #796D70;
+    --aayna-beige: #EAD9DA;
     --aayna-white: #FFFFFF;
 
     --font-heading: 'Playfair Display', Georgia, serif;
-    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-bangla: 'Noto Sans Bengali', 'Inter', sans-serif;
+    --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-bangla: 'Noto Sans Bengali', 'DM Sans', sans-serif;
 }
 
 * {
@@ -46,7 +52,7 @@ h1, h2, h3.font-display, .font-display {
 
 ::selection {
     background: var(--aayna-mist);
-    color: var(--aayna-rose);
+    color: var(--aayna-burgundy);
 }
 
 /* Custom thin scrollbar */
@@ -57,25 +63,30 @@ h1, h2, h3.font-display, .font-display {
 
 @layer base {
     :root {
-        --background: 33 100% 97%;
-        --foreground: 20 17% 16%;
+        /* HSL equivalents of the Brand Book hex palette above, for shadcn/ui
+           components that consume hsl(var(--token)) rather than the aayna-*
+           utility classes. background=ivory, foreground=ink/charcoal,
+           primary=coral (Brand Book: reserve coral for CTAs/energy),
+           secondary/muted=soft burgundy tint, accent=muted gold. */
+        --background: 36 46% 95%;
+        --foreground: 342 12% 12%;
         --card: 0 0% 100%;
-        --card-foreground: 20 17% 16%;
+        --card-foreground: 342 12% 12%;
         --popover: 0 0% 100%;
-        --popover-foreground: 20 17% 16%;
-        --primary: 348 32% 46%;
+        --popover-foreground: 342 12% 12%;
+        --primary: 11 69% 60%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 351 47% 94%;
-        --secondary-foreground: 20 17% 16%;
-        --muted: 351 47% 94%;
-        --muted-foreground: 19 12% 43%;
-        --accent: 39 47% 57%;
-        --accent-foreground: 20 17% 16%;
+        --secondary: 350 35% 93%;
+        --secondary-foreground: 350 73% 20%;
+        --muted: 350 35% 93%;
+        --muted-foreground: 345 5% 45%;
+        --accent: 38 46% 60%;
+        --accent-foreground: 342 12% 12%;
         --destructive: 0 72% 41%;
         --destructive-foreground: 0 0% 100%;
-        --border: 25 35% 87%;
-        --input: 25 35% 87%;
-        --ring: 348 32% 46%;
+        --border: 356 29% 88%;
+        --input: 356 29% 88%;
+        --ring: 11 69% 60%;
         --radius: 0.5rem;
     }
 }

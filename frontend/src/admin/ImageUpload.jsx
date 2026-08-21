@@ -58,7 +58,7 @@ export default function ImageUpload({ images = [], onChange }) {
         ))}
         <label
           data-testid="image-upload-input"
-          className="aspect-square border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-aayna-rose text-gray-400 hover:text-aayna-rose transition-colors"
+          className="aspect-square border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-aayna-burgundy text-gray-400 hover:text-aayna-burgundy transition-colors"
         >
           {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
           <span className="text-xs mt-1">Upload</span>

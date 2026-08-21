@@ -20,7 +20,7 @@ export default function StaticPage({ pageKey }) {
               <ul className="mt-2 space-y-2">
                 {s.list.map((item, j) => (
                   <li key={j} className="flex items-start gap-2.5 text-aayna-taupe">
-                    <span className="h-1.5 w-1.5 rounded-full bg-aayna-rose mt-2 flex-shrink-0" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-aayna-burgundy mt-2 flex-shrink-0" />
                     <span>{item}</span>
                   </li>
                 ))}

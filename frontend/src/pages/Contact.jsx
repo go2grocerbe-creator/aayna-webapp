@@ -48,14 +48,14 @@ export default function Contact() {
             href={c.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white border border-aayna-beige p-6 text-center hover:border-aayna-rose transition-colors group"
+            className="bg-white border border-aayna-beige p-6 text-center hover:border-aayna-burgundy transition-colors group"
           >
-            <span className="h-12 w-12 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-3 group-hover:bg-aayna-rose transition-colors">
-              <c.icon className="h-5 w-5 text-aayna-rose group-hover:text-white transition-colors" />
+            <span className="h-12 w-12 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-3 group-hover:bg-aayna-burgundy transition-colors">
+              <c.icon className="h-5 w-5 text-aayna-burgundy group-hover:text-white transition-colors" />
             </span>
             <h3 className="font-semibold text-aayna-charcoal">{c.title}</h3>
             <p className="text-sm text-aayna-taupe mt-1 break-all">{c.value}</p>
-            <span className="text-sm text-aayna-rose font-medium mt-3 inline-block">{c.cta}</span>
+            <span className="text-sm text-aayna-burgundy font-medium mt-3 inline-block">{c.cta}</span>
           </a>
         ))}
       </div>
@@ -64,10 +64,10 @@ export default function Contact() {
         <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-3">Follow AAYNA</h2>
         <p className="text-sm text-aayna-taupe mb-4">For new arrivals, styling tips, and offers.</p>
         <div className="flex items-center justify-center gap-4">
-          <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-rose transition-colors">
+          <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
             <Instagram className="h-5 w-5" /> <span className="text-sm">{settings?.instagram_handle}</span>
           </a>
-          <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-rose transition-colors">
+          <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
             <Facebook className="h-5 w-5" /> <span className="text-sm">AAYNA Bangladesh</span>
           </a>
         </div>

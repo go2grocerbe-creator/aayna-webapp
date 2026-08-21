@@ -46,7 +46,7 @@ export default function Settings() {
 
   useEffect(() => { if (data) setForm(data); }, [data]);
 
-  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-rose" /></div>;
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -68,7 +68,7 @@ export default function Settings() {
     } finally { setSaving(false); }
   };
 
-  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose text-sm";
+  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy text-sm";
 
   const placeholderWarnings = PLACEHOLDER_FIELDS.filter(([k]) => looksPlaceholder(form[k])).map(([, l]) => l);
 
@@ -134,7 +134,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <button data-testid="settings-save" onClick={save} disabled={saving} className="h-11 px-6 bg-aayna-rose text-white rounded-md font-semibold hover:bg-aayna-rose-dark disabled:opacity-60 flex items-center gap-2">
+        <button data-testid="settings-save" onClick={save} disabled={saving} className="h-11 px-6 bg-aayna-burgundy text-white rounded-md font-semibold hover:bg-aayna-burgundy-dark disabled:opacity-60 flex items-center gap-2">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Settings
         </button>
       </div>

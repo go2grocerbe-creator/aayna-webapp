@@ -20,7 +20,7 @@ export default function OrderConfirmation() {
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-aayna-rose mx-auto" />
+        <Loader2 className="h-8 w-8 animate-spin text-aayna-burgundy mx-auto" />
       </div>
     );
   }
@@ -29,7 +29,7 @@ export default function OrderConfirmation() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
         <h1 className="font-display text-2xl font-bold text-aayna-charcoal">Order not found</h1>
-        <Link to="/" className="text-aayna-rose hover:underline mt-3 inline-block">Back to home</Link>
+        <Link to="/" className="text-aayna-burgundy hover:underline mt-3 inline-block">Back to home</Link>
       </div>
     );
   }
@@ -38,7 +38,7 @@ export default function OrderConfirmation() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 md:py-16">
       <div className="text-center animate-fade-up">
         <div className="h-16 w-16 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-5">
-          <CheckCircle2 className="h-9 w-9 text-aayna-rose" />
+          <CheckCircle2 className="h-9 w-9 text-aayna-burgundy" />
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal">Thank you, {order.customer_name.split(" ")[0]}!</h1>
         <p className="text-aayna-taupe mt-2">Your order has been placed successfully.</p>
@@ -77,15 +77,15 @@ export default function OrderConfirmation() {
 
         <div className="flex justify-between items-baseline pt-4">
           <span className="font-semibold text-aayna-charcoal">Total</span>
-          <span data-testid="confirmation-total" className="font-bold text-aayna-rose text-2xl">{formatBDT(order.total_amount)}</span>
+          <span data-testid="confirmation-total" className="font-bold text-aayna-burgundy text-2xl">{formatBDT(order.total_amount)}</span>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
-        <Link to="/shop" className="flex-1 h-12 bg-aayna-rose text-white font-semibold flex items-center justify-center hover:bg-aayna-rose-dark transition-colors">
+        <Link to="/shop" className="flex-1 h-12 bg-aayna-burgundy text-white font-semibold flex items-center justify-center hover:bg-aayna-burgundy-dark transition-colors">
           Continue Shopping
         </Link>
-        <Link to={`/track-order?order=${encodeURIComponent(order.order_number)}`} className="flex-1 h-12 border border-aayna-rose text-aayna-rose font-semibold flex items-center justify-center hover:bg-aayna-mist transition-colors">
+        <Link to={`/track-order?order=${encodeURIComponent(order.order_number)}`} className="flex-1 h-12 border border-aayna-burgundy text-aayna-burgundy font-semibold flex items-center justify-center hover:bg-aayna-mist transition-colors">
           Track This Order
         </Link>
       </div>

@@ -48,7 +48,7 @@ export default function ProductCard({ product }) {
             data-testid={`quick-add-${product.slug}`}
             onClick={handleAdd}
             aria-label="Add to cart"
-            className="absolute bottom-3 right-3 h-10 w-10 bg-aayna-rose text-white rounded-full flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-aayna-rose-dark"
+            className="absolute bottom-3 right-3 h-10 w-10 bg-aayna-burgundy text-white rounded-full flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-aayna-burgundy-dark"
           >
             <ShoppingBag className="h-4 w-4" />
           </button>
@@ -60,7 +60,7 @@ export default function ProductCard({ product }) {
           {product.product_name}
         </h3>
         <div className="flex items-center gap-2 mt-auto pt-1">
-          <span className="font-bold text-aayna-rose text-base">{formatBDT(effectivePrice(product))}</span>
+          <span className="font-bold text-aayna-burgundy text-base">{formatBDT(effectivePrice(product))}</span>
           {discount > 0 && (
             <span className="text-aayna-taupe line-through text-xs">{formatBDT(product.selling_price)}</span>
           )}

@@ -28,8 +28,8 @@ export default function Header() {
   };
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-medium font-body transition-colors hover:text-aayna-rose ${
-      isActive ? "text-aayna-rose" : "text-aayna-charcoal"
+    `text-sm font-medium font-body transition-colors hover:text-aayna-burgundy ${
+      isActive ? "text-aayna-burgundy" : "text-aayna-charcoal"
     }`;
 
   return (
@@ -103,7 +103,7 @@ export default function Header() {
               </NavLink>
             ))}
             <div className="relative group">
-              <button className="text-sm font-medium font-body text-aayna-charcoal hover:text-aayna-rose transition-colors">
+              <button className="text-sm font-medium font-body text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
                 Categories
               </button>
               <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
@@ -112,7 +112,7 @@ export default function Header() {
                     <Link
                       key={c.slug}
                       to={`/category/${c.slug}`}
-                      className="block px-4 py-2 text-sm text-aayna-charcoal hover:bg-aayna-mist hover:text-aayna-rose transition-colors"
+                      className="block px-4 py-2 text-sm text-aayna-charcoal hover:bg-aayna-mist hover:text-aayna-burgundy transition-colors"
                     >
                       {c.name}
                     </Link>
@@ -130,7 +130,7 @@ export default function Header() {
               data-testid="search-toggle"
               aria-label="Search"
               onClick={() => setSearchOpen((s) => !s)}
-              className="p-2 text-aayna-charcoal hover:text-aayna-rose transition-colors"
+              className="p-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors"
             >
               <Search className="h-5 w-5" />
             </button>
@@ -138,13 +138,13 @@ export default function Header() {
               to="/cart"
               data-testid="cart-icon"
               aria-label="Cart"
-              className="relative p-2 text-aayna-charcoal hover:text-aayna-rose transition-colors"
+              className="relative p-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors"
             >
               <ShoppingBag className="h-5 w-5" />
               {count > 0 && (
                 <span
                   data-testid="cart-count-badge"
-                  className="absolute -top-0.5 -right-0.5 bg-aayna-rose text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center"
+                  className="absolute -top-0.5 -right-0.5 bg-aayna-burgundy text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center"
                 >
                   {count}
                 </span>

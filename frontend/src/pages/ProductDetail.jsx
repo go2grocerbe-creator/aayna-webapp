@@ -101,9 +101,9 @@ export default function ProductDetail() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12 pb-28 md:pb-12">
       <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe mb-6 flex-wrap">
-        <Link to="/" className="hover:text-aayna-rose">Home</Link>
+        <Link to="/" className="hover:text-aayna-burgundy">Home</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to={`/category/${product.category_slug}`} className="hover:text-aayna-rose">{product.category_name}</Link>
+        <Link to={`/category/${product.category_slug}`} className="hover:text-aayna-burgundy">{product.category_name}</Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-aayna-charcoal line-clamp-1">{product.product_name}</span>
       </nav>
@@ -137,7 +137,7 @@ export default function ProductDetail() {
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`h-20 w-20 flex-shrink-0 border ${i === activeImg ? "border-aayna-rose" : "border-aayna-beige"}`}
+                  className={`h-20 w-20 flex-shrink-0 border ${i === activeImg ? "border-aayna-burgundy" : "border-aayna-beige"}`}
                 >
                   <img src={img.image_url} alt={img.alt_text} className="w-full h-full object-cover" />
                 </button>
@@ -154,7 +154,7 @@ export default function ProductDetail() {
           </h1>
 
           <div className="flex items-center gap-3 mt-4">
-            <span data-testid="product-price" className="text-2xl md:text-3xl font-bold text-aayna-rose">{formatBDT(price)}</span>
+            <span data-testid="product-price" className="text-2xl md:text-3xl font-bold text-aayna-burgundy">{formatBDT(price)}</span>
             {discount > 0 && (
               <>
                 <span className="text-aayna-taupe line-through text-lg">{formatBDT(product.selling_price)}</span>
@@ -205,14 +205,14 @@ export default function ProductDetail() {
               data-testid="add-to-cart-button"
               onClick={handleAddToCart}
               disabled={oos}
-              className="flex-1 h-12 bg-aayna-rose text-white font-semibold hover:bg-aayna-rose-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 h-12 bg-aayna-burgundy text-white font-semibold hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {oos ? "Out of Stock" : "Add to Cart"}
             </button>
             <button
               onClick={buyNow}
               disabled={oos}
-              className="flex-1 h-12 border border-aayna-rose text-aayna-rose font-semibold hover:bg-aayna-mist transition-colors disabled:opacity-50"
+              className="flex-1 h-12 border border-aayna-burgundy text-aayna-burgundy font-semibold hover:bg-aayna-mist transition-colors disabled:opacity-50"
             >
               Buy Now
             </button>
@@ -223,16 +223,16 @@ export default function ProductDetail() {
             href={waLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 hidden md:flex items-center justify-center gap-2 h-11 w-full border border-aayna-beige text-aayna-charcoal text-sm font-medium hover:border-aayna-rose transition-colors"
+            className="mt-3 hidden md:flex items-center justify-center gap-2 h-11 w-full border border-aayna-beige text-aayna-charcoal text-sm font-medium hover:border-aayna-burgundy transition-colors"
           >
             Have a question? Inquire on WhatsApp
           </a>
 
           {/* Notes */}
           <div className="mt-6 space-y-3 text-sm border-t border-aayna-beige pt-5">
-            <div className="flex items-start gap-3"><Truck className="h-4 w-4 text-aayna-rose mt-0.5" /><span className="text-aayna-taupe">Delivery in Dhaka 1–2 days, outside Dhaka 3–5 days. Cash on Delivery available.</span></div>
-            <div className="flex items-start gap-3"><RefreshCw className="h-4 w-4 text-aayna-rose mt-0.5" /><span className="text-aayna-taupe">Easy 3-day exchange for damaged or wrong items (earrings excluded for hygiene).</span></div>
-            <div className="flex items-start gap-3"><ShieldCheck className="h-4 w-4 text-aayna-rose mt-0.5" /><span className="text-aayna-taupe">Quality checked before dispatch.</span></div>
+            <div className="flex items-start gap-3"><Truck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Delivery in Dhaka 1–2 days, outside Dhaka 3–5 days. Cash on Delivery available.</span></div>
+            <div className="flex items-start gap-3"><RefreshCw className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Easy 3-day exchange for damaged or wrong items (earrings excluded for hygiene).</span></div>
+            <div className="flex items-start gap-3"><ShieldCheck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Quality checked before dispatch.</span></div>
           </div>
         </div>
       </div>
@@ -261,13 +261,13 @@ export default function ProductDetail() {
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-aayna-beige p-3 flex items-center gap-3">
         <div className="flex-shrink-0">
           <p className="text-xs text-aayna-taupe">Price</p>
-          <p className="font-bold text-aayna-rose text-lg leading-none">{formatBDT(price)}</p>
+          <p className="font-bold text-aayna-burgundy text-lg leading-none">{formatBDT(price)}</p>
         </div>
         <button
           data-testid="add-to-cart-button-mobile"
           onClick={handleAddToCart}
           disabled={oos}
-          className="flex-1 h-12 bg-aayna-rose text-white font-semibold disabled:opacity-50"
+          className="flex-1 h-12 bg-aayna-burgundy text-white font-semibold disabled:opacity-50"
         >
           {oos ? "Out of Stock" : "Add to Cart"}
         </button>

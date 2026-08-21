@@ -40,13 +40,13 @@ export default function Categories() {
     }
   };
 
-  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose text-sm";
+  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy text-sm";
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Categories</h1>
-        <button data-testid="add-category-btn" onClick={openNew} className="h-10 px-4 bg-aayna-rose text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-rose-dark"><Plus className="h-4 w-4" /> Add Category</button>
+        <button data-testid="add-category-btn" onClick={openNew} className="h-10 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark"><Plus className="h-4 w-4" /> Add Category</button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -63,7 +63,7 @@ export default function Categories() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-rose mx-auto" /></td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
             ) : categories.map((c) => (
               <tr key={c.id} data-testid={`category-row-${c.slug}`} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -77,7 +77,7 @@ export default function Categories() {
                 <td className="px-4 py-3">{c.sort_order}</td>
                 <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(c.status)}`}>{c.status}</span></td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => openEdit(c)} data-testid={`edit-category-${c.slug}`} className="p-2 text-gray-500 hover:text-aayna-rose"><Pencil className="h-4 w-4" /></button>
+                  <button onClick={() => openEdit(c)} data-testid={`edit-category-${c.slug}`} className="p-2 text-gray-500 hover:text-aayna-burgundy"><Pencil className="h-4 w-4" /></button>
                 </td>
               </tr>
             ))}
@@ -106,7 +106,7 @@ export default function Categories() {
           </div>
           <DialogFooter>
             <button onClick={() => setOpen(false)} className="h-10 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
-            <button data-testid="cat-save" onClick={save} disabled={saving} className="h-10 px-5 bg-aayna-rose text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save</button>
+            <button data-testid="cat-save" onClick={save} disabled={saving} className="h-10 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

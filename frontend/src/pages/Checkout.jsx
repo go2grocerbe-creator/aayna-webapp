@@ -105,10 +105,10 @@ export default function Checkout() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
         <div className="h-20 w-20 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-6">
-          <ShoppingBag className="h-9 w-9 text-aayna-rose" />
+          <ShoppingBag className="h-9 w-9 text-aayna-burgundy" />
         </div>
         <h1 className="font-display text-3xl font-bold text-aayna-charcoal">Your cart is empty</h1>
-        <Link to="/shop" className="inline-flex h-12 px-8 items-center bg-aayna-rose text-white font-semibold mt-6 hover:bg-aayna-rose-dark transition-colors">
+        <Link to="/shop" className="inline-flex h-12 px-8 items-center bg-aayna-burgundy text-white font-semibold mt-6 hover:bg-aayna-burgundy-dark transition-colors">
           Start Shopping
         </Link>
       </div>
@@ -116,7 +116,7 @@ export default function Checkout() {
   }
 
   const inputCls = (key) =>
-    `w-full h-11 border bg-white px-3 text-aayna-charcoal text-[15px] outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose ${
+    `w-full h-11 border bg-white px-3 text-aayna-charcoal text-[15px] outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy ${
       errors[key] ? "border-red-500" : "border-aayna-beige"
     }`;
 
@@ -179,7 +179,7 @@ export default function Checkout() {
                   key={p.value}
                   data-testid={`payment-${p.value}`}
                   className={`flex items-start gap-3 border p-4 cursor-pointer transition-colors ${
-                    form.payment_method === p.value ? "border-aayna-rose bg-aayna-mist/40" : "border-aayna-beige"
+                    form.payment_method === p.value ? "border-aayna-burgundy bg-aayna-mist/40" : "border-aayna-beige"
                   }`}
                 >
                   <RadioGroupItem value={p.value} className="mt-0.5" />
@@ -190,20 +190,20 @@ export default function Checkout() {
                       <div className="mt-3 space-y-3" onClick={(e) => e.preventDefault()}>
                         <div className="bg-aayna-cream border border-aayna-beige p-3 text-sm">
                           Send money to{" "}
-                          <span className="font-semibold text-aayna-rose">
+                          <span className="font-semibold text-aayna-burgundy">
                             {p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number}
                           </span>{" "}
                           ({p.value === "bkash" ? "bKash" : "Nagad"} Personal). Transaction ID is optional — our team verifies manually.
                         </div>
                         <input
                           data-testid="checkout-transaction-id"
-                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-rose"
+                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
                           placeholder="Transaction ID (optional)"
                           value={form.transaction_id}
                           onChange={(e) => set("transaction_id", e.target.value)}
                         />
                         <input
-                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-rose"
+                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
                           placeholder="Your bKash/Nagad number (optional)"
                           value={form.sender_number}
                           onChange={(e) => set("sender_number", e.target.value)}
@@ -226,7 +226,7 @@ export default function Checkout() {
                 <div key={i.product_id} className="flex gap-3">
                   <div className="h-14 w-14 flex-shrink-0 bg-aayna-cream overflow-hidden relative">
                     <img src={i.image} alt={i.name} className="w-full h-full object-cover" />
-                    <span className="absolute -top-1 -right-1 bg-aayna-rose text-white text-[10px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center">{i.quantity}</span>
+                    <span className="absolute -top-1 -right-1 bg-aayna-burgundy text-white text-[10px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center">{i.quantity}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-aayna-charcoal line-clamp-1">{i.name}</p>
@@ -245,13 +245,13 @@ export default function Checkout() {
             </div>
             <div className="border-t border-aayna-beige mt-4 pt-4 flex justify-between items-baseline">
               <span className="font-semibold text-aayna-charcoal">Total</span>
-              <span data-testid="checkout-total" className="font-bold text-aayna-rose text-xl">{formatBDT(total)}</span>
+              <span data-testid="checkout-total" className="font-bold text-aayna-burgundy text-xl">{formatBDT(total)}</span>
             </div>
             <button
               data-testid="place-order-button"
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full h-12 bg-aayna-rose text-white font-semibold hover:bg-aayna-rose-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="mt-5 w-full h-12 bg-aayna-burgundy text-white font-semibold hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {submitting ? "Placing Order..." : "Confirm Order"}

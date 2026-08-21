@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 const SITE_NAME = "AAYNA";
 const SITE_URL = (process.env.REACT_APP_PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
-const DEFAULT_TITLE = "AAYNA — Reflect your everyday style.";
+const DEFAULT_TITLE = "AAYNA — Reflect Your Aura.";
 const DEFAULT_DESC =
   "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
 

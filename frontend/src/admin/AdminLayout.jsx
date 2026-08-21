@@ -35,7 +35,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
             data-testid={`admin-nav-${item.label.toLowerCase()}`}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                isActive ? "bg-aayna-rose text-white" : "text-gray-600 hover:bg-aayna-mist hover:text-aayna-rose"
+                isActive ? "bg-aayna-burgundy text-white" : "text-gray-600 hover:bg-aayna-mist hover:text-aayna-burgundy"
               }`
             }
           >
@@ -50,7 +50,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
         </a>
         <div className="px-3 py-2 text-xs text-gray-400">
           {user?.email}
-          <span className="block uppercase tracking-wide text-[10px] text-aayna-rose font-semibold">{user?.role}</span>
+          <span className="block uppercase tracking-wide text-[10px] text-aayna-burgundy font-semibold">{user?.role}</span>
         </div>
         <button
           data-testid="admin-logout"
@@ -70,7 +70,7 @@ export function AdminProtected() {
   if (user === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-7 w-7 animate-spin text-aayna-rose" />
+        <Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" />
       </div>
     );
   }

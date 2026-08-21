@@ -16,7 +16,7 @@ export default function TrustBadges() {
           className="flex flex-col items-center text-center p-5 md:p-6 bg-aayna-mist border border-aayna-beige rounded-sm"
         >
           <span className="h-12 w-12 rounded-full bg-white flex items-center justify-center mb-3 border border-aayna-beige">
-            <b.icon className="h-5 w-5 text-aayna-rose" />
+            <b.icon className="h-5 w-5 text-aayna-burgundy" />
           </span>
           <h3 className="font-body font-semibold text-sm md:text-base text-aayna-charcoal">{b.title}</h3>
           <p className="text-xs md:text-sm text-aayna-taupe mt-1 leading-snug">{b.text}</p>

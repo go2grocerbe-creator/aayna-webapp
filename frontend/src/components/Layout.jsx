@@ -10,7 +10,7 @@ function MaintenanceScreen({ settings }) {
   return (
     <div data-testid="maintenance-screen" className="min-h-screen flex flex-col items-center justify-center bg-aayna-cream px-6 text-center">
       <div className="h-16 w-16 rounded-full bg-aayna-mist flex items-center justify-center mb-6">
-        <Wrench className="h-8 w-8 text-aayna-rose" />
+        <Wrench className="h-8 w-8 text-aayna-burgundy" />
       </div>
       <span className="font-display text-3xl md:text-4xl font-extrabold text-aayna-charcoal tracking-tight">
         {settings?.brand_name || "AAYNA"}

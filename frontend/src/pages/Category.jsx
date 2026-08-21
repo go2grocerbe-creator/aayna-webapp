@@ -44,9 +44,9 @@ export default function Category() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe mb-6">
-        <Link to="/" className="hover:text-aayna-rose">Home</Link>
+        <Link to="/" className="hover:text-aayna-burgundy">Home</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to="/shop" className="hover:text-aayna-rose">Shop</Link>
+        <Link to="/shop" className="hover:text-aayna-burgundy">Shop</Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-aayna-charcoal">{category?.name || slug}</span>
       </nav>

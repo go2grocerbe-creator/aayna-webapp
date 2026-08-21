@@ -15,7 +15,7 @@ function SectionHeading({ title, subtitle, link, linkLabel }) {
         {subtitle && <p className="text-aayna-taupe mt-2 text-sm md:text-base max-w-xl">{subtitle}</p>}
       </div>
       {link && (
-        <Link to={link} className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-aayna-rose hover:gap-2.5 transition-all whitespace-nowrap">
+        <Link to={link} className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-aayna-burgundy hover:gap-2.5 transition-all whitespace-nowrap">
           {linkLabel} <ArrowRight className="h-4 w-4" />
         </Link>
       )}
@@ -47,7 +47,7 @@ export default function Home() {
       <section className="relative bg-aayna-mist overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-8 py-10 md:py-0">
           <div className="order-2 md:order-1 md:py-24 animate-fade-up">
-            <p className="text-aayna-rose font-medium text-sm tracking-wide uppercase mb-3">{settings?.brand_name || "AAYNA"} · Bangladesh</p>
+            <p className="text-aayna-burgundy font-medium text-sm tracking-wide uppercase mb-3">{settings?.brand_name || "AAYNA"} · Bangladesh</p>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-aayna-charcoal leading-[1.08]">
               {settings?.hero_headline || "Everyday Accessories, Effortlessly Styled"}
             </h1>
@@ -58,13 +58,13 @@ export default function Home() {
               <Link
                 to="/shop"
                 data-testid="hero-shop-now"
-                className="h-12 px-8 bg-aayna-rose text-white font-semibold inline-flex items-center justify-center hover:bg-aayna-rose-dark transition-colors"
+                className="h-12 px-8 bg-aayna-burgundy text-white font-semibold inline-flex items-center justify-center hover:bg-aayna-burgundy-dark transition-colors"
               >
                 Shop Now
               </Link>
               <Link
                 to="/category/earrings"
-                className="h-12 px-8 border border-aayna-rose text-aayna-rose font-semibold inline-flex items-center justify-center hover:bg-white transition-colors"
+                className="h-12 px-8 border border-aayna-burgundy text-aayna-burgundy font-semibold inline-flex items-center justify-center hover:bg-white transition-colors"
               >
                 Explore Earrings
               </Link>

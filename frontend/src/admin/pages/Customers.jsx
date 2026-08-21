@@ -22,7 +22,7 @@ export default function Customers() {
 
       <div className="relative mb-4 max-w-sm">
         <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-        <input data-testid="customer-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or email" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-rose" />
+        <input data-testid="customer-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or email" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -41,7 +41,7 @@ export default function Customers() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-rose mx-auto" /></td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
               ) : customers.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No customers yet.</td></tr>
               ) : customers.map((c) => (
@@ -53,7 +53,7 @@ export default function Customers() {
                   <td className="px-4 py-3 text-green-700">{c.successful_orders}</td>
                   <td className="px-4 py-3 text-gray-500">{fmtDate(c.last_order_date)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/customers/${c.id}`} data-testid={`view-customer-${c.phone}`} className="p-2 inline-flex text-gray-500 hover:text-aayna-rose"><Eye className="h-4 w-4" /></Link>
+                    <Link to={`/admin/customers/${c.id}`} data-testid={`view-customer-${c.phone}`} className="p-2 inline-flex text-gray-500 hover:text-aayna-burgundy"><Eye className="h-4 w-4" /></Link>
                   </td>
                 </tr>
               ))}

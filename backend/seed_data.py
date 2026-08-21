@@ -188,10 +188,10 @@ SEED_PRODUCTS = [
 # ---------------------------------------------------------------------------
 SEED_SETTINGS = {
     "brand_name": "AAYNA",
-    "tagline": "Reflect your everyday style.",
+    "tagline": "Reflect Your Aura.",
     "announcement_bar_text": "Free styling tips • Cash on Delivery across Bangladesh • Easy 3-day exchange",
-    "hero_headline": "Everyday Accessories, Effortlessly Styled",
-    "hero_subtitle": "Trendy, affordable, and feminine pieces selected for your everyday looks.",
+    "hero_headline": "Everyday Luxury, Reflected.",
+    "hero_subtitle": "Beautiful enough to notice. Easy enough to live in. Personal enough to feel like yours.",
     "hero_image_url": f"{_BASE}/2cbf31f9e9d3f71a5f10c8439ae11afade95867c1cab05d0ec37bb592c43c214.png",
     "delivery_charge_inside_dhaka": 80,
     "delivery_charge_outside_dhaka": 130,
