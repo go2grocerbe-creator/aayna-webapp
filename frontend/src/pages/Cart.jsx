@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, Minus, Plus, Trash2, AlertCircle } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, AlertCircle, Gem } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { validateCart } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
@@ -34,7 +34,7 @@ export default function Cart() {
         <Link
           to="/shop"
           data-testid="empty-cart-shop-button"
-          className="inline-flex items-center justify-center h-12 px-8 bg-aayna-burgundy text-white font-semibold mt-6 hover:bg-aayna-burgundy-dark transition-colors"
+          className="inline-flex items-center justify-center h-12 px-8 bg-aayna-coral text-white font-semibold mt-6 hover:bg-aayna-coral-dark transition-colors"
         >
           Start Shopping
         </Link>
@@ -57,8 +57,16 @@ export default function Cart() {
                 data-testid={`cart-item-${item.slug}`}
                 className="flex gap-4 bg-white border border-aayna-beige p-3 sm:p-4"
               >
-                <Link to={`/product/${item.slug}`} className="h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-aayna-cream overflow-hidden">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <Link to={`/product/${item.slug}`} className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-aayna-mist overflow-hidden flex items-center justify-center">
+                  <Gem className="h-6 w-6 text-aayna-burgundy/30 absolute" aria-hidden="true" />
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="relative w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
                 </Link>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between gap-3">
@@ -69,7 +77,7 @@ export default function Cart() {
                       data-testid={`remove-item-${item.slug}`}
                       onClick={() => removeItem(item.product_id)}
                       aria-label="Remove"
-                      className="text-aayna-taupe hover:text-red-700 transition-colors p-1 -mr-1 h-fit"
+                      className="text-aayna-taupe hover:text-red-700 transition-colors h-11 w-11 -mr-2.5 -mt-2.5 flex items-center justify-center flex-shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -86,7 +94,7 @@ export default function Cart() {
                       <button
                         data-testid={`cart-decrease-${item.slug}`}
                         onClick={() => updateQty(item.product_id, item.quantity - 1)}
-                        className="h-9 w-9 flex items-center justify-center hover:bg-aayna-mist"
+                        className="h-11 w-11 flex items-center justify-center hover:bg-aayna-mist"
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </button>
@@ -94,7 +102,7 @@ export default function Cart() {
                       <button
                         data-testid={`cart-increase-${item.slug}`}
                         onClick={() => updateQty(item.product_id, item.quantity + 1)}
-                        className="h-9 w-9 flex items-center justify-center hover:bg-aayna-mist"
+                        className="h-11 w-11 flex items-center justify-center hover:bg-aayna-mist"
                       >
                         <Plus className="h-3.5 w-3.5" />
                       </button>
@@ -139,7 +147,7 @@ export default function Cart() {
               className={`mt-4 w-full h-12 flex items-center justify-center font-semibold transition-colors ${
                 hasIssue
                   ? "bg-aayna-beige text-aayna-taupe pointer-events-none"
-                  : "bg-aayna-burgundy text-white hover:bg-aayna-burgundy-dark"
+                  : "bg-aayna-coral text-white hover:bg-aayna-coral-dark"
               }`}
             >
               Proceed to Checkout
