@@ -8,11 +8,12 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer data-testid="site-footer" className="bg-aayna-charcoal text-aayna-beige mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <footer data-testid="site-footer" className="bg-aayna-burgundy-dark text-aayna-beige mt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           <div className="col-span-2 md:col-span-1">
-            <span className="font-display text-2xl font-extrabold text-aayna-cream tracking-tight">AAYNA</span>
+            {/* FOUNDER ASSET REQUIRED — FINAL LOGO: text wordmark, see Header.jsx */}
+            <span className="font-display text-2xl font-semibold text-aayna-cream tracking-[0.08em]">AAYNA</span>
             <p className="mt-3 text-sm text-aayna-beige/80 leading-relaxed max-w-xs">
               {settings?.tagline || "Reflect Your Aura."} Affordable, trendy and feminine
               accessories delivered across Bangladesh.

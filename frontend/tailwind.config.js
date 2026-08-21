@@ -22,6 +22,7 @@ module.exports = {
           'burgundy-dark': '#3B0811',
           blue: '#1A365D',
           coral: '#E06D53',
+          'coral-dark': '#C85A42',
           cream: '#F8F3EC',
           mist: '#F4E8EA',
           gold: '#C9A66B',

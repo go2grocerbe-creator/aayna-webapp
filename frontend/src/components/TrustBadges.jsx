@@ -1,10 +1,15 @@
-import { Truck, ShieldCheck, RefreshCw, BadgeDollarSign } from "lucide-react";
+import { Truck, ShieldCheck, Gift, BadgeDollarSign } from "lucide-react";
 
+// "Easy Exchange / 3-day policy" removed — not yet founder-confirmed (see
+// CLAUDE.md: never invent policy details). Replaced with a neutral line drawn
+// from the Brand Book's Presentation pillar, not a policy promise. The real
+// exchange-policy copy lives in Footer's "Returns & Exchange" link (StaticPage,
+// admin-configurable) and is untouched here.
 const badges = [
   { icon: BadgeDollarSign, title: "Cash on Delivery", text: "Pay when you receive your order" },
   { icon: ShieldCheck, title: "Quality Checked", text: "Every item checked before dispatch" },
   { icon: Truck, title: "Fast Delivery", text: "Across Bangladesh, 1–5 days" },
-  { icon: RefreshCw, title: "Easy Exchange", text: "Simple 3-day exchange policy" },
+  { icon: Gift, title: "Considered Presentation", text: "Arrives ready to gift, even to yourself" },
 ];
 
 export default function TrustBadges() {

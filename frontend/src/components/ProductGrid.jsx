@@ -1,3 +1,4 @@
+import { Gem } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 
 export default function ProductGrid({ products = [], loading = false, emptyText = "No products found." }) {
@@ -19,7 +20,14 @@ export default function ProductGrid({ products = [], loading = false, emptyText 
   }
 
   if (!products.length) {
-    return <p data-testid="empty-products" className="text-aayna-taupe text-center py-16">{emptyText}</p>;
+    return (
+      <div data-testid="empty-products" className="flex flex-col items-center text-center py-16 md:py-24">
+        <span className="h-12 w-12 rounded-full bg-aayna-mist flex items-center justify-center mb-4">
+          <Gem className="h-5 w-5 text-aayna-burgundy" />
+        </span>
+        <p className="text-aayna-taupe">{emptyText}</p>
+      </div>
+    );
   }
 
   return (

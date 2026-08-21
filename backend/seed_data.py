@@ -189,7 +189,9 @@ SEED_PRODUCTS = [
 SEED_SETTINGS = {
     "brand_name": "AAYNA",
     "tagline": "Reflect Your Aura.",
-    "announcement_bar_text": "Free styling tips • Cash on Delivery across Bangladesh • Easy 3-day exchange",
+    # "Easy 3-day exchange" removed pending founder-confirmed exchange policy
+    # (CLAUDE.md: never invent policy details). Kept to two verifiable facts.
+    "announcement_bar_text": "Cash on Delivery across Bangladesh • Free styling tips",
     "hero_headline": "Everyday Luxury, Reflected.",
     "hero_subtitle": "Beautiful enough to notice. Easy enough to live in. Personal enough to feel like yours.",
     "hero_image_url": f"{_BASE}/2cbf31f9e9d3f71a5f10c8439ae11afade95867c1cab05d0ec37bb592c43c214.png",
