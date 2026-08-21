@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Package, Search } from "lucide-react";
+import { Loader2, Package, Search, SearchX } from "lucide-react";
 import { trackOrder } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
@@ -41,6 +41,7 @@ export default function TrackOrder() {
         <div className="h-14 w-14 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-4">
           <Package className="h-7 w-7 text-aayna-burgundy" />
         </div>
+        <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-2">Order Status</p>
         <h1 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal">Track Your Order</h1>
         <p className="text-aayna-taupe mt-2">Enter your Order ID (e.g. ORD-1001) and the phone number you used at checkout.</p>
       </div>
@@ -53,7 +54,7 @@ export default function TrackOrder() {
           placeholder="Order ID (e.g. ORD-1001)"
           className="w-full h-12 border border-aayna-beige bg-white px-4 outline-none focus:border-aayna-burgundy text-aayna-charcoal"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             data-testid="track-phone"
             value={phone}
@@ -61,7 +62,7 @@ export default function TrackOrder() {
             placeholder="Phone number (e.g. 01712345678)"
             className="flex-1 h-12 border border-aayna-beige bg-white px-4 outline-none focus:border-aayna-burgundy text-aayna-charcoal"
           />
-          <button data-testid="track-submit" type="submit" disabled={loading} className="h-12 px-6 bg-aayna-burgundy text-white font-semibold flex items-center gap-2 hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-60">
+          <button data-testid="track-submit" type="submit" disabled={loading} className="h-12 px-6 bg-aayna-burgundy text-white font-semibold flex items-center justify-center gap-2 hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-60">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Track
           </button>
@@ -70,20 +71,32 @@ export default function TrackOrder() {
       <p className="text-xs text-aayna-taupe mt-2">For your privacy, we verify both your Order ID and phone number.</p>
 
       {results && results.length === 0 && (
-        <p data-testid="track-no-results" className="text-center text-aayna-taupe mt-8">No order found. Please check your details.</p>
+        <div data-testid="track-no-results" className="flex flex-col items-center text-center py-14">
+          <span className="h-12 w-12 rounded-full bg-aayna-mist flex items-center justify-center mb-4">
+            <SearchX className="h-5 w-5 text-aayna-burgundy" />
+          </span>
+          <p className="text-aayna-taupe">No order found. Please check your details.</p>
+        </div>
       )}
 
       <div className="space-y-5 mt-8">
         {(results || []).map((o) => {
           const stepIdx = STATUS_STEPS.indexOf(o.order_status);
+          const isStopped = o.order_status === "Cancelled" || o.order_status === "Returned";
           return (
             <div key={o.order_number} data-testid={`track-result-${o.order_number}`} className="bg-white border border-aayna-beige p-5 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="font-display text-xl font-bold text-aayna-charcoal">{o.order_number}</span>
-                <span className="bg-aayna-mist text-aayna-burgundy text-xs font-semibold px-3 py-1.5 uppercase tracking-wide">{o.order_status}</span>
+                <span
+                  className={`text-xs font-semibold px-3 py-1.5 uppercase tracking-wide ${
+                    isStopped ? "bg-red-50 text-red-700 border border-red-200" : "bg-aayna-mist text-aayna-burgundy"
+                  }`}
+                >
+                  {o.order_status}
+                </span>
               </div>
 
-              {stepIdx >= 0 && o.order_status !== "Cancelled" && o.order_status !== "Returned" && (
+              {stepIdx >= 0 && !isStopped && (
                 <div className="flex items-center mb-5">
                   {STATUS_STEPS.map((s, i) => (
                     <div key={s} className="flex-1 flex items-center last:flex-none">
