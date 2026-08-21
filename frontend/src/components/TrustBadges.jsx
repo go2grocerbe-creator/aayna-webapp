@@ -5,10 +5,13 @@ import { Truck, ShieldCheck, Gift, BadgeDollarSign } from "lucide-react";
 // from the Brand Book's Presentation pillar, not a policy promise. The real
 // exchange-policy copy lives in Footer's "Returns & Exchange" link (StaticPage,
 // admin-configurable) and is untouched here.
+// "1–5 days" delivery estimate also removed (Storefront Milestone 2, Part A) —
+// no founder-confirmed or settings-backed SLA exists yet; "Fast Delivery"
+// alone makes no numeric commitment.
 const badges = [
   { icon: BadgeDollarSign, title: "Cash on Delivery", text: "Pay when you receive your order" },
   { icon: ShieldCheck, title: "Quality Checked", text: "Every item checked before dispatch" },
-  { icon: Truck, title: "Fast Delivery", text: "Across Bangladesh, 1–5 days" },
+  { icon: Truck, title: "Nationwide Delivery", text: "Delivered across Bangladesh" },
   { icon: Gift, title: "Considered Presentation", text: "Arrives ready to gift, even to yourself" },
 ];
 

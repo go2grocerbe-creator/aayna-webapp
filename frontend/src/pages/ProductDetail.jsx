@@ -228,12 +228,13 @@ export default function ProductDetail() {
             Have a question? Inquire on WhatsApp
           </a>
 
-          {/* Notes. The exchange-policy line is intentionally omitted here until
-              the founder confirms real terms (CLAUDE.md: never invent policy
-              details) - see Footer's "Returns & Exchange" page for the actual,
-              admin-configurable policy once set. */}
+          {/* Notes. Delivery-day estimate and exchange-window claims removed
+              (Storefront Milestone 2, Part A) - no founder-confirmed or
+              settings-backed SLA exists yet. Delivery charge (real, from
+              settings) already shown at Checkout; see /delivery-policy and
+              /returns for current founder-approved policy text. */}
           <div className="mt-6 space-y-3 text-sm border-t border-aayna-beige pt-5">
-            <div className="flex items-start gap-3"><Truck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Delivery in Dhaka 1–2 days, outside Dhaka 3–5 days. Cash on Delivery available.</span></div>
+            <div className="flex items-start gap-3"><Truck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><Link to="/delivery-policy" className="text-aayna-taupe hover:text-aayna-burgundy underline underline-offset-2">Delivered nationwide. Cash on Delivery available — see delivery policy</Link></div>
             <div className="flex items-start gap-3"><ShieldCheck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Quality checked before dispatch.</span></div>
             <div className="flex items-start gap-3"><RefreshCw className="h-4 w-4 text-aayna-burgundy mt-0.5" /><Link to="/returns" className="text-aayna-taupe hover:text-aayna-burgundy underline underline-offset-2">See our Returns &amp; Exchange policy</Link></div>
           </div>
