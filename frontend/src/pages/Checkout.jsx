@@ -2,11 +2,12 @@ import { useState, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ShoppingBag, Gem } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
 import { getDistricts, checkout } from "@/lib/api";
 import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, isPlaceholder } from "@/lib/format";
+import ProductImage from "@/components/ProductImage";
 import {
   Select,
   SelectContent,
@@ -240,16 +241,8 @@ export default function Checkout() {
             <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar mb-4">
               {items.map((i) => (
                 <div key={i.product_id} className="flex gap-3">
-                  <div className="h-14 w-14 flex-shrink-0 bg-aayna-mist overflow-hidden relative flex items-center justify-center">
-                    <Gem className="h-4 w-4 text-aayna-burgundy/30 absolute" aria-hidden="true" />
-                    {i.image && (
-                      <img
-                        src={i.image}
-                        alt={i.name}
-                        className="relative w-full h-full object-cover"
-                        onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      />
-                    )}
+                  <div className="relative flex-shrink-0">
+                    <ProductImage src={i.image} alt={i.name} className="h-14 w-14" iconClassName="h-4 w-4" />
                     <span className="absolute -top-1 -right-1 bg-aayna-burgundy text-white text-[10px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center">{i.quantity}</span>
                   </div>
                   <div className="flex-1 min-w-0">

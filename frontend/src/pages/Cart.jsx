@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, Minus, Plus, Trash2, AlertCircle, Gem } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, AlertCircle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { validateCart } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
+import ProductImage from "@/components/ProductImage";
 
 export default function Cart() {
   const { items, updateQty, removeItem, subtotal } = useCart();
@@ -57,16 +58,8 @@ export default function Cart() {
                 data-testid={`cart-item-${item.slug}`}
                 className="flex gap-4 bg-white border border-aayna-beige p-3 sm:p-4"
               >
-                <Link to={`/product/${item.slug}`} className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-aayna-mist overflow-hidden flex items-center justify-center">
-                  <Gem className="h-6 w-6 text-aayna-burgundy/30 absolute" aria-hidden="true" />
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="relative w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                  )}
+                <Link to={`/product/${item.slug}`} className="flex-shrink-0">
+                  <ProductImage src={item.image} alt={item.name} className="h-24 w-24 sm:h-28 sm:w-28" />
                 </Link>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between gap-3">

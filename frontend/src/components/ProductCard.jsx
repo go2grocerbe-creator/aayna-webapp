@@ -3,6 +3,7 @@ import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
+import ProductImage from "@/components/ProductImage";
 
 export default function ProductCard({ product }) {
   const { addItem } = useCart();
@@ -24,12 +25,13 @@ export default function ProductCard({ product }) {
       data-testid={`product-card-${product.slug}`}
       className="group bg-white border border-aayna-beige flex flex-col overflow-hidden hover:shadow-md transition-shadow duration-300"
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-aayna-cream">
-        <img
+      <div className="relative aspect-square w-full overflow-hidden">
+        <ProductImage
           src={image}
           alt={product.images?.[0]?.alt_text || product.product_name}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="absolute inset-0"
+          imgClassName="group-hover:scale-105 transition-transform duration-500"
+          iconClassName="h-8 w-8"
         />
         {discount > 0 && !oos && (
           <span className="absolute top-2 left-2 bg-aayna-gold text-aayna-charcoal text-[11px] font-bold px-2 py-1 z-10">

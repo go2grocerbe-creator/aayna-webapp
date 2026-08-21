@@ -1,9 +1,10 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Loader2, Gem } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { getOrder } from "@/lib/api";
-import { formatBDT } from "@/lib/format";
+import { formatBDT, customerStatusLabel } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
+import ProductImage from "@/components/ProductImage";
 
 export default function OrderConfirmation() {
   const { orderNumber } = useParams();
@@ -52,24 +53,14 @@ export default function OrderConfirmation() {
             <p data-testid="confirmation-order-number" className="font-display text-2xl font-bold text-aayna-charcoal">{order.order_number}</p>
           </div>
           <span className="bg-aayna-gold/20 text-aayna-charcoal border border-aayna-gold text-xs font-semibold px-3 py-1.5 uppercase tracking-wide">
-            {order.order_status}
+            {customerStatusLabel(order.order_status)}
           </span>
         </div>
 
         <div className="py-4 border-b border-aayna-beige space-y-3">
           {order.items.map((it, idx) => (
             <div key={idx} className="flex gap-3 items-center">
-              <div className="h-12 w-12 bg-aayna-mist overflow-hidden flex-shrink-0 relative flex items-center justify-center">
-                <Gem className="h-3.5 w-3.5 text-aayna-burgundy/30 absolute" aria-hidden="true" />
-                {it.image && (
-                  <img
-                    src={it.image}
-                    alt={it.product_name}
-                    className="relative w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  />
-                )}
-              </div>
+              <ProductImage src={it.image} alt={it.product_name} className="h-12 w-12 flex-shrink-0" iconClassName="h-3.5 w-3.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-aayna-charcoal line-clamp-1">{it.product_name}</p>
                 <p className="text-xs text-aayna-taupe">{formatBDT(it.unit_price)} × {it.quantity}</p>
@@ -91,7 +82,7 @@ export default function OrderConfirmation() {
         </div>
       </div>
 
-      <div className="bg-aayna-mist border border-aayna-beige mt-6 p-5 sm:p-6">
+      <div className="bg-white border border-aayna-beige mt-6 p-5 sm:p-6">
         <h2 className="font-display text-lg font-bold text-aayna-charcoal mb-2">What happens next</h2>
         <p className="text-sm text-aayna-taupe leading-relaxed">
           Our team reviews every order before it ships and will reach out on your phone number if we need

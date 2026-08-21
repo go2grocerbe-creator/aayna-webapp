@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/hooks/useStore";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
+import ProductImage from "@/components/ProductImage";
 import { useSeo, useJsonLd } from "@/lib/seo";
 
 export default function ProductDetail() {
@@ -61,11 +62,11 @@ export default function ProductDetail() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-2 gap-10 animate-pulse">
-          <div className="aspect-square bg-aayna-mist/60" />
+          <div className="aspect-square bg-aayna-beige/60" />
           <div className="space-y-4">
-            <div className="h-8 w-3/4 bg-aayna-mist/60" />
-            <div className="h-6 w-1/3 bg-aayna-mist/60" />
-            <div className="h-24 bg-aayna-mist/60" />
+            <div className="h-8 w-3/4 bg-aayna-beige/60" />
+            <div className="h-6 w-1/3 bg-aayna-beige/60" />
+            <div className="h-24 bg-aayna-beige/60" />
           </div>
         </div>
       </div>
@@ -111,12 +112,14 @@ export default function ProductDetail() {
       <div className="grid md:grid-cols-2 gap-8 lg:gap-14">
         {/* Gallery */}
         <div>
-          <div className="relative aspect-square bg-aayna-cream border border-aayna-beige overflow-hidden">
-            <img
-              data-testid="product-main-image"
+          <div className="relative aspect-square border border-aayna-beige overflow-hidden">
+            <ProductImage
+              testId="product-main-image"
               src={images[activeImg]?.image_url}
               alt={images[activeImg]?.alt_text || product.product_name}
-              className="w-full h-full object-cover"
+              className="absolute inset-0"
+              iconClassName="h-10 w-10"
+              eager
             />
             {discount > 0 && !oos && (
               <span className="absolute top-3 left-3 bg-aayna-gold text-aayna-charcoal text-xs font-bold px-2.5 py-1.5">
@@ -139,7 +142,7 @@ export default function ProductDetail() {
                   onClick={() => setActiveImg(i)}
                   className={`h-20 w-20 flex-shrink-0 border ${i === activeImg ? "border-aayna-burgundy" : "border-aayna-beige"}`}
                 >
-                  <img src={img.image_url} alt={img.alt_text} className="w-full h-full object-cover" />
+                  <ProductImage src={img.image_url} alt={img.alt_text || product.product_name} className="w-full h-full" iconClassName="h-4 w-4" />
                 </button>
               ))}
             </div>
@@ -156,10 +159,7 @@ export default function ProductDetail() {
           <div className="flex items-center gap-3 mt-4">
             <span data-testid="product-price" className="text-2xl md:text-3xl font-bold text-aayna-burgundy">{formatBDT(price)}</span>
             {discount > 0 && (
-              <>
-                <span className="text-aayna-taupe line-through text-lg">{formatBDT(product.selling_price)}</span>
-                <span className="bg-aayna-gold text-aayna-charcoal text-xs font-bold px-2 py-1">Save {discount}%</span>
-              </>
+              <span className="text-aayna-taupe line-through text-lg">{formatBDT(product.selling_price)}</span>
             )}
           </div>
 
