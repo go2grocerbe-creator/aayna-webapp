@@ -12,7 +12,10 @@ const navLinks = [
 
 export default function Header() {
   const { count } = useCart();
-  const { data: categories = [] } = useCategories();
+  const { data: allCategories = [] } = useCategories();
+  // Nav is a merchandising surface too - don't link to a category with
+  // nothing to buy yet (Visual QA Fix Sprint item 4).
+  const categories = allCategories.filter((c) => (c.product_count || 0) > 0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [term, setTerm] = useState("");

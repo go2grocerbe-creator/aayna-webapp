@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, Package, Search, SearchX } from "lucide-react";
 import { trackOrder } from "@/lib/api";
-import { formatBDT } from "@/lib/format";
+import { formatBDT, customerStatusLabel } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
 
 const STATUS_STEPS = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered"];
@@ -92,7 +92,7 @@ export default function TrackOrder() {
                     isStopped ? "bg-red-50 text-red-700 border border-red-200" : "bg-aayna-mist text-aayna-burgundy"
                   }`}
                 >
-                  {o.order_status}
+                  {customerStatusLabel(o.order_status)}
                 </span>
               </div>
 
@@ -100,7 +100,7 @@ export default function TrackOrder() {
                 <div className="flex items-center mb-5">
                   {STATUS_STEPS.map((s, i) => (
                     <div key={s} className="flex-1 flex items-center last:flex-none">
-                      <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${i <= stepIdx ? "bg-aayna-burgundy" : "bg-aayna-beige"}`} title={s} />
+                      <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${i <= stepIdx ? "bg-aayna-burgundy" : "bg-aayna-beige"}`} title={customerStatusLabel(s)} />
                       {i < STATUS_STEPS.length - 1 && <div className={`h-0.5 flex-1 ${i < stepIdx ? "bg-aayna-burgundy" : "bg-aayna-beige"}`} />}
                     </div>
                   ))}

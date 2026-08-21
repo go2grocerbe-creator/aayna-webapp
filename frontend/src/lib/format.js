@@ -22,3 +22,20 @@ export const isPlaceholder = (value) => {
   if (v.startsWith("test")) return true;
   return ["xxxx", "example.com", "changeme", "placeholder"].some((m) => v.includes(m));
 };
+
+// Customer-facing presentation labels for the real backend order_status
+// values (backend/admin_routes.py ORDER_STATUSES - inspected directly, not
+// assumed). Admin screens intentionally keep the raw operational terms
+// ("Packed", "Sent to Courier") - this mapping is for OrderConfirmation and
+// TrackOrder only, and never changes the stored/internal status string.
+const ORDER_STATUS_LABELS = {
+  New: "Order received",
+  Confirmed: "Confirmed",
+  Packed: "Preparing your order",
+  "Sent to Courier": "On the way",
+  Delivered: "Delivered",
+  Cancelled: "Cancelled",
+  Returned: "Returned",
+};
+
+export const customerStatusLabel = (status) => ORDER_STATUS_LABELS[status] || status;
