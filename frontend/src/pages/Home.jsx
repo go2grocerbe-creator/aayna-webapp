@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Gem, Layers, HeartHandshake } from "lucide-react";
+import { ArrowRight, Gem, Layers, HeartHandshake, ChevronDown } from "lucide-react";
 import { getProducts } from "@/lib/api";
 import { useSettings, useCategories } from "@/hooks/useStore";
 import ProductGrid from "@/components/ProductGrid";
@@ -23,22 +23,37 @@ function SectionHeading({ title, subtitle, link, linkLabel }) {
   );
 }
 
-// Graceful hero fallback for when no campaign/product image is set yet
-// (Section 22: hero must never depend on one exact image existing). Built
-// from the Brand Book's own cover-page motif: concentric rings + a faint
-// Bangla "আয়না" watermark (the book uses the identical device in its pull
-// quotes), so it reads as intentional brand texture, not a broken image box.
+// Scene I (Arrival) fallback world — DESIGN.md "Fallback World-Building".
+// No campaign photography exists yet, so this must look like an intentional
+// AAYNA artboard, not a placeholder: concentric rings + faint "আয়না"
+// watermark (from the Brand Book's own cover/quote-block device), an
+// oversized cropped letterform (typography-as-image), a paired/echoed ring
+// pair (a restrained, structural nod to reflection), and a thin gold hairline
+// rule. CSS/type only — no images, no WebGL, no glassmorphism, no literal
+// mirror chrome.
 function HeroFallback() {
   return (
     <div className="absolute inset-0 bg-aayna-burgundy overflow-hidden">
       <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full border border-white/15" />
       <div className="absolute right-10 top-1/3 w-44 h-44 rounded-full border border-white/15" />
+      {/* paired/echoed shape — two offset thin rings, a quiet reflection cue */}
+      <div className="absolute left-10 bottom-24 w-24 h-24 rounded-full border border-aayna-gold/25" />
+      <div className="absolute left-16 bottom-16 w-24 h-24 rounded-full border border-aayna-gold/15" />
+      {/* oversized cropped letterform — type as visual material, bleeding off the edge */}
+      <span
+        aria-hidden="true"
+        className="absolute -bottom-16 -left-6 font-display text-[16rem] leading-none text-white/[0.04] select-none"
+      >
+        A
+      </span>
       <span
         aria-hidden="true"
         className="absolute -bottom-10 -right-4 font-display text-[10rem] leading-none text-white/5 select-none"
       >
         আয়না
       </span>
+      {/* thin hairline rule */}
+      <div className="absolute right-16 bottom-16 w-16 h-px bg-aayna-gold/40" />
     </div>
   );
 }
@@ -65,42 +80,17 @@ export default function Home() {
       "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
   });
 
-  const secondaryHeroLink = categories[0] ? `/category/${categories[0].slug}` : "/shop";
-  const secondaryHeroLabel = categories[0] ? `Explore ${categories[0].name}` : "Explore the Collection";
-
   return (
     <div>
-      {/* Hero */}
-      <section className="relative bg-aayna-cream overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-8 py-10 md:py-0">
-          <div className="order-2 md:order-1 md:py-24 animate-fade-up">
-            <p className="text-aayna-burgundy font-medium text-sm tracking-[0.15em] uppercase mb-3">
-              {settings?.brand_name || "AAYNA"} · Bangladesh
-            </p>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-aayna-charcoal leading-[1.08]">
-              {settings?.hero_headline || "Everyday Luxury, Reflected."}
-            </h1>
-            <p className="mt-5 text-base md:text-lg text-aayna-taupe max-w-md">
-              {settings?.hero_subtitle ||
-                "Beautiful enough to notice. Easy enough to live in. Personal enough to feel like yours."}
-            </p>
-            <div className="flex flex-wrap items-center gap-3 mt-8">
-              <Link
-                to="/shop"
-                data-testid="hero-shop-now"
-                className="h-12 px-8 bg-aayna-coral text-white font-semibold inline-flex items-center justify-center hover:bg-aayna-coral-dark transition-colors"
-              >
-                Shop Now
-              </Link>
-              <Link
-                to={secondaryHeroLink}
-                className="h-12 px-8 border border-aayna-burgundy text-aayna-burgundy font-semibold inline-flex items-center justify-center hover:bg-white transition-colors"
-              >
-                {secondaryHeroLabel}
-              </Link>
-            </div>
-          </div>
-          <div className="order-1 md:order-2 relative h-64 sm:h-80 md:h-[480px]">
+      {/* SCENE I — ARRIVAL (DESIGN.md Experience Storyboard). Asymmetric field:
+          media ~60%, type block ~40%, type sits in the lower third (not
+          vertically centered), one thin seam rule between the two zones, one
+          quiet CTA (text link, not a filled button pair). Mobile stacks
+          media-dominant-top / type-lower, left-aligned, still one CTA. */}
+      <section className="relative bg-aayna-burgundy md:bg-aayna-cream overflow-hidden h-[82vh] min-h-[560px] md:h-[90vh] md:min-h-[640px]">
+        <div className="absolute inset-0 md:grid md:grid-cols-5">
+          {/* Media — mobile: full-bleed top field via absolute inset0 (overridden below by md). Desktop: right 60% (3/5). */}
+          <div className="absolute inset-0 md:relative md:col-start-3 md:col-span-3 md:order-2 h-full">
             {settings?.hero_image_url ? (
               <img
                 src={settings.hero_image_url}
@@ -110,7 +100,40 @@ export default function Home() {
             ) : (
               <HeroFallback />
             )}
+            {/* mobile legibility scrim behind the lower text block */}
+            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-aayna-burgundy-dark/90 via-aayna-burgundy-dark/40 to-transparent md:hidden" />
           </div>
+
+          {/* Thin seam rule between media and type zones — desktop only */}
+          <div className="hidden md:block md:col-start-3 md:row-start-1 relative">
+            <div className="absolute inset-y-0 left-0 w-px bg-aayna-gold/40" />
+          </div>
+
+          {/* Type block — mobile: bottom third, left-aligned, over the scrim.
+              Desktop: left 2/5, anchored to the lower third of the section. */}
+          <div className="relative h-full flex flex-col justify-end pb-14 sm:pb-16 md:pb-24 px-5 sm:px-8 md:col-start-1 md:col-span-2 md:order-1 md:px-0 md:pl-4 lg:pl-8 animate-fade-up">
+            <p className="text-aayna-gold md:text-aayna-burgundy font-medium text-xs sm:text-sm tracking-[0.2em] uppercase mb-3">
+              {(settings?.brand_name || "AAYNA").toUpperCase()} · Bangladesh
+            </p>
+            <h1 className="font-display text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-semibold text-white md:text-aayna-charcoal leading-[1.05] max-w-md">
+              {settings?.hero_headline || "Reflect Your Aura."}
+            </h1>
+            <Link
+              to="/shop"
+              data-testid="hero-shop-now"
+              className="group inline-flex items-center gap-2 mt-7 text-white md:text-aayna-coral text-base sm:text-lg font-semibold w-fit border-b border-transparent hover:border-current transition-colors"
+            >
+              Shop Now
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Scroll cue — static, no bounce/loop; respects prefers-reduced-motion
+            by simply not animating (it never animated to begin with). */}
+        <div className="hidden sm:flex absolute bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-1.5 text-white/70 md:text-aayna-taupe">
+          <span className="text-[10px] uppercase tracking-[0.2em]">Reflect</span>
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
         </div>
       </section>
 
