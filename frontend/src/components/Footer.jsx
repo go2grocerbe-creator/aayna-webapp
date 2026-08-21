@@ -15,8 +15,8 @@ export default function Footer() {
             {/* FOUNDER ASSET REQUIRED — FINAL LOGO: text wordmark, see Header.jsx */}
             <span className="font-display text-2xl font-semibold text-aayna-cream tracking-[0.08em]">AAYNA</span>
             <p className="mt-3 text-sm text-aayna-beige/80 leading-relaxed max-w-xs">
-              {settings?.tagline || "Reflect Your Aura."} Affordable, trendy and feminine
-              accessories delivered across Bangladesh.
+              {settings?.tagline || "Reflect Your Aura."} Accessible premium jewelry for
+              everyday wear, delivered across Bangladesh.
             </p>
             <div className="flex items-center gap-3 mt-5">
               <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-aayna-gold transition-colors">

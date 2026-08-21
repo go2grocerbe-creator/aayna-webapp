@@ -4,7 +4,7 @@ const SITE_NAME = "AAYNA";
 const SITE_URL = (process.env.REACT_APP_PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
 const DEFAULT_TITLE = "AAYNA — Reflect Your Aura.";
 const DEFAULT_DESC =
-  "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
+  "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
 
 function siteOrigin() {
   return SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");

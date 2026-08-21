@@ -45,7 +45,11 @@ function HeroFallback() {
 
 export default function Home() {
   const { data: settings } = useSettings();
-  const { data: categories = [] } = useCategories();
+  const { data: allCategories = [] } = useCategories();
+  // Merchandising surfaces only show categories that actually have something
+  // to buy right now (Visual QA Fix Sprint item 4) - the category itself
+  // stays untouched in Admin/DB either way, this is display-only.
+  const categories = allCategories.filter((c) => (c.product_count || 0) > 0);
   const { data: newArrivals = [], isLoading: loadingNew } = useQuery({
     queryKey: ["products", "new"],
     queryFn: () => getProducts({ new_arrival: true, limit: 8 }),
@@ -58,7 +62,7 @@ export default function Home() {
   useSeo({
     description:
       settings?.hero_subtitle ||
-      "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
+      "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
   });
 
   const secondaryHeroLink = categories[0] ? `/category/${categories[0].slug}` : "/shop";
@@ -67,7 +71,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-aayna-mist overflow-hidden">
+      <section className="relative bg-aayna-cream overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-8 py-10 md:py-0">
           <div className="order-2 md:order-1 md:py-24 animate-fade-up">
             <p className="text-aayna-burgundy font-medium text-sm tracking-[0.15em] uppercase mb-3">
@@ -119,12 +123,12 @@ export default function Home() {
               key={c.slug}
               to={`/category/${c.slug}`}
               data-testid={`home-category-${c.slug}`}
-              className="group relative overflow-hidden aspect-[4/3] bg-aayna-mist"
+              className="group relative overflow-hidden aspect-[4/3] bg-aayna-cream"
             >
               {c.image_url ? (
                 <img src={c.image_url} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               ) : (
-                <div className="w-full h-full bg-aayna-mist flex items-center justify-center">
+                <div className="w-full h-full bg-aayna-cream flex items-center justify-center">
                   <Gem className="h-8 w-8 text-aayna-burgundy/40" />
                 </div>
               )}

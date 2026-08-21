@@ -21,7 +21,7 @@ export default function TrustBadges() {
       {badges.map((b) => (
         <div
           key={b.title}
-          className="flex flex-col items-center text-center p-5 md:p-6 bg-aayna-mist border border-aayna-beige rounded-sm"
+          className="flex flex-col items-center text-center p-5 md:p-6 bg-white border border-aayna-beige rounded-sm"
         >
           <span className="h-12 w-12 rounded-full bg-white flex items-center justify-center mb-3 border border-aayna-beige">
             <b.icon className="h-5 w-5 text-aayna-burgundy" />
