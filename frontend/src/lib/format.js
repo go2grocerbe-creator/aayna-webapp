@@ -12,3 +12,13 @@ export const discountPercent = (p) => {
 
 export const isOutOfStock = (p) =>
   !p || p.stock_quantity <= 0 || p.status === "out_of_stock";
+
+// Mirrors backend/auth.py-adjacent server.py `_looks_placeholder()` so the
+// storefront never shows a founder-unconfigured value (e.g. "01XXXXXXXXX")
+// as if it were real, live payment/contact information.
+export const isPlaceholder = (value) => {
+  const v = (value || "").trim().toLowerCase();
+  if (!v) return true;
+  if (v.startsWith("test")) return true;
+  return ["xxxx", "example.com", "changeme", "placeholder"].some((m) => v.includes(m));
+};

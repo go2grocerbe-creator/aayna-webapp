@@ -2,11 +2,11 @@ import { useState, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { Loader2, ShoppingBag, Gem } from "lucide-react";
 import { getDistricts, checkout } from "@/lib/api";
 import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
-import { formatBDT } from "@/lib/format";
+import { formatBDT, isPlaceholder } from "@/lib/format";
 import {
   Select,
   SelectContent,
@@ -108,7 +108,7 @@ export default function Checkout() {
           <ShoppingBag className="h-9 w-9 text-aayna-burgundy" />
         </div>
         <h1 className="font-display text-3xl font-bold text-aayna-charcoal">Your cart is empty</h1>
-        <Link to="/shop" className="inline-flex h-12 px-8 items-center bg-aayna-burgundy text-white font-semibold mt-6 hover:bg-aayna-burgundy-dark transition-colors">
+        <Link to="/shop" className="inline-flex h-12 px-8 items-center bg-aayna-coral text-white font-semibold mt-6 hover:bg-aayna-coral-dark transition-colors">
           Start Shopping
         </Link>
       </div>
@@ -128,7 +128,8 @@ export default function Checkout() {
         {/* Form fields */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white border border-aayna-beige p-5 sm:p-6">
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Delivery Details</h2>
+            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 1</p>
+            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Contact</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Name *</label>
@@ -141,6 +142,17 @@ export default function Checkout() {
                 {errors.customer_phone && <p className="text-xs text-red-700 mt-1">{errors.customer_phone}</p>}
               </div>
               <div>
+                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Email (optional)</label>
+                <input data-testid="checkout-email" type="email" className={inputCls("customer_email")} value={form.customer_email} onChange={(e) => set("customer_email", e.target.value)} placeholder="you@email.com" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-aayna-beige p-5 sm:p-6">
+            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 2</p>
+            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Delivery Information</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">District *</label>
                 <Select value={form.district} onValueChange={(v) => set("district", v)}>
                   <SelectTrigger data-testid="checkout-district" className={`h-11 bg-white ${errors.district ? "border-red-500" : "border-aayna-beige"}`}>
@@ -159,11 +171,7 @@ export default function Checkout() {
                 <textarea data-testid="checkout-address" rows={3} className={`${inputCls("delivery_address")} h-auto py-2.5 resize-none`} value={form.delivery_address} onChange={(e) => set("delivery_address", e.target.value)} placeholder="House, road, area, landmark..." />
                 {errors.delivery_address && <p className="text-xs text-red-700 mt-1">{errors.delivery_address}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Email (optional)</label>
-                <input data-testid="checkout-email" type="email" className={inputCls("customer_email")} value={form.customer_email} onChange={(e) => set("customer_email", e.target.value)} placeholder="you@email.com" />
-              </div>
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Delivery Note (optional)</label>
                 <input data-testid="checkout-note" className={inputCls("delivery_note")} value={form.delivery_note} onChange={(e) => set("delivery_note", e.target.value)} placeholder="Any instructions?" />
               </div>
@@ -172,47 +180,54 @@ export default function Checkout() {
 
           {/* Payment */}
           <div className="bg-white border border-aayna-beige p-5 sm:p-6">
+            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 3</p>
             <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Payment Method</h2>
             <RadioGroup value={form.payment_method} onValueChange={(v) => set("payment_method", v)} className="space-y-3">
-              {PAYMENTS.map((p) => (
-                <label
-                  key={p.value}
-                  data-testid={`payment-${p.value}`}
-                  className={`flex items-start gap-3 border p-4 cursor-pointer transition-colors ${
-                    form.payment_method === p.value ? "border-aayna-burgundy bg-aayna-mist/40" : "border-aayna-beige"
-                  }`}
-                >
-                  <RadioGroupItem value={p.value} className="mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium text-aayna-charcoal text-sm">{p.label}</p>
-                    <p className="text-xs text-aayna-taupe mt-0.5">{p.desc}</p>
-                    {form.payment_method === p.value && p.value !== "cod" && (
-                      <div className="mt-3 space-y-3" onClick={(e) => e.preventDefault()}>
-                        <div className="bg-aayna-cream border border-aayna-beige p-3 text-sm">
-                          Send money to{" "}
-                          <span className="font-semibold text-aayna-burgundy">
-                            {p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number}
-                          </span>{" "}
-                          ({p.value === "bkash" ? "bKash" : "Nagad"} Personal). Transaction ID is optional — our team verifies manually.
+              {PAYMENTS.map((p) => {
+                const manualNumber = p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number;
+                const notConfigured = p.value !== "cod" && isPlaceholder(manualNumber);
+                return (
+                  <label
+                    key={p.value}
+                    data-testid={`payment-${p.value}`}
+                    className={`flex items-start gap-3 border p-4 transition-colors ${
+                      notConfigured ? "border-aayna-beige opacity-60 cursor-not-allowed" : "cursor-pointer"
+                    } ${
+                      form.payment_method === p.value && !notConfigured ? "border-aayna-burgundy bg-aayna-mist/40" : "border-aayna-beige"
+                    }`}
+                  >
+                    <RadioGroupItem value={p.value} disabled={notConfigured} className="mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-aayna-charcoal text-sm">{p.label}</p>
+                      <p className="text-xs text-aayna-taupe mt-0.5">
+                        {notConfigured ? "Not available yet — choose Cash on Delivery for now." : p.desc}
+                      </p>
+                      {form.payment_method === p.value && p.value !== "cod" && !notConfigured && (
+                        <div className="mt-3 space-y-3" onClick={(e) => e.preventDefault()}>
+                          <div className="bg-aayna-cream border border-aayna-beige p-3 text-sm">
+                            Send money to{" "}
+                            <span className="font-semibold text-aayna-burgundy">{manualNumber}</span>{" "}
+                            ({p.value === "bkash" ? "bKash" : "Nagad"} Personal). Transaction ID is optional — our team verifies manually.
+                          </div>
+                          <input
+                            data-testid="checkout-transaction-id"
+                            className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
+                            placeholder="Transaction ID (optional)"
+                            value={form.transaction_id}
+                            onChange={(e) => set("transaction_id", e.target.value)}
+                          />
+                          <input
+                            className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
+                            placeholder="Your bKash/Nagad number (optional)"
+                            value={form.sender_number}
+                            onChange={(e) => set("sender_number", e.target.value)}
+                          />
                         </div>
-                        <input
-                          data-testid="checkout-transaction-id"
-                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
-                          placeholder="Transaction ID (optional)"
-                          value={form.transaction_id}
-                          onChange={(e) => set("transaction_id", e.target.value)}
-                        />
-                        <input
-                          className="w-full h-11 border border-aayna-beige bg-white px-3 text-sm outline-none focus:border-aayna-burgundy"
-                          placeholder="Your bKash/Nagad number (optional)"
-                          value={form.sender_number}
-                          onChange={(e) => set("sender_number", e.target.value)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </label>
-              ))}
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
             </RadioGroup>
           </div>
         </div>
@@ -220,12 +235,21 @@ export default function Checkout() {
         {/* Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white border border-aayna-beige p-5 sm:p-6 sticky top-24">
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Your Order</h2>
+            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 4</p>
+            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Order Summary</h2>
             <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar mb-4">
               {items.map((i) => (
                 <div key={i.product_id} className="flex gap-3">
-                  <div className="h-14 w-14 flex-shrink-0 bg-aayna-cream overflow-hidden relative">
-                    <img src={i.image} alt={i.name} className="w-full h-full object-cover" />
+                  <div className="h-14 w-14 flex-shrink-0 bg-aayna-mist overflow-hidden relative flex items-center justify-center">
+                    <Gem className="h-4 w-4 text-aayna-burgundy/30 absolute" aria-hidden="true" />
+                    {i.image && (
+                      <img
+                        src={i.image}
+                        alt={i.name}
+                        className="relative w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    )}
                     <span className="absolute -top-1 -right-1 bg-aayna-burgundy text-white text-[10px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center">{i.quantity}</span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -251,10 +275,10 @@ export default function Checkout() {
               data-testid="place-order-button"
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full h-12 bg-aayna-burgundy text-white font-semibold hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="mt-5 w-full h-12 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitting ? "Placing Order..." : "Confirm Order"}
+              {submitting ? "Placing Order..." : "Place Order"}
             </button>
             <p className="text-xs text-aayna-taupe text-center mt-3">No account needed. We'll confirm your order shortly.</p>
           </div>
