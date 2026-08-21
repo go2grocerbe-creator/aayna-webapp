@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Wrench } from "lucide-react";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
@@ -30,6 +30,10 @@ function MaintenanceScreen({ settings }) {
 
 export default function Layout() {
   const { data: settings } = useSettings();
+  const location = useLocation();
+  // PDP renders a sticky mobile Add to Cart bar (ProductDetail.jsx, md:hidden);
+  // the floating WhatsApp button must clear it rather than sit on top.
+  const hasStickyCommerceBar = location.pathname.startsWith("/product/");
 
   if (settings?.maintenance_mode) {
     return <MaintenanceScreen settings={settings} />;
@@ -43,7 +47,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat clearStickyBar={hasStickyCommerceBar} />
     </>
   );
 }
