@@ -88,3 +88,5 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+.design-research/
+.firecrawl/
