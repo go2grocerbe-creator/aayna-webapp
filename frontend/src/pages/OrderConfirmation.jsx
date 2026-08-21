@@ -1,6 +1,6 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Gem } from "lucide-react";
 import { getOrder } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
@@ -59,7 +59,17 @@ export default function OrderConfirmation() {
         <div className="py-4 border-b border-aayna-beige space-y-3">
           {order.items.map((it, idx) => (
             <div key={idx} className="flex gap-3 items-center">
-              {it.image && <div className="h-12 w-12 bg-aayna-cream overflow-hidden flex-shrink-0"><img src={it.image} alt={it.product_name} className="w-full h-full object-cover" /></div>}
+              <div className="h-12 w-12 bg-aayna-mist overflow-hidden flex-shrink-0 relative flex items-center justify-center">
+                <Gem className="h-3.5 w-3.5 text-aayna-burgundy/30 absolute" aria-hidden="true" />
+                {it.image && (
+                  <img
+                    src={it.image}
+                    alt={it.product_name}
+                    className="relative w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-aayna-charcoal line-clamp-1">{it.product_name}</p>
                 <p className="text-xs text-aayna-taupe">{formatBDT(it.unit_price)} × {it.quantity}</p>
@@ -81,8 +91,16 @@ export default function OrderConfirmation() {
         </div>
       </div>
 
+      <div className="bg-aayna-mist border border-aayna-beige mt-6 p-5 sm:p-6">
+        <h2 className="font-display text-lg font-bold text-aayna-charcoal mb-2">What happens next</h2>
+        <p className="text-sm text-aayna-taupe leading-relaxed">
+          Our team reviews every order before it ships and will reach out on your phone number if we need
+          anything from you. You can check your order's status any time on the Track Order page.
+        </p>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
-        <Link to="/shop" className="flex-1 h-12 bg-aayna-burgundy text-white font-semibold flex items-center justify-center hover:bg-aayna-burgundy-dark transition-colors">
+        <Link to="/shop" className="flex-1 h-12 bg-aayna-coral text-white font-semibold flex items-center justify-center hover:bg-aayna-coral-dark transition-colors">
           Continue Shopping
         </Link>
         <Link to={`/track-order?order=${encodeURIComponent(order.order_number)}`} className="flex-1 h-12 border border-aayna-burgundy text-aayna-burgundy font-semibold flex items-center justify-center hover:bg-aayna-mist transition-colors">
