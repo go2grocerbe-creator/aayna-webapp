@@ -51,14 +51,15 @@ export default function Shop() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-      <div className="mb-8">
+      <div className="mb-8 md:mb-10">
+        <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-2">The Collection</p>
         <h1 className="font-display text-4xl md:text-5xl font-bold text-aayna-charcoal">Shop All</h1>
         <p className="text-aayna-taupe mt-2">
           {search ? `Showing results for "${search}"` : "Browse our full collection of accessories."}
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8 bg-white border border-aayna-beige p-4">
         <div className="flex-1">
           <label className="block text-xs text-aayna-taupe mb-1.5">Category</label>
           <Select value={category} onValueChange={(v) => updateParam("category", v)}>
