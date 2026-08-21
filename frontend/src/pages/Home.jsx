@@ -36,13 +36,17 @@ function HeroFallback() {
     <div className="absolute inset-0 bg-aayna-burgundy overflow-hidden">
       <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full border border-white/15" />
       <div className="absolute right-10 top-1/3 w-44 h-44 rounded-full border border-white/15" />
-      {/* paired/echoed shape — two offset thin rings, a quiet reflection cue */}
-      <div className="absolute left-10 bottom-24 w-24 h-24 rounded-full border border-aayna-gold/25" />
-      <div className="absolute left-16 bottom-16 w-24 h-24 rounded-full border border-aayna-gold/15" />
-      {/* oversized cropped letterform — type as visual material, bleeding off the edge */}
+      {/* paired/echoed shape — two offset thin rings, positioned toward the seam
+          so they relate to the transition into the type zone rather than
+          sitting isolated in a corner */}
+      <div className="absolute left-6 md:left-10 bottom-28 w-24 h-24 rounded-full border border-aayna-gold/25" />
+      <div className="absolute left-12 md:left-16 bottom-20 w-24 h-24 rounded-full border border-aayna-gold/15" />
+      {/* oversized cropped letterform — type as visual material, positioned at
+          the left (seam) edge so it approaches the type zone rather than
+          sitting inert in the field's outer corner (Scene I correction pass) */}
       <span
         aria-hidden="true"
-        className="absolute -bottom-16 -left-6 font-display text-[16rem] leading-none text-white/[0.04] select-none"
+        className="absolute -bottom-16 -left-16 md:-left-24 font-display text-[16rem] leading-none text-white/[0.05] select-none"
       >
         A
       </span>
@@ -82,40 +86,50 @@ export default function Home() {
 
   return (
     <div>
-      {/* SCENE I — ARRIVAL (DESIGN.md Experience Storyboard). Asymmetric field:
-          media ~60%, type block ~40%, type sits in the lower third (not
-          vertically centered), one thin seam rule between the two zones, one
-          quiet CTA (text link, not a filled button pair). Mobile stacks
-          media-dominant-top / type-lower, left-aligned, still one CTA. */}
+      {/* SCENE I — ARRIVAL (DESIGN.md Experience Storyboard, Scene I correction
+          pass). Media occupies a true full-bleed rectangle via `absolute
+          inset-0 md:left-[40%]` rather than a CSS-grid column — a grid
+          column's auto-sized row was collapsing to the (short) text content's
+          height, leaving unfilled space above the image. This approach
+          guarantees the media field fills exactly top:0/right:0/bottom:0/
+          left:40% with no dependency on sibling content height. The type
+          block shares the header's own `max-w-7xl mx-auto px-4 sm:px-6
+          lg:px-8` container so the kicker/headline/CTA align to the same
+          left edge as the header logo, instead of floating at an unrelated
+          inset. An ivory fade-blend at the media zone's seam edge (rather
+          than a hard color cut) plus the fallback's letterform/rings
+          positioned toward that same edge make the scene read as one
+          composed field instead of two independent rectangles. */}
       <section className="relative bg-aayna-burgundy md:bg-aayna-cream overflow-hidden h-[82vh] min-h-[560px] md:h-[90vh] md:min-h-[640px]">
-        <div className="absolute inset-0 md:grid md:grid-cols-5">
-          {/* Media — mobile: full-bleed top field via absolute inset0 (overridden below by md). Desktop: right 60% (3/5). */}
-          <div className="absolute inset-0 md:relative md:col-start-3 md:col-span-3 md:order-2 h-full">
-            {settings?.hero_image_url ? (
-              <img
-                src={settings.hero_image_url}
-                alt="AAYNA accessories"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <HeroFallback />
-            )}
-            {/* mobile legibility scrim behind the lower text block */}
-            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-aayna-burgundy-dark/90 via-aayna-burgundy-dark/40 to-transparent md:hidden" />
-          </div>
+        {/* Media layer — full-bleed rectangle, right 60% on desktop */}
+        <div className="absolute inset-0 md:left-[40%] z-0">
+          {settings?.hero_image_url ? (
+            <img
+              src={settings.hero_image_url}
+              alt="AAYNA accessories"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <HeroFallback />
+          )}
+          {/* mobile legibility scrim behind the lower text block */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-aayna-burgundy-dark/90 via-aayna-burgundy-dark/40 to-transparent md:hidden" />
+          {/* ivory fade-blend at the seam edge — the two zones dissolve into
+              one field instead of meeting at a hard, "two rectangles" cut */}
+          <div className="hidden md:block absolute inset-y-0 left-0 w-28 lg:w-36 bg-gradient-to-r from-aayna-cream to-transparent" />
+        </div>
 
-          {/* Thin seam rule between media and type zones — desktop only */}
-          <div className="hidden md:block md:col-start-3 md:row-start-1 relative">
-            <div className="absolute inset-y-0 left-0 w-px bg-aayna-gold/40" />
-          </div>
+        {/* Thin seam rule, drawn on top of the fade-blend */}
+        <div className="hidden md:block absolute inset-y-0 left-[40%] w-px bg-aayna-gold/40 z-[1]" />
 
-          {/* Type block — mobile: bottom third, left-aligned, over the scrim.
-              Desktop: left 2/5, anchored to the lower third of the section. */}
-          <div className="relative h-full flex flex-col justify-end pb-14 sm:pb-16 md:pb-24 px-5 sm:px-8 md:col-start-1 md:col-span-2 md:order-1 md:px-0 md:pl-4 lg:pl-8 animate-fade-up">
+        {/* Type layer — same container system as the header, so the kicker/
+            headline/CTA align to the logo's left edge, not a floating inset */}
+        <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-full flex flex-col justify-end md:max-w-[38%] pb-14 sm:pb-16 md:pb-24 animate-fade-up">
             <p className="text-aayna-gold md:text-aayna-burgundy font-medium text-xs sm:text-sm tracking-[0.2em] uppercase mb-3">
               {(settings?.brand_name || "AAYNA").toUpperCase()} · Bangladesh
             </p>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-semibold text-white md:text-aayna-charcoal leading-[1.05] max-w-md">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white md:text-aayna-charcoal leading-[1.03]">
               {settings?.hero_headline || "Reflect Your Aura."}
             </h1>
             <Link
@@ -131,7 +145,11 @@ export default function Home() {
 
         {/* Scroll cue — static, no bounce/loop; respects prefers-reduced-motion
             by simply not animating (it never animated to begin with). */}
-        <div className="hidden sm:flex absolute bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-1.5 text-white/70 md:text-aayna-taupe">
+        {/* Positioned at 50% of the full section width, which always falls
+            inside the media zone (40-100%) on desktop too - stays white/70
+            at every breakpoint rather than switching to a dark color that
+            would lose contrast against the burgundy/photo background here. */}
+        <div className="flex absolute bottom-5 md:bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-1.5 text-white/70 z-10">
           <span className="text-[10px] uppercase tracking-[0.2em]">Reflect</span>
           <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
         </div>
