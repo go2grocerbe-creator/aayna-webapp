@@ -96,6 +96,25 @@ class TestAdminAuth:
         assert blocked.status_code == 429
         assert "try again" in blocked.json().get("detail", "").lower()
 
+    def test_login_lockout_is_scoped_per_ip_not_just_email(self, session):
+        # H2: failed attempts against one email from a single IP must not lock
+        # out the same email seen from a different client IP.
+        email = f"h2-{uuid.uuid4().hex}@example.com"
+        headers_attacker = {"X-Forwarded-For": "203.0.113.10"}
+        for _ in range(5):
+            r = session.post(f"{API}/admin/login", json={"email": email, "password": "wrong"},
+                              headers=headers_attacker, timeout=30)
+            assert r.status_code == 401
+        blocked = session.post(f"{API}/admin/login", json={"email": email, "password": "wrong"},
+                                headers=headers_attacker, timeout=30)
+        assert blocked.status_code == 429
+
+        # Same email, different (the "real admin's") IP — must NOT be locked out.
+        headers_victim = {"X-Forwarded-For": "198.51.100.20"}
+        not_locked = session.post(f"{API}/admin/login", json={"email": email, "password": "wrong"},
+                                   headers=headers_victim, timeout=30)
+        assert not_locked.status_code == 401  # wrong password, but not 429
+
     def test_me_requires_auth(self, session):
         r = session.get(f"{API}/admin/me", timeout=30)
         assert r.status_code == 401
@@ -148,6 +167,13 @@ class TestProducts:
     def test_filter_search(self, admin):
         r = admin.get(f"{API}/admin/products?search=pearl", timeout=30)
         assert r.status_code == 200
+
+    def test_search_regex_special_chars_do_not_error(self, admin):
+        # M4: unescaped regex metacharacters must not break the query or
+        # act as an unintended wildcard/DoS pattern.
+        for q in ["(", "[a-z", "a{50,}", ".*", "a|b", "\\"]:
+            r = admin.get(f"{API}/admin/products", params={"search": q}, timeout=30)
+            assert r.status_code == 200, (q, r.text)
 
     def test_create_edit_delete_no_history(self, admin):
         sku = f"TEST-SKU-{uuid.uuid4().hex[:6].upper()}"
@@ -458,6 +484,16 @@ class TestStorageUpload:
                 public = f"{API}/files/{rel.split('files/')[-1]}"
         g = requests.get(public, timeout=30)
         assert g.status_code == 200
+
+    def test_files_endpoint_rejects_unrecorded_path(self):
+        # M3: only paths recorded in db.files (under the aayna upload prefix)
+        # may be served; arbitrary/unknown object keys must 404.
+        r = requests.get(f"{API}/files/aayna/uploads/{uuid.uuid4().hex}.png", timeout=30)
+        assert r.status_code == 404
+
+    def test_files_endpoint_rejects_outside_prefix(self):
+        r = requests.get(f"{API}/files/some-other-app/secret.txt", timeout=30)
+        assert r.status_code == 404
 
 
 # ============================================================

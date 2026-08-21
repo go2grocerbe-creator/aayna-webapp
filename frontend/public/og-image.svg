@@ -1,0 +1,12 @@
+<!--
+  TODO (launch blocker for social sharing): replace with a real 1200x630 JPG/PNG
+  before launch. Facebook/WhatsApp/Twitter link previews do not reliably render
+  SVG images - this file is a placeholder only so useSeo()/index.html always
+  have *something* to point at during development.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#fff1f2"/>
+  <rect x="0" y="0" width="1200" height="630" fill="none" stroke="#e11d48" stroke-width="4"/>
+  <text x="600" y="330" font-family="Georgia, 'Times New Roman', serif" font-size="120" font-weight="600" fill="#e11d48" text-anchor="middle">AAYNA</text>
+  <text x="600" y="400" font-family="Arial, sans-serif" font-size="32" fill="#57534e" text-anchor="middle">Reflect your everyday style</text>
+</svg>

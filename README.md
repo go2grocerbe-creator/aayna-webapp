@@ -220,8 +220,9 @@ After editing `frontend/.env`, rebuild/restart the frontend so the new values ar
 
 **Storefront content**
 - [ ] Replace placeholder **announcement bar text**, **WhatsApp / bKash / Nagad numbers**, **support email**, and social links in Admin → Settings (the Settings page shows a warning while placeholders remain).
-- [ ] Replace placeholder product/category/hero images via the admin dashboard.
+- [ ] Replace placeholder product/category/hero images via the admin dashboard. `backend/seed_data.py` still points at Emergent-scaffold demo image URLs (`static.prod-images.emergentagent.com`) - real product photography is not available yet, so these are left as-is with a TODO comment rather than swapped for other fake URLs.
 - [ ] Review delivery charges (Dhaka / outside Dhaka) in Settings.
+- [ ] Replace `frontend/public/og-image.svg` (social share preview) with a real 1200x630 **JPG/PNG**. SVG is a dev-only placeholder - Facebook/WhatsApp/Twitter link previews don't reliably render SVG images.
 
 **Test data cleanup (manual — do NOT run destructive scripts)**
 - [ ] Before going live, remove test products, test orders, and test customers via the admin dashboard.

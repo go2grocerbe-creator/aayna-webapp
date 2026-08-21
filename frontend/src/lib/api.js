@@ -13,7 +13,8 @@ export const getProduct = (slug) => client.get(`/products/${slug}`).then((r) => 
 export const getDistricts = () => client.get("/districts").then((r) => r.data);
 export const validateCart = (payload) => client.post("/cart/validate", payload).then((r) => r.data);
 export const checkout = (payload) => client.post("/checkout", payload).then((r) => r.data);
-export const getOrder = (orderNumber) => client.get(`/orders/${orderNumber}`).then((r) => r.data);
+export const getOrder = (orderNumber, token) =>
+  client.get(`/orders/${orderNumber}`, { params: { token } }).then((r) => r.data);
 export const trackOrder = (payload) => client.post("/track", payload).then((r) => r.data);
 
 export default client;

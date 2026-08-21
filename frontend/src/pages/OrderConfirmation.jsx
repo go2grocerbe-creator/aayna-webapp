@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { getOrder } from "@/lib/api";
@@ -7,9 +7,12 @@ import { useSeo } from "@/lib/seo";
 
 export default function OrderConfirmation() {
   const { orderNumber } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
   const { data: order, isLoading, isError } = useQuery({
-    queryKey: ["order", orderNumber],
-    queryFn: () => getOrder(orderNumber),
+    queryKey: ["order", orderNumber, token],
+    queryFn: () => getOrder(orderNumber, token),
+    enabled: !!token,
     retry: 1,
   });
   useSeo({ title: "Order Confirmed", description: "Your AAYNA order has been placed.", noindex: true });

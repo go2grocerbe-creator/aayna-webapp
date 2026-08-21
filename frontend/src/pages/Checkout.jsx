@@ -92,7 +92,8 @@ export default function Checkout() {
         client_request_id: requestId.current,
       });
       clearCart();
-      navigate(`/order-confirmation/${res.order_number}`);
+      const token = encodeURIComponent(res.order_confirmation_token || "");
+      navigate(`/order-confirmation/${res.order_number}?token=${token}`);
     } catch (err) {
       const msg = err?.response?.data?.detail || "Something went wrong. Please try again.";
       toast.error(msg);
