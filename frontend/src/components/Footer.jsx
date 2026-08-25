@@ -1,11 +1,27 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Mail, Phone } from "lucide-react";
+import { Instagram, Facebook, Phone } from "lucide-react";
 import { useSettings, useCategories } from "@/hooks/useStore";
+import { isPlaceholder } from "@/lib/format";
 
 export default function Footer() {
   const { data: settings } = useSettings();
   const { data: categories = [] } = useCategories();
   const year = new Date().getFullYear();
+
+  // L3.1: WhatsApp/phone only renders once it's a real, non-placeholder
+  // number - same isPlaceholder() gate WhatsAppFloat/PDP already use, now
+  // applied here too. Support email is intentionally not shown as a launch
+  // contact channel yet - founder has not approved one for production (not
+  // a placeholder-detection question, a launch-readiness one); see
+  // LAUNCH_BUSINESS_SETTINGS_AUDIT.md. "We accept" only lists methods that
+  // are actually selectable at checkout today, instead of a hardcoded list
+  // that claimed bKash/Nagad were accepted while Checkout disabled both.
+  const hasWhatsapp = !isPlaceholder(settings?.whatsapp_number);
+  const paymentBadges = [
+    settings?.cod_available !== false && "Cash on Delivery",
+    !isPlaceholder(settings?.bkash_number) && "bKash",
+    !isPlaceholder(settings?.nagad_number) && "Nagad",
+  ].filter(Boolean);
 
   return (
     <footer data-testid="site-footer" className="bg-aayna-burgundy-dark text-aayna-beige mt-20">
@@ -55,18 +71,17 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-aayna-cream mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
-                <Phone className="h-4 w-4 text-aayna-gold" /> {settings?.whatsapp_number}
-              </li>
-              <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
-                <Mail className="h-4 w-4 text-aayna-gold" /> {settings?.support_email}
-              </li>
+              {hasWhatsapp && (
+                <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
+                  <Phone className="h-4 w-4 text-aayna-gold" /> {settings.whatsapp_number}
+                </li>
+              )}
               <li><Link to="/contact" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Contact Us</Link></li>
             </ul>
             <div className="mt-5">
               <p className="text-xs text-aayna-beige/60 mb-2">We accept</p>
               <div className="flex flex-wrap gap-2">
-                {["Cash on Delivery", "bKash", "Nagad"].map((m) => (
+                {paymentBadges.map((m) => (
                   <span key={m} className="text-[11px] font-semibold bg-white/10 border border-white/15 px-2.5 py-1 rounded-sm">
                     {m}
                   </span>

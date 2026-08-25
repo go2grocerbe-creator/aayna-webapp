@@ -1,13 +1,20 @@
 import { useSettings } from "@/hooks/useStore";
+import { isPlaceholder } from "@/lib/format";
 
 const waLink = (number) => {
   const digits = (number || "").replace(/[^0-9]/g, "");
   return `https://wa.me/${digits}`;
 };
 
+// L3.1: this had no placeholder gate at all - unlike the PDP inline WhatsApp
+// inquiry link, it always rendered, and a placeholder number like
+// "+8801XXXXXXXXX" produces a broken link (stripping non-digits leaves only
+// "8801" - every X is a letter, not a digit). WhatsApp launch = OFF until a
+// real number is approved; see LAUNCH_BUSINESS_SETTINGS_AUDIT.md.
 export default function WhatsAppFloat({ clearStickyBar = false }) {
   const { data: settings } = useSettings();
   const number = settings?.whatsapp_number || "";
+  if (isPlaceholder(number)) return null;
   return (
     <a
       data-testid="whatsapp-float"

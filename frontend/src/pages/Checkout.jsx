@@ -315,7 +315,13 @@ export default function Checkout() {
             <RadioGroup value={form.payment_method} onValueChange={(v) => set("payment_method", v)} className="space-y-3">
               {PAYMENTS.map((p) => {
                 const manualNumber = p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number;
-                const notConfigured = p.value !== "cod" && isPlaceholder(manualNumber);
+                // L3.1: cod_available now actually gates COD, not just bKash/Nagad's
+                // existing placeholder-number gate. Fails OPEN (available) while
+                // settings are still loading or the flag is missing entirely, so a
+                // slow/failed settings fetch can never make checkout impossible -
+                // only an explicit settings.cod_available === false disables it.
+                const codDisabled = settings ? settings.cod_available === false : false;
+                const notConfigured = p.value === "cod" ? codDisabled : isPlaceholder(manualNumber);
                 return (
                   <label
                     key={p.value}
@@ -330,7 +336,11 @@ export default function Checkout() {
                     <div className="flex-1">
                       <p className="font-medium text-aayna-charcoal text-sm">{p.label}</p>
                       <p className="text-xs text-aayna-taupe mt-0.5">
-                        {notConfigured ? "Not available yet — choose Cash on Delivery for now." : p.desc}
+                        {notConfigured
+                          ? p.value === "cod"
+                            ? "Not available right now."
+                            : "Not available yet — choose Cash on Delivery for now."
+                          : p.desc}
                       </p>
                       {form.payment_method === p.value && p.value !== "cod" && !notConfigured && (
                         <div className="mt-3 space-y-3" onClick={(e) => e.preventDefault()}>
