@@ -25,12 +25,30 @@ export const STATIC_PAGES = {
     ],
   },
   returns: {
+    // L3.1, founder-approved rules only. Deliberately not specified because
+    // no founder decision exists yet: who pays return shipping, packaging/
+    // tags requirements, what evidence (e.g. photos) is needed, refund
+    // processing time, refund method, courier collection process, or any
+    // category exclusions. None of that is invented here - see
+    // LAUNCH_BUSINESS_SETTINGS_AUDIT.md.
     title: "Return & Exchange Policy",
-    intro: "Our full return and exchange policy is still being finalized — please check back, or contact us if you have a question about a specific order.",
+    intro: "Here is how exchanges and refunds work at AAYNA.",
     sections: [
       {
-        heading: "Damaged or Incorrect Items",
-        body: "If your order arrives damaged or isn't what you ordered, please contact us with your order number and we'll help make it right.",
+        heading: "Exchange Window",
+        body: "You may request an exchange within 7 days of delivery.",
+      },
+      {
+        heading: "Condition for a Standard Exchange",
+        body: "For a standard exchange, the item must be undamaged and in the condition you received it.",
+      },
+      {
+        heading: "Damaged or Wrong Item",
+        body: "If your order arrives damaged, or you received the wrong item, it's eligible for assessment. Depending on the outcome, we will offer a replacement or a refund.",
+      },
+      {
+        heading: "Refunds",
+        body: "Refund eligibility is determined after assessment of the reported damage or quality issue.",
       },
       {
         heading: "How to Reach Us",
@@ -48,7 +66,7 @@ export const STATIC_PAGES = {
       },
       {
         heading: "How We Use It",
-        body: "Your information is used solely to confirm, deliver, and support your orders. We may contact you about your order via phone, WhatsApp, or SMS.",
+        body: "Your information is used solely to confirm, deliver, and support your orders. We may use the contact information you provide to communicate with you about your order.",
       },
       {
         heading: "Data Sharing",
