@@ -1,96 +1,40 @@
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getProducts } from "@/lib/api";
 import { useCategories } from "@/hooks/useStore";
-import ProductGrid from "@/components/ProductGrid";
+import TheEdit from "@/components/TheEdit";
 import { useSeo } from "@/lib/seo";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-const SORTS = [
-  { value: "newest", label: "Newest" },
-  { value: "price_low", label: "Price: Low to High" },
-  { value: "price_high", label: "Price: High to Low" },
-  { value: "best_seller", label: "Best Sellers" },
-];
+// The Edit — Shop (D2, concept-d2-the-edit.html). "All" is active when
+// arriving directly at /shop; ?category=slug preselects a category, mirroring
+// the previous Shop.jsx's own query-param pattern so old /shop?category=...
+// links keep working.
+const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
 
 export default function Shop() {
   const [params, setParams] = useSearchParams();
-  const { data: categories = [] } = useCategories();
+  const { data: allCategories = [] } = useCategories();
+  const categories = allCategories.filter((c) => EDIT_CATEGORY_SLUGS.includes(c.slug));
 
-  const category = params.get("category") || "all";
-  const sort = params.get("sort") || "newest";
+  const category = params.get("category") || null;
   const search = params.get("search") || "";
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", "shop", category, sort, search],
-    queryFn: () =>
-      getProducts({
-        sort,
-        ...(category !== "all" ? { category } : {}),
-        ...(search ? { search } : {}),
-      }),
-  });
-
   useSeo({
-    title: search ? `Search: ${search}` : "Shop All",
-    description: "Browse the full AAYNA collection of women's accessories — earrings, necklaces, rings and more.",
+    title: search ? `Search: ${search}` : "The Edit",
+    description: "Browse the AAYNA edit — earrings, necklaces and rings, women's accessories in Bangladesh.",
   });
 
-  const updateParam = (key, value) => {
+  const handleCategoryChange = (slug) => {
     const next = new URLSearchParams(params);
-    if (value && value !== "all") next.set(key, value);
-    else next.delete(key);
+    if (slug) next.set("category", slug);
+    else next.delete("category");
     setParams(next);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-      <div className="mb-8 md:mb-10">
-        <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-2">The Collection</p>
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-aayna-charcoal">Shop All</h1>
-        <p className="text-aayna-taupe mt-2">
-          {search ? `Showing results for "${search}"` : "Browse our full collection of accessories."}
-        </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8 bg-white border border-aayna-beige p-4">
-        <div className="flex-1">
-          <label className="block text-xs text-aayna-taupe mb-1.5">Category</label>
-          <Select value={category} onValueChange={(v) => updateParam("category", v)}>
-            <SelectTrigger data-testid="filter-category" className="bg-white border-aayna-beige h-11">
-              <SelectValue placeholder="All categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs text-aayna-taupe mb-1.5">Sort by</label>
-          <Select value={sort} onValueChange={(v) => updateParam("sort", v)}>
-            <SelectTrigger data-testid="filter-sort" className="bg-white border-aayna-beige h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORTS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <p className="text-sm text-aayna-taupe mb-4">{products.length} products</p>
-      <ProductGrid products={products} loading={isLoading} />
-    </div>
+    <TheEdit
+      categories={categories}
+      activeCategory={category}
+      onCategoryChange={handleCategoryChange}
+      search={search}
+    />
   );
 }
