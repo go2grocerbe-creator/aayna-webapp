@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingBag, Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/context/CartContext";
 import { useCategories } from "@/hooks/useStore";
 
-const navLinks = [
-  { to: "/", label: "Home" },
-  { to: "/shop", label: "Shop" },
-];
+// Restrained D1.6-D3 header treatment: the visible desktop bar shows only
+// AAYNA / Shop / Search / Bag (Home is reachable via the AAYNA wordmark,
+// matching the prototypes' own nav; "The Edit" is /shop's own page title,
+// not a second link to the same destination). Track Order, Contact, and
+// the full category list are NOT removed from the site - they remain in
+// the mobile menu (unchanged below) and in the footer (unchanged), which is
+// the explicitly-approved pattern for keeping secondary destinations
+// reachable without cluttering the restrained desktop bar.
+const navLinks = [{ to: "/shop", label: "Shop" }];
 
 export default function Header() {
   const { count } = useCart();
@@ -30,11 +35,6 @@ export default function Header() {
     }
   };
 
-  const linkClass = ({ isActive }) =>
-    `text-sm font-medium font-body transition-colors hover:text-aayna-burgundy ${
-      isActive ? "text-aayna-burgundy" : "text-aayna-charcoal"
-    }`;
-
   return (
     <header className="sticky top-0 z-40 bg-aayna-cream/95 backdrop-blur border-b border-aayna-beige">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,9 +51,13 @@ export default function Header() {
                 {/* FOUNDER ASSET REQUIRED — FINAL LOGO: restrained text wordmark until an
                     approved logo file exists (Brand Book gives a direction, not a final asset). */}
                 <div className="p-6 border-b border-aayna-beige">
-                  <span className="font-display text-2xl font-semibold text-aayna-burgundy tracking-[0.08em]">
+                  <Link
+                    to="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="font-display text-2xl font-semibold text-aayna-burgundy tracking-[0.08em]"
+                  >
                     AAYNA
-                  </span>
+                  </Link>
                 </div>
                 <nav className="flex flex-col p-4">
                   {navLinks.map((l) => (
@@ -102,33 +106,22 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
+          {/* Desktop nav — restrained: Shop only. The mobile Sheet trigger is
+              md:hidden, so on desktop the reachable path for Track Order /
+              Contact / the full category list is the footer's Shop/Help
+              columns (unchanged) - the explicitly-approved pattern for this
+              restrained header. Mobile keeps everything in the Sheet below. */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((l) => (
-              <NavLink key={l.to} to={l.to} data-testid={`nav-${l.label.toLowerCase()}`} className={linkClass}>
+              <Link
+                key={l.to}
+                to={l.to}
+                data-testid={`nav-${l.label.toLowerCase()}`}
+                className="text-sm font-medium font-body text-aayna-burgundy border-b border-aayna-burgundy pb-0.5"
+              >
                 {l.label}
-              </NavLink>
+              </Link>
             ))}
-            <div className="relative group">
-              <button className="text-sm font-medium font-body text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
-                Categories
-              </button>
-              <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="bg-white border border-aayna-beige shadow-lg rounded-sm py-2 w-52">
-                  {categories.map((c) => (
-                    <Link
-                      key={c.slug}
-                      to={`/category/${c.slug}`}
-                      className="block px-4 py-2 text-sm text-aayna-charcoal hover:bg-aayna-mist hover:text-aayna-burgundy transition-colors"
-                    >
-                      {c.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <NavLink to="/track-order" className={linkClass}>Track Order</NavLink>
-            <NavLink to="/contact" className={linkClass}>Contact</NavLink>
           </nav>
 
           {/* Actions */}
