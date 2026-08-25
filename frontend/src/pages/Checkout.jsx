@@ -2,7 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { getDistricts, checkout } from "@/lib/api";
 import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
@@ -18,6 +18,15 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSeo } from "@/lib/seo";
 
+// D5 - function-first checkout. Same single-scroll-form architecture as
+// before (there is no real hide/show wizard here to preserve - every
+// section has always been visible in one <form>, one submit). This pass
+// keeps that exact interaction model and layers on: a numbered progress
+// strip derived from existing validation state (not a new state machine),
+// quiet scroll-to-section "back" links instead of a fake step transition,
+// and calmer D2-D4-consistent presentation. Validation rules, field set,
+// payment gating, delivery calculation, and the order request itself are
+// untouched.
 const PHONE_RE = /^(?:\+?880|0)1[3-9]\d{8}$/;
 
 const PAYMENTS = [
@@ -25,6 +34,20 @@ const PAYMENTS = [
   { value: "bkash", label: "bKash (Manual)", desc: "Send money, then add your transaction ID." },
   { value: "nagad", label: "Nagad (Manual)", desc: "Send money, then add your transaction ID." },
 ];
+
+const STEPS = [
+  { key: "contact", num: "01", label: "Contact" },
+  { key: "delivery", num: "02", label: "Delivery" },
+  { key: "payment", num: "03", label: "Payment" },
+  { key: "summary", num: "04", label: "Summary" },
+];
+
+const FIELD_TESTID = {
+  customer_name: "checkout-name",
+  customer_phone: "checkout-phone",
+  district: "checkout-district",
+  delivery_address: "checkout-address",
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -66,21 +89,46 @@ export default function Checkout() {
 
   const total = subtotal + deliveryCharge;
 
+  // Presentation-only progress read from the same fields/validation the
+  // form already has - not a second source of truth, not a gate.
+  const cleanedPhone = form.customer_phone.replace(/[\s-]/g, "");
+  const contactDone = !!form.customer_name.trim() && PHONE_RE.test(cleanedPhone);
+  const deliveryDone = !!form.district && !!form.delivery_address.trim();
+  const paymentDone = !!form.payment_method;
+  const stepStatus = (key) => {
+    if (key === "contact") return contactDone ? "complete" : "current";
+    if (key === "delivery") return !contactDone ? "upcoming" : deliveryDone ? "complete" : "current";
+    if (key === "payment") return !(contactDone && deliveryDone) ? "upcoming" : paymentDone ? "complete" : "current";
+    return contactDone && deliveryDone && paymentDone ? "current" : "upcoming";
+  };
+  const goToSection = (key) => {
+    document.getElementById(`checkout-section-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const validate = () => {
     const e = {};
     if (!form.customer_name.trim()) e.customer_name = "Full name is required";
     if (!form.customer_phone.trim()) e.customer_phone = "Phone number is required";
-    else if (!PHONE_RE.test(form.customer_phone.replace(/[\s-]/g, "")))
+    else if (!PHONE_RE.test(cleanedPhone))
       e.customer_phone = "Enter a valid Bangladesh number (e.g. 01712345678)";
     if (!form.district) e.district = "Please select your district";
     if (!form.delivery_address.trim()) e.delivery_address = "Delivery address is required";
     if (!form.payment_method) e.payment_method = "Select a payment method";
     setErrors(e);
+    if (Object.keys(e).length > 0) {
+      const firstKey = Object.keys(FIELD_TESTID).find((k) => e[k]);
+      const target = firstKey
+        ? document.querySelector(`[data-testid="${FIELD_TESTID[firstKey]}"]`)
+        : document.getElementById("checkout-section-payment");
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus?.();
+    }
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
+    if (submitting) return;
     if (!validate()) {
       toast.error("Please fix the highlighted fields");
       return;
@@ -104,13 +152,15 @@ export default function Checkout() {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <div className="h-20 w-20 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-6">
-          <ShoppingBag className="h-9 w-9 text-aayna-burgundy" />
-        </div>
-        <h1 className="font-display text-3xl font-bold text-aayna-charcoal">Your cart is empty</h1>
-        <Link to="/shop" className="inline-flex h-12 px-8 items-center bg-aayna-coral text-white font-semibold mt-6 hover:bg-aayna-coral-dark transition-colors">
-          Start Shopping
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 text-center">
+        <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-2">AAYNA · Checkout</p>
+        <h1 className="font-display font-semibold text-3xl md:text-4xl text-aayna-burgundy-dark">Checkout</h1>
+        <p className="text-aayna-taupe text-sm mt-3">Nothing to check out.</p>
+        <Link
+          to="/shop"
+          className="inline-flex items-center gap-1.5 mt-7 text-aayna-burgundy font-medium min-h-[44px] hover:underline underline-offset-2"
+        >
+          Return to The Edit <span aria-hidden="true">→</span>
         </Link>
       </div>
     );
@@ -122,41 +172,102 @@ export default function Checkout() {
     }`;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-      <h1 className="font-display text-4xl md:text-5xl font-bold text-aayna-charcoal mb-8">Checkout</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+      <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-2">The Selection · Checkout</p>
+      <h1 className="font-display font-semibold text-3xl md:text-5xl text-aayna-burgundy-dark mb-8 md:mb-10">Checkout</h1>
 
-      <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
+      {/* Progress strip - reflects real form state, not a hidden-step gate */}
+      <nav aria-label="Checkout progress" className="flex flex-wrap gap-x-6 gap-y-2 border-y border-aayna-beige py-3 mb-10 md:mb-14">
+        {STEPS.map((s) => {
+          const status = stepStatus(s.key);
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => goToSection(s.key)}
+              className={`inline-flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] uppercase min-h-[44px] transition-colors ${
+                status === "current"
+                  ? "text-aayna-burgundy"
+                  : status === "complete"
+                  ? "text-aayna-charcoal"
+                  : "text-aayna-taupe/70"
+              }`}
+            >
+              {status === "complete" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <span aria-hidden="true">{s.num}</span>}
+              {s.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
         {/* Form fields */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-aayna-beige p-5 sm:p-6">
-            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 1</p>
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Contact</h2>
+        <div className="md:col-span-7 space-y-10">
+          <div id="checkout-section-contact">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">01 — Contact</p>
+            <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Contact</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Name *</label>
-                <input data-testid="checkout-name" className={inputCls("customer_name")} value={form.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Your full name" />
-                {errors.customer_name && <p className="text-xs text-red-700 mt-1">{errors.customer_name}</p>}
+                <label htmlFor="checkout-name" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Name *</label>
+                <input
+                  id="checkout-name"
+                  data-testid="checkout-name"
+                  autoComplete="name"
+                  className={inputCls("customer_name")}
+                  value={form.customer_name}
+                  onChange={(e) => set("customer_name", e.target.value)}
+                  placeholder="Your full name"
+                  aria-invalid={!!errors.customer_name}
+                  aria-describedby={errors.customer_name ? "checkout-name-error" : undefined}
+                />
+                {errors.customer_name && <p id="checkout-name-error" className="text-xs text-red-700 mt-1">{errors.customer_name}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Phone Number *</label>
-                <input data-testid="checkout-phone" className={inputCls("customer_phone")} value={form.customer_phone} onChange={(e) => set("customer_phone", e.target.value)} placeholder="01712345678" />
-                {errors.customer_phone && <p className="text-xs text-red-700 mt-1">{errors.customer_phone}</p>}
+                <label htmlFor="checkout-phone" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Phone Number *</label>
+                <input
+                  id="checkout-phone"
+                  data-testid="checkout-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className={inputCls("customer_phone")}
+                  value={form.customer_phone}
+                  onChange={(e) => set("customer_phone", e.target.value)}
+                  placeholder="01712345678"
+                  aria-invalid={!!errors.customer_phone}
+                  aria-describedby={errors.customer_phone ? "checkout-phone-error" : undefined}
+                />
+                {errors.customer_phone && <p id="checkout-phone-error" className="text-xs text-red-700 mt-1">{errors.customer_phone}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Email (optional)</label>
-                <input data-testid="checkout-email" type="email" className={inputCls("customer_email")} value={form.customer_email} onChange={(e) => set("customer_email", e.target.value)} placeholder="you@email.com" />
+                <label htmlFor="checkout-email" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Email (optional)</label>
+                <input
+                  id="checkout-email"
+                  data-testid="checkout-email"
+                  type="email"
+                  autoComplete="email"
+                  className={inputCls("customer_email")}
+                  value={form.customer_email}
+                  onChange={(e) => set("customer_email", e.target.value)}
+                  placeholder="you@email.com"
+                />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-aayna-beige p-5 sm:p-6">
-            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 2</p>
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Delivery Information</h2>
+          <div id="checkout-section-delivery">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">02 — Delivery</p>
+            <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Delivery Information</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">District *</label>
+                <label htmlFor="checkout-district" className="block text-sm font-medium text-aayna-charcoal mb-1.5">District *</label>
                 <Select value={form.district} onValueChange={(v) => set("district", v)}>
-                  <SelectTrigger data-testid="checkout-district" className={`h-11 bg-white ${errors.district ? "border-red-500" : "border-aayna-beige"}`}>
+                  <SelectTrigger
+                    id="checkout-district"
+                    data-testid="checkout-district"
+                    aria-invalid={!!errors.district}
+                    aria-describedby={errors.district ? "checkout-district-error" : undefined}
+                    className={`h-11 bg-white ${errors.district ? "border-red-500" : "border-aayna-beige"}`}
+                  >
                     <SelectValue placeholder="Select district" />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
@@ -165,24 +276,42 @@ export default function Checkout() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.district && <p className="text-xs text-red-700 mt-1">{errors.district}</p>}
+                {errors.district && <p id="checkout-district-error" className="text-xs text-red-700 mt-1">{errors.district}</p>}
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Address *</label>
-                <textarea data-testid="checkout-address" rows={3} className={`${inputCls("delivery_address")} h-auto py-2.5 resize-none`} value={form.delivery_address} onChange={(e) => set("delivery_address", e.target.value)} placeholder="House, road, area, landmark..." />
-                {errors.delivery_address && <p className="text-xs text-red-700 mt-1">{errors.delivery_address}</p>}
+                <label htmlFor="checkout-address" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Address *</label>
+                <textarea
+                  id="checkout-address"
+                  data-testid="checkout-address"
+                  autoComplete="street-address"
+                  rows={3}
+                  className={`${inputCls("delivery_address")} h-auto py-2.5 resize-none`}
+                  value={form.delivery_address}
+                  onChange={(e) => set("delivery_address", e.target.value)}
+                  placeholder="House, road, area, landmark..."
+                  aria-invalid={!!errors.delivery_address}
+                  aria-describedby={errors.delivery_address ? "checkout-address-error" : undefined}
+                />
+                {errors.delivery_address && <p id="checkout-address-error" className="text-xs text-red-700 mt-1">{errors.delivery_address}</p>}
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-aayna-charcoal mb-1.5">Delivery Note (optional)</label>
-                <input data-testid="checkout-note" className={inputCls("delivery_note")} value={form.delivery_note} onChange={(e) => set("delivery_note", e.target.value)} placeholder="Any instructions?" />
+                <label htmlFor="checkout-note" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Delivery Note (optional)</label>
+                <input
+                  id="checkout-note"
+                  data-testid="checkout-note"
+                  className={inputCls("delivery_note")}
+                  value={form.delivery_note}
+                  onChange={(e) => set("delivery_note", e.target.value)}
+                  placeholder="Any instructions?"
+                />
               </div>
             </div>
           </div>
 
           {/* Payment */}
-          <div className="bg-white border border-aayna-beige p-5 sm:p-6">
-            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 3</p>
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Payment Method</h2>
+          <div id="checkout-section-payment">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">03 — Payment</p>
+            <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Payment Method</h2>
             <RadioGroup value={form.payment_method} onValueChange={(v) => set("payment_method", v)} className="space-y-3">
               {PAYMENTS.map((p) => {
                 const manualNumber = p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number;
@@ -233,12 +362,12 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border border-aayna-beige p-5 sm:p-6 sticky top-24">
-            <p className="text-aayna-burgundy text-xs font-bold tracking-[0.2em] uppercase mb-1">Step 4</p>
-            <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-4">Order Summary</h2>
-            <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar mb-4">
+        {/* Summary - anchored by hairlines, not a boxed card, matching The Selection */}
+        <div className="md:col-span-5" id="checkout-section-summary">
+          <div className="md:sticky md:top-28">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">04 — Summary</p>
+            <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Order Summary</h2>
+            <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar mb-4" aria-label="Items in your order">
               {items.map((i) => (
                 <div key={i.product_id} className="flex gap-3">
                   <div className="relative flex-shrink-0">
@@ -257,20 +386,21 @@ export default function Checkout() {
               <div className="flex justify-between"><span className="text-aayna-taupe">Subtotal</span><span className="font-semibold">{formatBDT(subtotal)}</span></div>
               <div className="flex justify-between">
                 <span className="text-aayna-taupe">Delivery {form.district ? `(${form.district})` : ""}</span>
-                <span data-testid="checkout-delivery" className="font-semibold">{form.district ? formatBDT(deliveryCharge) : "—"}</span>
+                <span data-testid="checkout-delivery" className="font-semibold">{form.district ? formatBDT(deliveryCharge) : "Calculated at checkout"}</span>
               </div>
             </div>
             <div className="border-t border-aayna-beige mt-4 pt-4 flex justify-between items-baseline">
-              <span className="font-semibold text-aayna-charcoal">Total</span>
-              <span data-testid="checkout-total" className="font-bold text-aayna-burgundy text-xl">{formatBDT(total)}</span>
+              <span className="font-display text-lg text-aayna-charcoal">Total</span>
+              <span data-testid="checkout-total" className="font-display text-2xl font-semibold text-aayna-burgundy">{formatBDT(total)}</span>
             </div>
             <button
               data-testid="place-order-button"
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full h-12 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              aria-busy={submitting}
+              className="mt-5 w-full h-12 md:h-14 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {submitting ? "Placing Order..." : "Place Order"}
             </button>
             <p className="text-xs text-aayna-taupe text-center mt-3">No account needed. We'll confirm your order shortly.</p>
