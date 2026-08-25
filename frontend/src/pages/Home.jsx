@@ -6,7 +6,7 @@ import { useSettings, useCategories } from "@/hooks/useStore";
 import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
 import { useSeo } from "@/lib/seo";
-import { effectivePrice, formatBDT } from "@/lib/format";
+import { effectivePrice, formatBDT, isOutOfStock } from "@/lib/format";
 
 // The Digital Mirror homepage (D1.6). Replaces the previous module-stack
 // homepage (Shop by Category grid / New Arrivals grid / Material Trust
@@ -64,25 +64,33 @@ export default function Home() {
   // panel — real product data, cached, no per-hover network wait. Called
   // explicitly (not in a loop/map) since hooks must run in a fixed order;
   // MIRROR_CATEGORIES has exactly three entries.
+  // limit: 3, not 1 - a sold-out piece shouldn't be the one thing a visitor
+  // sees when previewing a category, so the first in-stock item among a
+  // small candidate set leads (falls back to the top pick if the whole
+  // category happens to be out of stock).
+  const preferInStock = (data) => data.find((p) => !isOutOfStock(p)) || data[0];
   const earringsPreview = useQuery({
     queryKey: ["products", "mirror-preview", "earrings"],
-    queryFn: () => getProducts({ category: "earrings", sort: "best_seller", limit: 1 }),
+    queryFn: () => getProducts({ category: "earrings", sort: "best_seller", limit: 3 }),
+    select: preferInStock,
     staleTime: 5 * 60_000,
   });
   const necklacesPreview = useQuery({
     queryKey: ["products", "mirror-preview", "necklaces"],
-    queryFn: () => getProducts({ category: "necklaces", sort: "best_seller", limit: 1 }),
+    queryFn: () => getProducts({ category: "necklaces", sort: "best_seller", limit: 3 }),
+    select: preferInStock,
     staleTime: 5 * 60_000,
   });
   const ringsPreview = useQuery({
     queryKey: ["products", "mirror-preview", "rings"],
-    queryFn: () => getProducts({ category: "rings", sort: "best_seller", limit: 1 }),
+    queryFn: () => getProducts({ category: "rings", sort: "best_seller", limit: 3 }),
+    select: preferInStock,
     staleTime: 5 * 60_000,
   });
   const previewQueries = { earrings: earringsPreview, necklaces: necklacesPreview, rings: ringsPreview };
 
   const activeSlug = hovered || committed;
-  const previewProduct = activeSlug ? previewQueries[activeSlug]?.data?.[0] : null;
+  const previewProduct = activeSlug ? previewQueries[activeSlug]?.data : null;
 
   const { data: editProducts = [] } = useQuery({
     queryKey: ["products", "your-edit", committed],
@@ -90,6 +98,10 @@ export default function Home() {
       committed
         ? getProducts({ category: committed, sort: "best_seller", limit: 4 })
         : getProducts({ new_arrival: true, limit: 4 }),
+    // Featuring a sold-out piece as the hero recommendation isn't a real
+    // storefront experience, so an in-stock item leads whenever one exists
+    // in the fetched set - a stable reorder, not a different query/limit.
+    select: (data) => [...data].sort((a, b) => Number(isOutOfStock(a)) - Number(isOutOfStock(b))),
   });
   const [heroProduct, ...supportProducts] = editProducts;
 
