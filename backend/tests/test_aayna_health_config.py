@@ -16,8 +16,12 @@ def test_health_returns_safe_status():
     assert d["status"] == "ok"
     assert d["app"] == "aayna"
     assert "environment" in d
-    # only these three keys — nothing else
-    assert set(d.keys()) == {"status", "app", "environment"}
+    # L1: `database` is the configured DB_NAME (never the Mongo URI/credentials)
+    # so automated tests can verify they're pointed at an isolated test database
+    # before running anything — see backend/tests/conftest.py and ENVIRONMENTS.md.
+    assert "database" in d
+    # only these four keys — nothing else
+    assert set(d.keys()) == {"status", "app", "environment", "database"}
 
 
 def test_health_does_not_leak_secrets():

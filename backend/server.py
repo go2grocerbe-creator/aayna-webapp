@@ -24,7 +24,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from db import db, client, now_iso, effective_price
-from auth import auth_router, seed_admin, ensure_indexes, validate_security_config
+from auth import auth_router, seed_admin, ensure_indexes, validate_security_config, IS_PRODUCTION
 from storage import storage_router, files_router, init_storage_safe
 from admin_routes import admin_router
 
@@ -134,6 +134,17 @@ class TrackRequest(BaseModel):
 # Seeding
 # ---------------------------------------------------------------------------
 async def seed_database():
+    # Demo catalogue/settings seeding is only ever meant for local dev/QA.
+    # Production must not silently fill an empty launch DB with placeholder
+    # products - that requires explicit intent (L1 - seed protection).
+    if IS_PRODUCTION and str(os.environ.get("ALLOW_PRODUCTION_SEED", "")).strip().lower() not in ("1", "true", "yes", "on"):
+        if await db.categories.count_documents({}) == 0 and await db.products.count_documents({}) == 0:
+            logger.warning(
+                "Skipping demo catalogue seed: APP_ENV=production and ALLOW_PRODUCTION_SEED is not set. "
+                "Set ALLOW_PRODUCTION_SEED=true if you actually want the demo catalogue seeded here."
+            )
+        return
+
     if await db.categories.count_documents({}) == 0:
         await db.categories.insert_many([{**c} for c in SEED_CATEGORIES])
         logger.info("Seeded %d categories", len(SEED_CATEGORIES))
@@ -171,11 +182,15 @@ async def root():
 
 @api_router.get("/health")
 async def health():
-    """Public liveness check. Fast and safe — does NOT touch the database."""
+    """Public liveness check. Fast and safe — does NOT touch the database.
+    `database` is the configured DB_NAME (never the Mongo URI/credentials) so
+    automated tests can assert they're pointed at an isolated test database
+    before running anything - see backend/tests/conftest.py and ENVIRONMENTS.md."""
     return {
         "status": "ok",
         "app": "aayna",
         "environment": (os.environ.get("APP_ENV", "development") or "development").strip().lower(),
+        "database": os.environ.get("DB_NAME", ""),
     }
 
 
