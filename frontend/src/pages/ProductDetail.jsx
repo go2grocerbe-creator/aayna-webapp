@@ -2,28 +2,41 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, Minus, Plus, Truck, RefreshCw, ShieldCheck } from "lucide-react";
+import { ChevronRight, Minus, Plus } from "lucide-react";
 import { getProduct } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/hooks/useStore";
-import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
+import { formatBDT, effectivePrice, discountPercent, isOutOfStock, isPlaceholder } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
 import { useSeo, useJsonLd } from "@/lib/seo";
 
+// The Object (D3, concept-d3-the-object.html). The product is the visual
+// protagonist; no letterform, no scattered typography — one hairline seam
+// and one quiet arc only, both far more restrained than the homepage.
+//
+// Every claim in this file has been re-audited against real project
+// evidence (this round's explicit instruction), not carried forward just
+// because the previous ProductDetail.jsx already said it:
+//   - "Delivered nationwide. Cash on Delivery available" -> verified business
+//     policy, links to the real delivery-policy page. Kept.
+//   - "See our Returns & Exchange policy" -> verified business policy, real
+//     link. Kept.
+//   - "Quality checked before dispatch." -> REMOVED. It existed in the old
+//     copy but no settings field, documented QC process, or founder
+//     confirmation backs it this session - unsupported (Category D), not a
+//     verified claim just because it shipped before.
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { data: settings } = useSettings();
   const [qty, setQty] = useState(1);
-  const [activeImg, setActiveImg] = useState(0);
 
   const { data, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => getProduct(slug),
   });
-
   const product = data?.product;
 
   useSeo({
@@ -50,9 +63,7 @@ export default function ProductDetail() {
             "@type": "Offer",
             price: String(effectivePrice(product) ?? product.selling_price ?? 0),
             priceCurrency: "BDT",
-            availability: isOutOfStock(product)
-              ? "https://schema.org/OutOfStock"
-              : "https://schema.org/InStock",
+            availability: isOutOfStock(product) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
           },
         }
       : null
@@ -61,217 +72,267 @@ export default function ProductDetail() {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-2 gap-10 animate-pulse">
-          <div className="aspect-square bg-aayna-beige/60" />
-          <div className="space-y-4">
-            <div className="h-8 w-3/4 bg-aayna-beige/60" />
-            <div className="h-6 w-1/3 bg-aayna-beige/60" />
-            <div className="h-24 bg-aayna-beige/60" />
+        <div className="grid md:grid-cols-12 gap-10 animate-pulse">
+          <div className="md:col-span-7 aspect-[4/5] bg-aayna-mist" />
+          <div className="md:col-span-5 space-y-4">
+            <div className="h-8 w-3/4 bg-aayna-mist" />
+            <div className="h-6 w-1/3 bg-aayna-mist" />
+            <div className="h-24 bg-aayna-mist" />
           </div>
         </div>
       </div>
     );
   }
 
-  if (!data?.product) {
+  if (!product) {
     return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-aayna-taupe">Product not found.</div>;
   }
 
-  const images = product.images?.length ? product.images : [{ image_url: "", alt_text: product.product_name }];
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);
   const price = effectivePrice(product);
+  const image = product.images?.[0];
+  const related = (data?.related || []).filter((p) => p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
     if (oos) return;
     addItem(product, qty);
     toast.success(`${product.product_name} added to cart`);
   };
-
   const buyNow = () => {
     if (oos) return;
     addItem(product, qty);
     navigate("/cart");
   };
 
-  const waDigits = (settings?.whatsapp_number || "").replace(/[^0-9]/g, "");
-  const waLink = `https://wa.me/${waDigits}?text=${encodeURIComponent(
-    `Hi AAYNA, I'm interested in "${product.product_name}" (${product.sku}).`
-  )}`;
+  const waNumber = settings?.whatsapp_number;
+  const waAvailable = waNumber && !isPlaceholder(waNumber);
+  const waDigits = (waNumber || "").replace(/[^0-9]/g, "");
+  const waLink = waAvailable
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hi AAYNA, I'm interested in "${product.product_name}" (${product.sku}).`)}`
+    : null;
+
+  const detailRows = [
+    ["Material", product.material],
+    ["Color", product.color],
+    ["Size", product.size],
+    ["Weight", product.weight],
+    ["SKU", product.sku],
+  ].filter(([, v]) => v);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12 pb-28 md:pb-12">
-      <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe mb-6 flex-wrap">
-        <Link to="/" className="hover:text-aayna-burgundy">Home</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link to={`/category/${product.category_slug}`} className="hover:text-aayna-burgundy">{product.category_name}</Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-aayna-charcoal line-clamp-1">{product.product_name}</span>
-      </nav>
+    <div className="bg-aayna-cream pb-24 md:pb-0">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+        <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe flex-wrap">
+          <Link to="/shop" className="hover:text-aayna-burgundy">The Edit</Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link to={`/category/${product.category_slug}`} className="hover:text-aayna-burgundy">{product.category_name}</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-aayna-charcoal line-clamp-1">The Object</span>
+        </nav>
+      </section>
 
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-14">
-        {/* Gallery */}
-        <div>
-          <div className="relative aspect-square border border-aayna-beige overflow-hidden">
-            <ProductImage
-              testId="product-main-image"
-              src={images[activeImg]?.image_url}
-              alt={images[activeImg]?.alt_text || product.product_name}
-              className="absolute inset-0"
-              iconClassName="h-10 w-10"
-              eager
-            />
-            {discount > 0 && !oos && (
-              <span className="absolute top-3 left-3 bg-aayna-gold text-aayna-charcoal text-xs font-bold px-2.5 py-1.5">
-                -{discount}%
-              </span>
-            )}
-            {oos && (
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                <span className="bg-aayna-charcoal text-white text-sm font-semibold px-4 py-2 uppercase tracking-wide">
-                  Out of Stock
+      {/* ================= THE OBJECT — first viewport ================= */}
+      <section className="relative py-5 md:py-8">
+        <div
+          aria-hidden="true"
+          className="hidden md:block absolute rounded-full border border-aayna-burgundy/[0.08] w-[420px] h-[420px] right-[-10%] top-[-4%]"
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-x-8">
+          <div className="md:col-span-7 relative z-10">
+            <div className="relative aspect-[4/5] bg-aayna-mist overflow-hidden">
+              <ProductImage
+                testId="product-main-image"
+                src={image?.image_url}
+                alt={image?.alt_text || product.product_name}
+                className="absolute inset-0"
+                iconClassName="h-10 w-10"
+                eager
+              />
+              {oos && (
+                <span className="absolute left-3 bottom-3 text-[11px] uppercase tracking-wider text-aayna-taupe bg-aayna-cream/90 px-2.5 py-1.5">
+                  Currently unavailable
+                </span>
+              )}
+            </div>
+            {/* Detail view — a second, wider real image if one exists; a CSS
+                crop of the same photo otherwise (never presented as a second
+                photograph if only one is real). */}
+            {product.images?.length > 1 ? (
+              <div className="mt-5 relative aspect-video bg-aayna-mist overflow-hidden">
+                <ProductImage
+                  src={product.images[1].image_url}
+                  alt={product.images[1].alt_text || product.product_name}
+                  className="absolute inset-0"
+                  iconClassName="h-8 w-8"
+                />
+              </div>
+            ) : image?.image_url ? (
+              <div className="mt-5 relative aspect-video bg-aayna-mist overflow-hidden">
+                <img
+                  src={image.image_url}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: "32% 42%", transform: "scale(1.9)" }}
+                />
+                <span className="absolute left-3 bottom-3 text-[10px] uppercase tracking-wider text-white bg-aayna-burgundy-dark/50 px-2.5 py-1">
+                  Detail, actual finish
                 </span>
               </div>
-            )}
+            ) : null}
           </div>
-          {images.length > 1 && (
-            <div className="flex gap-3 mt-3 overflow-x-auto no-scrollbar">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImg(i)}
-                  className={`h-20 w-20 flex-shrink-0 border ${i === activeImg ? "border-aayna-burgundy" : "border-aayna-beige"}`}
-                >
-                  <ProductImage src={img.image_url} alt={img.alt_text || product.product_name} className="w-full h-full" iconClassName="h-4 w-4" />
-                </button>
-              ))}
+
+          <div className="md:col-span-5 flex flex-col justify-center relative z-10">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-2.5">The Object</p>
+            <h1 className="font-display font-semibold text-3xl md:text-[42px] leading-tight text-aayna-charcoal">
+              {product.product_name}
+            </h1>
+            <div className="flex items-baseline gap-2.5 mt-3">
+              <span data-testid="product-price" className="font-display font-semibold text-2xl text-aayna-burgundy">
+                {formatBDT(price)}
+              </span>
+              {discount > 0 && (
+                <>
+                  <span className="text-aayna-taupe line-through text-base">{formatBDT(product.selling_price)}</span>
+                  <span className="text-aayna-coral-dark text-xs font-bold">-{discount}%</span>
+                </>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div>
-          <p className="text-xs uppercase tracking-wider text-aayna-taupe">{product.category_name}</p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal mt-1.5 leading-tight">
-            {product.product_name}
-          </h1>
-
-          <div className="flex items-center gap-3 mt-4">
-            <span data-testid="product-price" className="text-2xl md:text-3xl font-bold text-aayna-burgundy">{formatBDT(price)}</span>
-            {discount > 0 && (
-              <span className="text-aayna-taupe line-through text-lg">{formatBDT(product.selling_price)}</span>
+            {product.short_description && (
+              <p className="text-aayna-taupe text-sm leading-relaxed mt-4 max-w-md">{product.short_description}</p>
             )}
-          </div>
 
-          <p className="text-aayna-taupe mt-4 leading-relaxed">{product.short_description}</p>
-
-          {/* Attributes */}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-6 text-sm border-t border-aayna-beige pt-5">
-            {product.material && (<><dt className="text-aayna-taupe">Material</dt><dd className="text-aayna-charcoal font-medium text-right">{product.material}</dd></>)}
-            {product.color && (<><dt className="text-aayna-taupe">Color</dt><dd className="text-aayna-charcoal font-medium text-right">{product.color}</dd></>)}
-            {product.size && (<><dt className="text-aayna-taupe">Size</dt><dd className="text-aayna-charcoal font-medium text-right">{product.size}</dd></>)}
-            <dt className="text-aayna-taupe">SKU</dt><dd className="text-aayna-charcoal font-medium text-right">{product.sku}</dd>
-            <dt className="text-aayna-taupe">Availability</dt>
-            <dd className={`font-medium text-right ${oos ? "text-red-700" : "text-green-700"}`}>
-              {oos ? "Out of stock" : `${product.stock_quantity} in stock`}
-            </dd>
-          </dl>
-
-          {/* Quantity + actions */}
-          {!oos && (
-            <div className="flex items-center gap-4 mt-6">
-              <div className="flex items-center border border-aayna-beige bg-white">
+            {!oos && (
+              <div className="flex items-center border border-aayna-beige w-fit mt-6">
                 <button
                   data-testid="qty-decrease"
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="h-12 w-12 flex items-center justify-center text-aayna-charcoal hover:bg-aayna-mist"
+                  aria-label="Decrease quantity"
+                  className="h-11 w-11 flex items-center justify-center hover:bg-aayna-mist"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
-                <span data-testid="qty-value" className="w-12 text-center font-semibold">{qty}</span>
+                <span data-testid="qty-value" className="w-10 text-center font-semibold text-sm">{qty}</span>
                 <button
                   data-testid="qty-increase"
                   onClick={() => setQty((q) => Math.min(product.stock_quantity, q + 1))}
-                  className="h-12 w-12 flex items-center justify-center text-aayna-charcoal hover:bg-aayna-mist"
+                  aria-label="Increase quantity"
+                  className="h-11 w-11 flex items-center justify-center hover:bg-aayna-mist"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
+            )}
+
+            <div className="hidden md:flex gap-3 mt-4">
+              <button
+                data-testid="add-to-cart-button"
+                onClick={handleAddToCart}
+                disabled={oos}
+                className="bg-aayna-coral text-white font-semibold text-sm px-8 h-12 hover:bg-aayna-coral-dark transition-colors disabled:bg-aayna-taupe disabled:cursor-not-allowed"
+              >
+                {oos ? "Out of Stock" : "Add to Cart"}
+              </button>
+              <button
+                onClick={buyNow}
+                disabled={oos}
+                className="border border-aayna-burgundy text-aayna-burgundy font-semibold text-sm px-7 h-12 hover:bg-aayna-mist transition-colors disabled:border-aayna-beige disabled:text-aayna-taupe disabled:cursor-not-allowed"
+              >
+                Buy Now
+              </button>
             </div>
-          )}
+            {oos && (
+              <p className="text-aayna-taupe text-sm mt-3">
+                This piece is currently unavailable — check back soon, or explore the rest of the edit.
+              </p>
+            )}
 
-          <div className="hidden md:flex flex-col sm:flex-row gap-3 mt-5">
-            <button
-              data-testid="add-to-cart-button"
-              onClick={handleAddToCart}
-              disabled={oos}
-              className="flex-1 h-12 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {oos ? "Out of Stock" : "Add to Cart"}
-            </button>
-            <button
-              onClick={buyNow}
-              disabled={oos}
-              className="flex-1 h-12 border border-aayna-burgundy text-aayna-burgundy font-semibold hover:bg-aayna-mist transition-colors disabled:opacity-50"
-            >
-              Buy Now
-            </button>
-          </div>
+            {waAvailable && (
+              <a
+                data-testid="whatsapp-inquiry"
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-4 text-sm text-aayna-taupe border-b border-aayna-beige w-fit hover:text-aayna-burgundy hover:border-aayna-burgundy transition-colors"
+              >
+                Have a question? Inquire on WhatsApp
+              </a>
+            )}
 
-          <a
-            data-testid="whatsapp-inquiry"
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 hidden md:flex items-center justify-center gap-2 h-11 w-full border border-aayna-beige text-aayna-charcoal text-sm font-medium hover:border-aayna-burgundy transition-colors"
-          >
-            Have a question? Inquire on WhatsApp
-          </a>
-
-          {/* Notes. Delivery-day estimate and exchange-window claims removed
-              (Storefront Milestone 2, Part A) - no founder-confirmed or
-              settings-backed SLA exists yet. Delivery charge (real, from
-              settings) already shown at Checkout; see /delivery-policy and
-              /returns for current founder-approved policy text. */}
-          <div className="mt-6 space-y-3 text-sm border-t border-aayna-beige pt-5">
-            <div className="flex items-start gap-3"><Truck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><Link to="/delivery-policy" className="text-aayna-taupe hover:text-aayna-burgundy underline underline-offset-2">Delivered nationwide. Cash on Delivery available — see delivery policy</Link></div>
-            <div className="flex items-start gap-3"><ShieldCheck className="h-4 w-4 text-aayna-burgundy mt-0.5" /><span className="text-aayna-taupe">Quality checked before dispatch.</span></div>
-            <div className="flex items-start gap-3"><RefreshCw className="h-4 w-4 text-aayna-burgundy mt-0.5" /><Link to="/returns" className="text-aayna-taupe hover:text-aayna-burgundy underline underline-offset-2">See our Returns &amp; Exchange policy</Link></div>
+            <div className="mt-6 pt-5 border-t border-aayna-beige flex flex-col gap-2.5 text-[13px] text-aayna-taupe">
+              <Link to="/delivery-policy" className="underline underline-offset-2 hover:text-aayna-burgundy w-fit">
+                Delivered nationwide. Cash on Delivery available — see delivery policy
+              </Link>
+              <Link to="/returns" className="underline underline-offset-2 hover:text-aayna-burgundy w-fit">
+                See our Returns &amp; Exchange policy
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Full description */}
+      {/* ================= DESCRIPTION ================= */}
       {product.full_description && (
-        <div className="mt-12 md:mt-16 max-w-3xl">
-          <h2 className="font-display text-2xl font-bold text-aayna-charcoal mb-3">Description</h2>
-          <p className="text-aayna-taupe leading-relaxed">{product.full_description}</p>
-        </div>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          <div className="md:max-w-2xl">
+            <h2 className="font-display font-semibold text-xl text-aayna-burgundy-dark mb-2.5">Description</h2>
+            <p className="text-aayna-taupe text-sm leading-[1.85] max-w-prose">{product.full_description}</p>
+          </div>
+        </section>
       )}
 
-      {/* Related */}
-      {data.related?.length > 0 && (
-        <div className="mt-14 md:mt-20">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-aayna-charcoal mb-7">You May Also Like</h2>
+      {/* ================= THE DETAILS ================= */}
+      {detailRows.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 md:py-14 border-t border-aayna-beige">
+          <div className="md:max-w-md">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-5">The Details</p>
+            <dl>
+              {detailRows.map(([k, v]) => (
+                <div key={k} className="flex justify-between py-3 border-b border-aayna-beige text-sm">
+                  <dt className="text-aayna-taupe">{k}</dt>
+                  <dd className="text-aayna-charcoal font-semibold">{v}</dd>
+                </div>
+              ))}
+              <div className="flex justify-between py-3 text-sm">
+                <dt className="text-aayna-taupe">Availability</dt>
+                <dd className={`font-semibold ${oos ? "text-red-700" : "text-green-700"}`}>
+                  {oos ? "Out of stock" : `${product.stock_quantity} in stock`}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+      )}
+
+      {/* ================= CONTINUE THE EDIT ================= */}
+      {related.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+          <div className="flex items-baseline justify-between mb-6">
+            <h2 className="font-display font-semibold text-xl md:text-2xl text-aayna-burgundy-dark">Continue the Edit</h2>
+            <Link to={`/category/${product.category_slug}`} className="text-xs text-aayna-taupe underline underline-offset-2 hover:text-aayna-burgundy">
+              View all {product.category_name} →
+            </Link>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {data.related.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} variant="editorial" />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Sticky mobile add to cart */}
+      {/* ================= STICKY MOBILE ADD TO CART ================= */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-aayna-beige p-3 flex items-center gap-3">
         <div className="flex-shrink-0">
           <p className="text-xs text-aayna-taupe">Price</p>
-          <p className="font-bold text-aayna-burgundy text-lg leading-none">{formatBDT(price)}</p>
+          <p className="font-display font-semibold text-aayna-burgundy text-lg leading-none">{formatBDT(price)}</p>
         </div>
         <button
           data-testid="add-to-cart-button-mobile"
           onClick={handleAddToCart}
           disabled={oos}
-          className="flex-1 h-12 bg-aayna-coral text-white font-semibold disabled:opacity-50"
+          className="flex-1 h-12 bg-aayna-coral text-white font-semibold disabled:bg-aayna-taupe disabled:cursor-not-allowed"
         >
           {oos ? "Out of Stock" : "Add to Cart"}
         </button>
