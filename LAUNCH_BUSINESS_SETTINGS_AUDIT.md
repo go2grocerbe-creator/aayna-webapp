@@ -7,6 +7,13 @@ those 19 keys, nothing more. No admin credentials, secrets, API keys, or
 storage credentials are present in the settings collection or its public
 response.
 
+> **Update (L3.1, founder-approved):** the findings below reflect the state
+> at the time of this audit. See `LAUNCH_SETTINGS_BASELINE.md` for what was
+> actually approved and applied afterward — delivery fees, COD gating, the
+> Footer/Contact/WhatsAppFloat placeholder-exposure fixes, and the rewritten
+> Return/Exchange and Privacy policy text. This document is left as
+> originally written; it is the audit trail, not the current state.
+
 ## 1. Executive Summary
 
 Delivery (COD, ৳80/৳130), order/status workflow, and policy copy are all in
