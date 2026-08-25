@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getProducts } from "@/lib/api";
+import { isOutOfStock } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 
 // Shared product-discovery presentation (D2 "The Edit", concept-d2-the-edit.html).
@@ -72,7 +73,14 @@ export default function TheEdit({
         ...(activeCategory ? { category: activeCategory } : {}),
         ...(search ? { search } : {}),
       }),
-    select: (data) => (activeCategory ? data : data.filter((p) => allowedSlugs.has(p.category_slug))),
+    // L2.2: launch discovery is the six in-stock founder-approved products
+    // only. Real out-of-stock catalogue (e.g. the Rings item that isn't
+    // part of the initial launch) stays in aayna_dev untouched, just
+    // excluded from this discovery grid until intentionally restocked.
+    select: (data) => {
+      const inStock = data.filter((p) => !isOutOfStock(p));
+      return activeCategory ? inStock : inStock.filter((p) => allowedSlugs.has(p.category_slug));
+    },
   });
 
   return (

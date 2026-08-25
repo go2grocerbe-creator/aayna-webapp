@@ -96,12 +96,20 @@ export default function Home() {
     queryKey: ["products", "your-edit", committed],
     queryFn: () =>
       committed
-        ? getProducts({ category: committed, sort: "best_seller", limit: 4 })
-        : getProducts({ new_arrival: true, limit: 4 }),
-    // Featuring a sold-out piece as the hero recommendation isn't a real
-    // storefront experience, so an in-stock item leads whenever one exists
-    // in the fetched set - a stable reorder, not a different query/limit.
-    select: (data) => [...data].sort((a, b) => Number(isOutOfStock(a)) - Number(isOutOfStock(b))),
+        ? getProducts({ category: committed, sort: "best_seller", limit: 20 })
+        : getProducts({ new_arrival: true, sort: "newest", limit: 20 }),
+    // L2.2: launch discovery is in-stock Earrings/Necklaces/Rings only.
+    // Confirmed live before this fix - the uncommitted "New This Season"
+    // query has no category scope at all, and with the current catalogue
+    // it returned 4 out-of-stock/out-of-scope products and zero real
+    // launch products (all 4 happen to sort newest-first). committed
+    // category requests are already scoped server-side, but a category can
+    // still legitimately hold out-of-stock items (e.g. Rings), so both
+    // branches are filtered here rather than just reordered. limit raised
+    // from 4 to 20 so filtering has real candidates to work with instead of
+    // truncating to an all-excluded set.
+    select: (data) =>
+      data.filter((p) => !isOutOfStock(p) && MIRROR_CATEGORIES.some((c) => c.slug === p.category_slug)),
   });
   const [heroProduct, ...supportProducts] = editProducts;
 
