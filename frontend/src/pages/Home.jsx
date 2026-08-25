@@ -1,82 +1,97 @@
 import { Link } from "react-router-dom";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Gem, Layers, HeartHandshake, ChevronDown } from "lucide-react";
 import { getProducts } from "@/lib/api";
 import { useSettings, useCategories } from "@/hooks/useStore";
-import ProductGrid from "@/components/ProductGrid";
-import TrustBadges from "@/components/TrustBadges";
+import ProductCard from "@/components/ProductCard";
+import ProductImage from "@/components/ProductImage";
 import { useSeo } from "@/lib/seo";
+import { effectivePrice, formatBDT } from "@/lib/format";
 
-function SectionHeading({ title, subtitle, link, linkLabel }) {
-  return (
-    <div className="flex items-end justify-between mb-7 md:mb-9">
-      <div>
-        <h2 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal">{title}</h2>
-        {subtitle && <p className="text-aayna-taupe mt-2 text-sm md:text-base max-w-xl">{subtitle}</p>}
-      </div>
-      {link && (
-        <Link to={link} className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-aayna-burgundy hover:gap-2.5 transition-all whitespace-nowrap">
-          {linkLabel} <ArrowRight className="h-4 w-4" />
-        </Link>
-      )}
-    </div>
-  );
-}
+// The Digital Mirror homepage (D1.6). Replaces the previous module-stack
+// homepage (Shop by Category grid / New Arrivals grid / Material Trust
+// block / Best Sellers grid / three gradient editorial rectangles / Why
+// Shop With AAYNA badges) with the three-scene Arrival -> Reflection ->
+// Your Edit sequence approved in concept-d1-6-single-hover-letter.html.
+//
+// Scoped to the three curated categories only (Earrings/Necklaces/Rings) -
+// Hair Accessories and any zero-inventory category are intentionally not
+// part of this experience, though they remain fully reachable via the
+// header/footer category links, which are unchanged.
+const MIRROR_CATEGORIES = [
+  { slug: "earrings", label: "Earrings", letter: "E" },
+  { slug: "necklaces", label: "Necklaces", letter: "N" },
+  { slug: "rings", label: "Rings", letter: "R" },
+];
+const PREF_KEY = "aayna.selectedCategory";
 
-// Scene I (Arrival) fallback world — DESIGN.md "Fallback World-Building".
-// No campaign photography exists yet, so this must look like an intentional
-// AAYNA artboard, not a placeholder: concentric rings + faint "আয়না"
-// watermark (from the Brand Book's own cover/quote-block device), an
-// oversized cropped letterform (typography-as-image), a paired/echoed ring
-// pair (a restrained, structural nod to reflection), and a thin gold hairline
-// rule. CSS/type only — no images, no WebGL, no glassmorphism, no literal
-// mirror chrome.
-function HeroFallback() {
-  return (
-    <div className="absolute inset-0 bg-aayna-burgundy overflow-hidden">
-      <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full border border-white/15" />
-      <div className="absolute right-10 top-1/3 w-44 h-44 rounded-full border border-white/15" />
-      {/* paired/echoed shape — two offset thin rings, positioned toward the seam
-          so they relate to the transition into the type zone rather than
-          sitting isolated in a corner */}
-      <div className="absolute left-6 md:left-10 bottom-28 w-24 h-24 rounded-full border border-aayna-gold/25" />
-      <div className="absolute left-12 md:left-16 bottom-20 w-24 h-24 rounded-full border border-aayna-gold/15" />
-      {/* oversized cropped letterform — type as visual material, positioned at
-          the left (seam) edge so it approaches the type zone rather than
-          sitting inert in the field's outer corner (Scene I correction pass) */}
-      <span
-        aria-hidden="true"
-        className="absolute -bottom-16 -left-16 md:-left-24 font-display text-[16rem] leading-none text-white/[0.05] select-none"
-      >
-        A
-      </span>
-      <span
-        aria-hidden="true"
-        className="absolute -bottom-10 -right-4 font-display text-[10rem] leading-none text-white/5 select-none"
-      >
-        আয়না
-      </span>
-      {/* thin hairline rule */}
-      <div className="absolute right-16 bottom-16 w-16 h-px bg-aayna-gold/40" />
-    </div>
-  );
+function useLocalPreference() {
+  const [preference, setPreference] = useState(() => {
+    try {
+      return localStorage.getItem(PREF_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+  const choose = useCallback((slug) => {
+    setPreference(slug);
+    try {
+      if (slug) localStorage.setItem(PREF_KEY, slug);
+      else localStorage.removeItem(PREF_KEY);
+    } catch {
+      /* localStorage unavailable — preference just won't persist */
+    }
+  }, []);
+  return [preference, choose];
 }
 
 export default function Home() {
   const { data: settings } = useSettings();
   const { data: allCategories = [] } = useCategories();
-  // Merchandising surfaces only show categories that actually have something
-  // to buy right now (Visual QA Fix Sprint item 4) - the category itself
-  // stays untouched in Admin/DB either way, this is display-only.
-  const categories = allCategories.filter((c) => (c.product_count || 0) > 0);
-  const { data: newArrivals = [], isLoading: loadingNew } = useQuery({
-    queryKey: ["products", "new"],
-    queryFn: () => getProducts({ new_arrival: true, limit: 8 }),
+  const availableMirror = MIRROR_CATEGORIES.filter((c) =>
+    allCategories.some((real) => real.slug === c.slug && (real.product_count || 0) > 0)
+  );
+  const availableSlugs = new Set(availableMirror.map((c) => c.slug));
+
+  const [preference, choosePreference] = useLocalPreference();
+  const [hovered, setHovered] = useState(null); // category slug currently hovered/focused, or null
+  // Derived, not stored state — avoids an effect + a one-frame flicker back
+  // to the unpersonalized default before the effect would otherwise run,
+  // and only resolves to a category still actually shown in the nav.
+  const committed = preference && availableSlugs.has(preference) ? preference : null;
+
+  // One lightweight query per curated category for the Reflection preview
+  // panel — real product data, cached, no per-hover network wait. Called
+  // explicitly (not in a loop/map) since hooks must run in a fixed order;
+  // MIRROR_CATEGORIES has exactly three entries.
+  const earringsPreview = useQuery({
+    queryKey: ["products", "mirror-preview", "earrings"],
+    queryFn: () => getProducts({ category: "earrings", sort: "best_seller", limit: 1 }),
+    staleTime: 5 * 60_000,
   });
-  const { data: bestSellers = [], isLoading: loadingBest } = useQuery({
-    queryKey: ["products", "best"],
-    queryFn: () => getProducts({ best_seller: true, limit: 8 }),
+  const necklacesPreview = useQuery({
+    queryKey: ["products", "mirror-preview", "necklaces"],
+    queryFn: () => getProducts({ category: "necklaces", sort: "best_seller", limit: 1 }),
+    staleTime: 5 * 60_000,
   });
+  const ringsPreview = useQuery({
+    queryKey: ["products", "mirror-preview", "rings"],
+    queryFn: () => getProducts({ category: "rings", sort: "best_seller", limit: 1 }),
+    staleTime: 5 * 60_000,
+  });
+  const previewQueries = { earrings: earringsPreview, necklaces: necklacesPreview, rings: ringsPreview };
+
+  const activeSlug = hovered || committed;
+  const previewProduct = activeSlug ? previewQueries[activeSlug]?.data?.[0] : null;
+
+  const { data: editProducts = [] } = useQuery({
+    queryKey: ["products", "your-edit", committed],
+    queryFn: () =>
+      committed
+        ? getProducts({ category: committed, sort: "best_seller", limit: 4 })
+        : getProducts({ new_arrival: true, limit: 4 }),
+  });
+  const [heroProduct, ...supportProducts] = editProducts;
 
   useSeo({
     description:
@@ -84,195 +99,200 @@ export default function Home() {
       "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
   });
 
+  const selectCategory = (slug) => {
+    choosePreference(slug);
+    setHovered(null);
+  };
+
   return (
-    <div>
-      {/* SCENE I — ARRIVAL (DESIGN.md Experience Storyboard, Scene I correction
-          pass). Media occupies a true full-bleed rectangle via `absolute
-          inset-0 md:left-[40%]` rather than a CSS-grid column — a grid
-          column's auto-sized row was collapsing to the (short) text content's
-          height, leaving unfilled space above the image. This approach
-          guarantees the media field fills exactly top:0/right:0/bottom:0/
-          left:40% with no dependency on sibling content height. The type
-          block shares the header's own `max-w-7xl mx-auto px-4 sm:px-6
-          lg:px-8` container so the kicker/headline/CTA align to the same
-          left edge as the header logo, instead of floating at an unrelated
-          inset. An ivory fade-blend at the media zone's seam edge (rather
-          than a hard color cut) plus the fallback's letterform/rings
-          positioned toward that same edge make the scene read as one
-          composed field instead of two independent rectangles. */}
-      <section className="relative bg-aayna-burgundy md:bg-aayna-cream overflow-hidden h-[82vh] min-h-[560px] md:h-[90vh] md:min-h-[640px]">
-        {/* Media layer — full-bleed rectangle, right 60% on desktop */}
-        <div className="absolute inset-0 md:left-[40%] z-0">
-          {settings?.hero_image_url ? (
-            <img
-              src={settings.hero_image_url}
-              alt="AAYNA accessories"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <HeroFallback />
-          )}
-          {/* mobile legibility scrim behind the lower text block */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-aayna-burgundy-dark/90 via-aayna-burgundy-dark/40 to-transparent md:hidden" />
-          {/* ivory fade-blend at the seam edge — the two zones dissolve into
-              one field instead of meeting at a hard, "two rectangles" cut */}
-          <div className="hidden md:block absolute inset-y-0 left-0 w-28 lg:w-36 bg-gradient-to-r from-aayna-cream to-transparent" />
-        </div>
-
-        {/* Thin seam rule, drawn on top of the fade-blend */}
-        <div className="hidden md:block absolute inset-y-0 left-[40%] w-px bg-aayna-gold/40 z-[1]" />
-
-        {/* Type layer — same container system as the header, so the kicker/
-            headline/CTA align to the logo's left edge, not a floating inset */}
-        <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-full flex flex-col justify-end md:max-w-[38%] pb-14 sm:pb-16 md:pb-24 animate-fade-up">
-            <p className="text-aayna-gold md:text-aayna-burgundy font-medium text-xs sm:text-sm tracking-[0.2em] uppercase mb-3">
+    <div className="bg-aayna-cream">
+      {/* ================= SCENE I — ARRIVAL ================= */}
+      <section className="relative min-h-screen flex flex-col justify-end overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute rounded-full border border-aayna-burgundy/[0.13] w-[600px] h-[600px] left-[44%] -top-[18%]"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute rounded-full border border-aayna-taupe/10 w-[760px] h-[760px] -right-[28%] -bottom-[40%]"
+        />
+        <span
+          aria-hidden="true"
+          className="font-bangla absolute right-[3%] bottom-[4%] text-[11vw] leading-[0.8] text-aayna-burgundy/[0.04] select-none pointer-events-none"
+        >
+          আয়না
+        </span>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-32 sm:pt-36 md:pt-40 pb-16 md:pb-24">
+          <div className="max-w-xl">
+            <p className="text-aayna-burgundy font-bold text-xs tracking-[0.24em] uppercase mb-4">
               {(settings?.brand_name || "AAYNA").toUpperCase()} · Bangladesh
             </p>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white md:text-aayna-charcoal leading-[1.03]">
-              {settings?.hero_headline || "Reflect Your Aura."}
-            </h1>
-            <Link
-              to="/shop"
-              data-testid="hero-shop-now"
-              className="group inline-flex items-center gap-2 mt-7 text-white md:text-aayna-coral text-base sm:text-lg font-semibold w-fit border-b border-transparent hover:border-current transition-colors"
-            >
-              Shop Now
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Scroll cue — static, no bounce/loop; respects prefers-reduced-motion
-            by simply not animating (it never animated to begin with). */}
-        {/* Positioned at 50% of the full section width, which always falls
-            inside the media zone (40-100%) on desktop too - stays white/70
-            at every breakpoint rather than switching to a dark color that
-            would lose contrast against the burgundy/photo background here. */}
-        <div className="flex absolute bottom-5 md:bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-1.5 text-white/70 z-10">
-          <span className="text-[10px] uppercase tracking-[0.2em]">Reflect</span>
-          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-        </div>
-      </section>
-
-      {/* Shop by Category */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
-        <SectionHeading title="Shop by Category" subtitle="Find your everyday favourites." />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              to={`/category/${c.slug}`}
-              data-testid={`home-category-${c.slug}`}
-              className="group relative overflow-hidden aspect-[4/3] bg-aayna-cream"
-            >
-              {c.image_url ? (
-                <img src={c.image_url} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <h1 className="font-display font-semibold leading-[0.98] tracking-tight">
+              {settings?.hero_headline ? (
+                <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
+                  {settings.hero_headline}
+                </span>
               ) : (
-                <div className="w-full h-full bg-aayna-cream flex items-center justify-center">
-                  <Gem className="h-8 w-8 text-aayna-burgundy/40" />
-                </div>
+                <>
+                  <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
+                    Reflect Your
+                  </span>
+                  <span className="block text-aayna-burgundy text-[52px] sm:text-7xl md:text-8xl lg:text-[124px] mt-1">
+                    Aura.
+                  </span>
+                </>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-aayna-burgundy-dark/60 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-4 md:p-5">
-                <h3 className="font-display text-xl md:text-2xl font-bold text-white">{c.name}</h3>
-                <span className="text-white/85 text-xs md:text-sm">{c.product_count} items</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* New Arrivals */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 md:pb-20">
-        <SectionHeading title="New Arrivals" subtitle="Fresh picks just added to the collection." link="/shop" linkLabel="View all" />
-        <ProductGrid products={newArrivals.slice(0, 8)} loading={loadingNew} />
-      </section>
-
-      {/* Material / brand-proof — brand-level Material Trust positioning only.
-          No per-SKU technical claims (PVD/316L/waterproof/hypoallergenic) are
-          made here; those require SKU-level supplier evidence per CLAUDE.md
-          and only belong on a product page once verified. */}
-      <section className="bg-aayna-burgundy">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
-          <div className="max-w-2xl">
-            <p className="text-aayna-gold text-xs font-bold tracking-[0.2em] uppercase mb-3">Material Trust</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-white leading-tight">
-              Made for how you actually wear jewelry.
-            </h2>
-            <p className="text-white/70 mt-4 text-base md:text-lg">
-              Humidity, long days, layering, the odd nap with your earrings still on — we choose finishes
-              built for real wear, not just display cases. Every piece lists what it's actually made from.
+            </h1>
+            <p className="mt-4 text-sm text-aayna-taupe">
+              <span className="font-bangla text-aayna-burgundy mr-1.5">আয়না</span>— mirror.
             </p>
+            <a
+              href="#reflection"
+              data-testid="hero-shop-now"
+              className="group inline-flex items-center gap-2 mt-7 text-aayna-coral-dark text-base font-semibold w-fit border-b border-transparent hover:border-current hover:gap-3 transition-all"
+            >
+              Enter the Edit
+              <span aria-hidden="true">→</span>
+            </a>
           </div>
-          <div className="grid sm:grid-cols-3 gap-6 md:gap-8 mt-10 md:mt-12">
-            <div className="border-t-2 border-aayna-gold/60 pt-5">
-              <Gem className="h-5 w-5 text-aayna-gold mb-3" />
-              <h3 className="font-display text-lg text-white font-semibold">Material, stated plainly</h3>
-              <p className="text-white/60 text-sm mt-1.5 leading-relaxed">
-                Each product page lists the actual base material — no guessing what's under the finish.
-              </p>
+        </div>
+        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-aayna-taupe">
+          <span className="text-[10px] uppercase tracking-[0.2em]">Reflect</span>
+          <span aria-hidden="true" className="w-px h-6 bg-gradient-to-b from-aayna-taupe to-transparent" />
+        </div>
+      </section>
+
+      {/* ================= SCENE II — REFLECTION ================= */}
+      <section id="reflection" className="relative py-24 md:py-28">
+        {/* One shared reactive background letter — desktop hover/focus only,
+            driven purely by `hovered` (never `committed`), so it can never
+            be pinned by a selection and never appears on the Your Edit
+            scene below. React state, not a CSS :has() hack. Clipped to its
+            own decorative-only wrapper (not the section itself) so it can
+            never affect the section's scrollable height or bleed sideways. */}
+        <div aria-hidden="true" className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none">
+          <span
+            className="absolute left-0 -top-[4%] font-display font-bold leading-[0.78] select-none transition-opacity duration-300"
+            style={{
+              fontSize: "36vw",
+              color:
+                hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#C85A42" : "#5A0E1A",
+              opacity: hovered ? 0.06 : 0,
+            }}
+          >
+            {MIRROR_CATEGORIES.find((c) => c.slug === hovered)?.letter}
+          </span>
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-x-8">
+          <div className="md:col-span-7">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-2.5">
+              The Digital Mirror
+            </p>
+            <h2 className="font-display font-semibold text-3xl md:text-4xl text-aayna-burgundy-dark">
+              What are you drawn to today?
+            </h2>
+            <p className="font-display italic text-aayna-taupe text-sm mt-3 max-w-md">
+              A mirror doesn't create you. It reveals you.
+            </p>
+
+            <div className="mt-11 flex flex-col gap-1.5">
+              {availableMirror.map((c, i) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  data-testid={`mirror-category-${c.slug}`}
+                  onMouseEnter={() => setHovered(c.slug)}
+                  onFocus={() => setHovered(c.slug)}
+                  onMouseLeave={() => setHovered(null)}
+                  onBlur={() => setHovered(null)}
+                  onClick={() => selectCategory(c.slug)}
+                  style={{ marginLeft: i === 1 ? "14%" : i === 2 ? "4%" : 0 }}
+                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-opacity w-fit ${
+                    i === 1 ? "text-aayna-burgundy" : "text-aayna-charcoal"
+                  } ${
+                    committed && committed !== c.slug && hovered !== c.slug ? "opacity-40" : "opacity-100"
+                  } text-4xl sm:text-5xl md:text-[54px]`}
+                >
+                  {c.label}
+                </button>
+              ))}
+              <Link
+                to="/shop"
+                data-testid="mirror-show-everything"
+                onClick={() => choosePreference(null)}
+                className="mt-5 text-sm font-semibold text-aayna-taupe hover:text-aayna-burgundy transition-colors w-fit min-h-[44px] flex items-center"
+              >
+                Show me everything →
+              </Link>
             </div>
-            <div className="border-t-2 border-aayna-gold/60 pt-5">
-              <Layers className="h-5 w-5 text-aayna-gold mb-3" />
-              <h3 className="font-display text-lg text-white font-semibold">Everyday-first design</h3>
-              <p className="text-white/60 text-sm mt-1.5 leading-relaxed">
-                Pieces sized and finished for daily rotation, not just a single occasion.
-              </p>
-            </div>
-            <div className="border-t-2 border-aayna-gold/60 pt-5">
-              <HeartHandshake className="h-5 w-5 text-aayna-gold mb-3" />
-              <h3 className="font-display text-lg text-white font-semibold">Checked before it ships</h3>
-              <p className="text-white/60 text-sm mt-1.5 leading-relaxed">
-                Every order is quality-checked before dispatch from our Bangladesh team.
-              </p>
-            </div>
+          </div>
+
+          {/* Response field — real product, revealed on hover/focus only */}
+          <div className="hidden md:flex md:col-span-5 flex-col justify-center">
+            {previewProduct ? (
+              <div key={activeSlug} className="animate-fade-up">
+                <div className="relative aspect-[3/4] border border-aayna-beige overflow-hidden">
+                  <ProductImage
+                    src={previewProduct.images?.[0]?.image_url}
+                    alt={previewProduct.images?.[0]?.alt_text || previewProduct.product_name}
+                    className="absolute inset-0"
+                    iconClassName="h-8 w-8"
+                  />
+                </div>
+                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-aayna-taupe">
+                  Previewing — {MIRROR_CATEGORIES.find((c) => c.slug === activeSlug)?.label}
+                </p>
+                <p className="font-display italic text-aayna-charcoal">{previewProduct.product_name}</p>
+                <p className="font-bold text-aayna-burgundy text-sm">{formatBDT(effectivePrice(previewProduct))}</p>
+              </div>
+            ) : (
+              <p className="font-display italic text-aayna-taupe text-sm">Explore an edit</p>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Best Sellers */}
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
-          <SectionHeading title="Best Sellers" subtitle="Loved by our customers across Bangladesh." link="/shop" linkLabel="View all" />
-          <ProductGrid products={bestSellers.slice(0, 8)} loading={loadingBest} />
-        </div>
-      </section>
+      {/* ================= SCENE III — YOUR EDIT ================= */}
+      <section className="relative py-20 md:py-24 border-t border-aayna-beige">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-baseline justify-between gap-4 flex-wrap mb-10">
+            <div>
+              <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase">Your Reflection</p>
+              <p className="font-display italic text-aayna-burgundy text-lg mt-1">
+                {committed
+                  ? `Because you're drawn to ${MIRROR_CATEGORIES.find((c) => c.slug === committed)?.label}`
+                  : "New This Season"}
+              </p>
+            </div>
+            {committed && (
+              <button
+                type="button"
+                onClick={() => choosePreference(null)}
+                data-testid="mirror-reset"
+                className="text-xs text-aayna-taupe underline underline-offset-2 hover:text-aayna-burgundy min-h-[44px]"
+              >
+                Reset your preference
+              </button>
+            )}
+          </div>
 
-      {/* Editorial / styling moment — abstract duotone panels rather than
-          stock "luxury jewelry" photography we don't have yet (Brand Book:
-          avoid generic stock language). Real campaign photography can replace
-          these panels directly later without changing the layout. */}
-      <section className="border-t border-aayna-beige">
-        <div className="grid sm:grid-cols-3">
-          <div className="relative aspect-[4/5] sm:aspect-auto sm:h-96 overflow-hidden bg-gradient-to-br from-aayna-burgundy-dark via-aayna-burgundy to-[#a8503a] flex items-end p-6">
-            <div className="relative z-10">
-              <span className="block text-white/60 text-[11px] uppercase tracking-[0.2em]">Heritage Reframed</span>
-              <strong className="block font-display text-2xl text-white mt-1.5 leading-tight">Modern jhumka,<br />new proportion.</strong>
+          {heroProduct ? (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10">
+              <div className="md:col-span-7">
+                <ProductCard product={heroProduct} variant="hero" />
+              </div>
+              <div className="md:col-span-5 flex flex-row md:flex-col gap-5 overflow-x-auto md:overflow-visible">
+                {supportProducts.slice(0, 3).map((p) => (
+                  <div key={p.id} className="flex-none w-40 md:w-auto">
+                    <ProductCard product={p} variant="editorial" />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="relative aspect-[4/5] sm:aspect-auto sm:h-96 overflow-hidden bg-gradient-to-br from-aayna-blue via-[#274a75] to-aayna-mist flex items-end p-6">
-            <div className="relative z-10">
-              <span className="block text-white/70 text-[11px] uppercase tracking-[0.2em]">Everyday Sculptural</span>
-              <strong className="block font-display text-2xl text-white mt-1.5 leading-tight">Layer it,<br />your way.</strong>
-            </div>
-          </div>
-          <div className="relative aspect-[4/5] sm:aspect-auto sm:h-96 overflow-hidden bg-gradient-to-br from-aayna-coral via-[#c85a3f] to-aayna-burgundy-dark flex items-end p-6">
-            <div className="relative z-10">
-              <span className="block text-white/70 text-[11px] uppercase tracking-[0.2em]">Reflection</span>
-              <strong className="block font-display text-2xl text-white mt-1.5 leading-tight">Reflect<br />Your Aura.</strong>
-            </div>
-          </div>
+          ) : (
+            <p className="text-aayna-taupe text-sm">No products to show yet.</p>
+          )}
         </div>
-      </section>
-
-      {/* Trust, care & delivery */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
-        <div className="text-center mb-9">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-aayna-charcoal">Why Shop With AAYNA</h2>
-          <p className="text-aayna-taupe mt-2">Pretty pieces, fair prices, and a shopping experience you can trust.</p>
-        </div>
-        <TrustBadges />
       </section>
     </div>
   );
