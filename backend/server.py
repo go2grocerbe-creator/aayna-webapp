@@ -311,7 +311,14 @@ async def list_products(
 
 @api_router.get("/products/{slug}")
 async def get_product(slug: str):
-    product = await db.products.find_one({"slug": slug}, PUBLIC_PRODUCT_FIELDS)
+    # L2.1: this lookup had no status filter, unlike list_products() and the
+    # related-products query four lines below - an inactive/draft product's
+    # direct PDP route stayed publicly reachable by slug regardless of its
+    # status. Matches the same filter already used everywhere else public
+    # product data is read.
+    product = await db.products.find_one(
+        {"slug": slug, "status": {"$in": ["active", "out_of_stock"]}}, PUBLIC_PRODUCT_FIELDS
+    )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 

@@ -4,6 +4,24 @@ Read-only audit of `aayna_dev`. No data was deleted, deactivated, published,
 unpublished, renamed, reprioritized, or restocked in this pass. See
 `LAUNCH_CATALOGUE_AUDIT.csv` for the same findings in one-row-per-product form.
 
+> **Update (L2.1, founder-approved cleanup):** all 8 records classified `D —
+> CONFIRMED TEST POLLUTION` below have been deactivated (not deleted — all 8
+> are referenced by historical orders, so the existing admin API's own
+> safety check correctly deactivated rather than hard-deleted every one) and
+> are no longer reachable through any public route. The 4 test categories
+> have no change available: no admin `DELETE /categories` endpoint exists in
+> this codebase, so they remain exactly as found — `status: inactive`,
+> already excluded from `GET /api/categories`, zero public exposure. A real,
+> separate bug was found and fixed during verification: `GET
+> /api/products/{slug}` had no status filter on its primary lookup (unlike
+> the list endpoint and unlike its own related-products query four lines
+> below), so a deactivated product's direct PDP route stayed publicly
+> reachable by slug regardless of status. Fixed to match the filter already
+> used everywhere else. Full outcome in `LAUNCH_CATALOGUE_BASELINE.md`. The
+> findings and evidence below are left exactly as originally recorded — this
+> is what the audit found, `LAUNCH_CATALOGUE_BASELINE.md` is what was done
+> about it.
+
 ## 1. Executive Summary
 
 `aayna_dev` holds 18 product records. **10 are real** (founder catalogue,
