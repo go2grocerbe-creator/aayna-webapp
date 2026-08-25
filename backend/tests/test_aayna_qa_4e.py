@@ -109,38 +109,53 @@ class TestPublicProductFields:
             "low_stock_alert": 3,
         }
 
+        # A dedicated Motor client, created and closed entirely inside this
+        # function's own asyncio.run()-created loop, rather than reusing the
+        # module-level `server.db` client. `server.db` is a singleton meant
+        # for the live FastAPI app's one persistent event loop; sharing it
+        # across independent asyncio.run() calls in a test process caused
+        # "Event loop is closed" once another test (test_aayna_health_config's
+        # TestClient, whose /api/health/ready check pings the DB) had already
+        # bound it to a different, since-closed loop. Confirmed via isolated
+        # run vs. full-suite run before this fix - see ENVIRONMENTS.md.
         async def _run():
-            await server.db.products.insert_one({
-                "id": pid, "sku": "TESTWL-0001", "slug": slug,
-                "product_name": "TEST Whitelist Product",
-                "category_name": "Earrings", "category_slug": "earrings",
-                "selling_price": 100, "discount_price": None, "stock_quantity": 5,
-                "status": "active", "images": [],
-                "short_description": "x", "full_description": "x",
-                "is_featured": False, "is_best_seller": False, "is_new_arrival": False,
-                "tags": [], "created_at": server.now_iso(), "updated_at": server.now_iso(),
-                **poisoned_fields,
-            })
+            from motor.motor_asyncio import AsyncIOMotorClient
+            local_client = AsyncIOMotorClient(os.environ["MONGO_URL"])
+            local_db = local_client[os.environ["DB_NAME"]]
             try:
-                listed = requests.get(f"{API}/products", timeout=30).json()
-                match = next(p for p in listed if p["slug"] == slug)
-                for field in poisoned_fields:
-                    assert field not in match, f"list endpoint leaked {field}"
+                await local_db.products.insert_one({
+                    "id": pid, "sku": "TESTWL-0001", "slug": slug,
+                    "product_name": "TEST Whitelist Product",
+                    "category_name": "Earrings", "category_slug": "earrings",
+                    "selling_price": 100, "discount_price": None, "stock_quantity": 5,
+                    "status": "active", "images": [],
+                    "short_description": "x", "full_description": "x",
+                    "is_featured": False, "is_best_seller": False, "is_new_arrival": False,
+                    "tags": [], "created_at": server.now_iso(), "updated_at": server.now_iso(),
+                    **poisoned_fields,
+                })
+                try:
+                    listed = requests.get(f"{API}/products", timeout=30).json()
+                    match = next(p for p in listed if p["slug"] == slug)
+                    for field in poisoned_fields:
+                        assert field not in match, f"list endpoint leaked {field}"
 
-                detail = requests.get(f"{API}/products/{slug}", timeout=30).json()["product"]
-                for field in poisoned_fields:
-                    assert field not in detail, f"detail endpoint leaked {field}"
+                    detail = requests.get(f"{API}/products/{slug}", timeout=30).json()["product"]
+                    for field in poisoned_fields:
+                        assert field not in detail, f"detail endpoint leaked {field}"
 
-                cart = requests.post(
-                    f"{API}/cart/validate",
-                    json={"items": [{"product_id": pid, "quantity": 1}], "district": "Dhaka"},
-                    timeout=30,
-                ).json()
-                raw = str(cart).lower()
-                for field in poisoned_fields:
-                    assert field.replace("_", "") not in raw.replace("_", ""), f"cart/validate leaked {field}"
+                    cart = requests.post(
+                        f"{API}/cart/validate",
+                        json={"items": [{"product_id": pid, "quantity": 1}], "district": "Dhaka"},
+                        timeout=30,
+                    ).json()
+                    raw = str(cart).lower()
+                    for field in poisoned_fields:
+                        assert field.replace("_", "") not in raw.replace("_", ""), f"cart/validate leaked {field}"
+                finally:
+                    await local_db.products.delete_one({"id": pid})
             finally:
-                await server.db.products.delete_one({"id": pid})
+                local_client.close()
 
         asyncio.run(_run())
 
