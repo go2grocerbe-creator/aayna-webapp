@@ -1,0 +1,19 @@
+sku,slug,name,category,stock,price,status,image_status,data_status,test_pollution,launch_classification,launch_blocker,higgsfield_candidate,mapping_confidence,recommended_action
+EAR-GD-0001,gold-pearl-hoop-earrings,Gold Pearl Hoop Earrings,earrings,5,450,active,READY,complete,NO,A,,no,none,launch ready
+EAR-RS-0002,rose-quartz-drop-earrings,Rose Quartz Drop Earrings,earrings,4,520,active,READY,complete,NO,A,,no,none,launch ready
+EAR-SV-0003,minimal-silver-stud-earrings,Minimal Silver Stud Earrings,earrings,8,280,active,READY,complete,NO,A,,no,none,launch ready
+NEC-GD-0001,layered-gold-chain-necklace,Layered Gold Chain Necklace,necklaces,4,650,active,READY,complete,NO,A,,no,none,launch ready
+NEC-GD-0002,heart-pendant-necklace,Heart Pendant Necklace,necklaces,5,480,active,READY,complete,NO,A,,no,none,launch ready
+RNG-RS-0001,adjustable-rose-stone-ring,Adjustable Rose Stone Ring,rings,6,350,active,READY,complete,NO,A,,no,none,launch ready
+RNG-GD-0002,gold-stack-ring-set,Gold Stack Ring Set,rings,0,420,out_of_stock,READY,complete,NO,C,stock = 0,no,none,"hold - out of stock / outside current launch scope, restock or exclude at founder discretion"
+BRC-PL-0001,pearl-charm-bracelet,Pearl Charm Bracelet,bracelets,0,390,out_of_stock,READY,complete,NO,C,stock = 0,no,none,"hold - out of stock / outside current launch scope, restock or exclude at founder discretion"
+HAR-PN-0001,blush-satin-scrunchie-set,Blush Satin Scrunchie Set,hair-accessories,0,250,out_of_stock,READY,complete,NO,C,stock = 0,no,none,"hold - out of stock / outside current launch scope, restock or exclude at founder discretion"
+HAR-GD-0002,gold-butterfly-hair-clip,Gold Butterfly Hair Clip,hair-accessories,0,320,out_of_stock,READY,complete,NO,C,stock = 0,no,none,"hold - out of stock / outside current launch scope, restock or exclude at founder discretion"
+TEST-HIST-4003DF,test-histproduct,TEST_HistProduct,earrings,4,500.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-IMP-B3ED7,test-imported,TEST Imported,earrings,0,750.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-HIST-D80B93,test-histproduct-7da4,TEST_HistProduct,earrings,4,500.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-IMP-83F3C,test-imported-86ce,TEST Imported,earrings,0,750.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-HIST-644744,test-histproduct-40e0,TEST_HistProduct,earrings,4,500.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-IMP-865C3,test-imported-44ba,TEST Imported,earrings,0,750.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-HIST-DF45F0,test-histproduct-65f5,TEST_HistProduct,earrings,4,500.0,inactive,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
+TEST-IMP-CC4C5,test-imported-e4c6,TEST Imported,earrings,0,750.0,out_of_stock,BROKEN,incomplete,YES,D,confirmed test pollution,no,none,flag for founder deletion approval (deactivate - referenced by order history)
