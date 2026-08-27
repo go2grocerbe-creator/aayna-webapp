@@ -11,6 +11,11 @@ import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
 import { useSeo, useJsonLd } from "@/lib/seo";
 
+// Matches the same launch-scope allowlist used by Shop.jsx/Category.jsx (D2
+// "The Edit"). A product outside these categories is real catalogue, just
+// not launch-promoted - noindex, not deleted or hidden from direct visitors.
+const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
+
 // The Object (D3, concept-d3-the-object.html). The product is the visual
 // protagonist; no letterform, no scattered typography — one hairline seam
 // and one quiet arc only, both far more restrained than the homepage.
@@ -33,11 +38,17 @@ export default function ProductDetail() {
   const { data: settings } = useSettings();
   const [qty, setQty] = useState(1);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => getProduct(slug),
+    retry: 1,
   });
   const product = data?.product;
+  // L4: a bad/deactivated slug used to leave isLoading:false with no product
+  // and no noindex — page silently stayed indexable under the default title.
+  const notFound = !isLoading && (isError || !product);
+  const isLaunchCategory = !!product && EDIT_CATEGORY_SLUGS.includes(product.category_slug);
+  const pageUrl = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
 
   useSeo({
     title: product?.product_name,
@@ -45,6 +56,7 @@ export default function ProductDetail() {
       ? `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
       : undefined,
     image: product?.images?.[0]?.image_url,
+    noindex: notFound ? true : !isLaunchCategory,
   });
 
   useJsonLd(
@@ -54,6 +66,7 @@ export default function ProductDetail() {
           "@context": "https://schema.org",
           "@type": "Product",
           name: product.product_name,
+          url: pageUrl,
           image: (product.images || []).map((i) => i.image_url).filter(Boolean),
           description: product.short_description || product.full_description || product.product_name,
           sku: product.sku,
@@ -61,10 +74,28 @@ export default function ProductDetail() {
           category: product.category_name,
           offers: {
             "@type": "Offer",
+            url: pageUrl,
             price: String(effectivePrice(product) ?? product.selling_price ?? 0),
             priceCurrency: "BDT",
             availability: isOutOfStock(product) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
           },
+        }
+      : null
+  );
+
+  const siteOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  useJsonLd(
+    "breadcrumb",
+    product
+      ? {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: siteOrigin + "/" },
+            { "@type": "ListItem", position: 2, name: "The Edit", item: siteOrigin + "/shop" },
+            { "@type": "ListItem", position: 3, name: product.category_name || "Category", item: siteOrigin + "/category/" + product.category_slug },
+            { "@type": "ListItem", position: 4, name: product.product_name, item: pageUrl },
+          ],
         }
       : null
   );
@@ -84,9 +115,17 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) {
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-aayna-taupe">Product not found.</div>;
+  if (notFound) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <p className="text-aayna-charcoal text-lg mb-2">Product not found.</p>
+        <p className="text-aayna-taupe text-sm mb-6">This piece may have been removed or the link is incorrect.</p>
+        <Link to="/shop" className="text-aayna-burgundy underline underline-offset-2 text-sm">Browse The Edit</Link>
+      </div>
+    );
   }
+
+  if (!product) return null;
 
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);

@@ -40,7 +40,8 @@ export function useSeo({ title, description, image, noindex } = {}) {
     const url = siteOrigin() + window.location.pathname;
     document.title = fullTitle;
     upsertMeta("name", "description", desc);
-    upsertMeta("name", "robots", noindex ? "noindex,nofollow" : "index,follow");
+    const robots = noindex === "follow" ? "noindex,follow" : noindex ? "noindex,nofollow" : "index,follow";
+    upsertMeta("name", "robots", robots);
 
     upsertMeta("property", "og:site_name", SITE_NAME);
     upsertMeta("property", "og:type", "website");

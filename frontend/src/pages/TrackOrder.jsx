@@ -9,14 +9,13 @@ import { useSeo } from "@/lib/seo";
 // D6 - presentation only. Verification is unchanged: both order number AND
 // phone are required, the backend never distinguishes which one was wrong,
 // and this page never renders anything beyond what POST /api/track returns.
-// No noindex here - Track Order is deliberately in the public sitemap
-// (backend/server.py SITEMAP_STATIC_PATHS) since the page itself never
-// shows order data until a matching lookup succeeds; that's existing
-// architecture, not something to "fix" by adding noindex.
+// L4: noindex,follow - a per-customer lookup form has no unique content to
+// rank on and was removed from the sitemap, but the route stays reachable
+// and its outbound links (nav/footer) should still be crawled.
 const STATUS_STEPS = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered"];
 
 export default function TrackOrder() {
-  useSeo({ title: "Track Your Order", description: "Track your AAYNA order using your Order ID and phone number." });
+  useSeo({ title: "Track Your Order", description: "Track your AAYNA order using your Order ID and phone number.", noindex: "follow" });
   const [params] = useSearchParams();
   const [orderNumber, setOrderNumber] = useState(params.get("order") || "");
   const [phone, setPhone] = useState("");

@@ -762,10 +762,22 @@ async def track_order(req: TrackRequest):
 # Served under /api (externally reachable) AND at root paths for direct/
 # deployment-level routing. Absolute URLs come from PUBLIC_SITE_URL.
 # ---------------------------------------------------------------------------
+# L4: /track-order deliberately excluded - a per-customer lookup form has no
+# unique content to rank on. The route itself stays public and reachable;
+# only its indexability changed (see frontend/src/pages/TrackOrder.jsx,
+# noindex,follow).
 SITEMAP_STATIC_PATHS = [
-    "/", "/shop", "/contact", "/track-order",
+    "/", "/shop", "/contact",
     "/delivery-policy", "/returns", "/privacy", "/terms",
 ]
+
+# L4: mirrors the frontend's launch-scope allowlist (Shop.jsx/Category.jsx/
+# ProductDetail.jsx EDIT_CATEGORY_SLUGS). Bracelets/Hair Accessories/Gift
+# Sets are real, active catalogue - not deleted, not deactivated - but not
+# launch-promoted; those pages are noindex on the frontend, so they are kept
+# out of the sitemap rather than sending crawlers a page and a noindex
+# signal at once. Update both lists together if launch scope changes.
+LAUNCH_CATEGORY_SLUGS = {"earrings", "necklaces", "rings"}
 
 
 def _public_site_url() -> str:
@@ -784,11 +796,13 @@ async def _collect_sitemap_urls() -> list:
     base = _public_site_url()
     urls = [(base + p, None) for p in SITEMAP_STATIC_PATHS]
     cats = await db.categories.find(
-        {"status": "active"}, {"_id": 0, "slug": 1, "updated_at": 1}
+        {"status": "active", "slug": {"$in": list(LAUNCH_CATEGORY_SLUGS)}},
+        {"_id": 0, "slug": 1, "updated_at": 1},
     ).to_list(1000)
     urls += [(f"{base}/category/{c['slug']}", c.get("updated_at")) for c in cats if c.get("slug")]
     prods = await db.products.find(
-        {"status": {"$in": ["active", "out_of_stock"]}}, {"_id": 0, "slug": 1, "updated_at": 1}
+        {"status": {"$in": ["active", "out_of_stock"]}, "category_slug": {"$in": list(LAUNCH_CATEGORY_SLUGS)}},
+        {"_id": 0, "slug": 1, "updated_at": 1},
     ).to_list(5000)
     urls += [(f"{base}/product/{p['slug']}", p.get("updated_at")) for p in prods if p.get("slug")]
     return urls
