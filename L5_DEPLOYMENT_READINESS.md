@@ -3,6 +3,14 @@
 Operational QA and infrastructure-readiness assessment. No deployment
 occurred. No infrastructure was provisioned. No credentials were invented.
 
+> **L5.1 update:** the hosting decision this document's §40-42 left open
+> is now made — Cloudflare Pages, Railway (Singapore), MongoDB Atlas Flex
+> (Singapore), object storage deferred. See `INFRASTRUCTURE_BASELINE.md`
+> for the approved architecture and `DEPLOYMENT_RUNBOOK.md` for the
+> updated step-by-step. The findings below (§0-39, §43-53) are left as
+> originally written — they're still accurate QA results, not
+> infrastructure recommendations, and nothing here has been provisioned.
+
 ## Gate 0 — database reconciliation
 
 Raw, direct, read-only counts against `aayna_dev` (not the public API):
@@ -248,7 +256,9 @@ verification call.
 (64-char SHA-256 hex) — no raw token field exists anywhere in the DB
 record.**
 
-**Finding (disclosed, not fixed):** the token travels as a URL query
+**Finding (disclosed at the time, remediated in L5.1 — see
+"Confirmation-token access-log remediation" in `INFRASTRUCTURE_BASELINE.md`;
+left as originally written below):** the token travels as a URL query
 parameter (`GET /api/orders/{order_number}?token=...`), which means it
 appears in plaintext in standard HTTP access logs — confirmed live: the
 uvicorn access-log line for this exact request contains the full raw
@@ -525,7 +535,7 @@ real production build.
 | Secrets env-only | Confirmed — only `.env.example` (placeholders) is tracked in git |
 | Admin noindex | Confirmed, L4 |
 | Checkout/confirmation noindex | Confirmed, L4 |
-| Confirmation-token-in-query-string logging | **Disclosed finding**, not fixed — see §23-24/36 |
+| Confirmation-token-in-query-string logging | **Disclosed finding**, remediated in L5.1 (uvicorn + frontend URL, see `INFRASTRUCTURE_BASELINE.md`); Railway edge logging unverified until deploy — see §23-24/36 |
 | Order-status transition guards | **Disclosed finding**, none exist — see §28 |
 | Stock auto-restore on Cancel/Return | **Disclosed finding**, none exists — manual workaround documented in runbook |
 

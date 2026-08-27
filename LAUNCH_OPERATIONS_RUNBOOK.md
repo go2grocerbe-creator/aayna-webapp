@@ -75,6 +75,13 @@ in the current system — see `L5_DEPLOYMENT_READINESS.md` §28 — and is
 flagged there as a post-launch automation candidate, not something
 invented or silently patched here.
 
+**Proposed rule for founder approval (not implemented — L5.1):**
+`Cancelled` → restore the ordered quantity exactly once, only if stock was
+previously decremented for this order (guard against double-restore on a
+repeated/duplicate status write). `Returned` → do **not** auto-restore —
+see §I, a returned item may be damaged/unsellable and needs inspection
+first. Do not build either until approved.
+
 There is also **no transition guard**: any order can be set to any
 status from any other status (including `Delivered → Cancelled`) with no
 warning. Use judgment; don't rely on the system to stop an accidental
