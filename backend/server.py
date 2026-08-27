@@ -34,6 +34,30 @@ logger = logging.getLogger("aayna")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
+class _RedactTokenFilter(logging.Filter):
+    """GET /api/orders/{order_number} takes its confirmation token as a query
+    param (see get_order_confirmation below) - uvicorn's access log records
+    the full request line, so the raw token would otherwise land in routine
+    logs. Redact it there; the token's own hashing/validation is untouched."""
+    _pattern = re.compile(r'(token=)[^&\s"]+')
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Uvicorn's AccessFormatter unpacks record.args by fixed position
+        # (client_addr, method, full_path, http_version, status_code) - it
+        # does not just %-render record.msg like a normal logger. Clearing
+        # or reshaping record.args breaks that unpacking, so redact only the
+        # matching string elements in place and keep the tuple's shape.
+        if isinstance(record.args, tuple) and record.args:
+            record.args = tuple(
+                self._pattern.sub(r'\1REDACTED', a) if isinstance(a, str) and "token=" in a else a
+                for a in record.args
+            )
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_RedactTokenFilter())
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

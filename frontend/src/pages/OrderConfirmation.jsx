@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, Copy, Check } from "lucide-react";
 import { getOrder } from "@/lib/api";
@@ -17,8 +17,24 @@ import ProductImage from "@/components/ProductImage";
 // district - it cannot show more contact detail than the API returns.
 export default function OrderConfirmation() {
   const { orderNumber } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  // Captured once, at mount, from the URL the customer actually arrived
+  // with - stripping the token from the visible URL below must not change
+  // this value or re-trigger/disable the query.
+  const [token] = useState(() => searchParams.get("token"));
+
+  // L5.1: the raw token otherwise sits in the browser's own address bar and
+  // history for as long as this tab/session keeps it. It's already used for
+  // the one request it's needed for by the time this runs, so replace the
+  // URL with the query string removed - no extra history entry, no refetch.
+  useEffect(() => {
+    if (searchParams.get("token")) {
+      navigate(`/order-confirmation/${orderNumber}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ["order", orderNumber, token],
     queryFn: () => getOrder(orderNumber, token),
