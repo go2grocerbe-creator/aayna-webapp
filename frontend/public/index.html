@@ -16,20 +16,29 @@
 
         <title>AAYNA — Reflect Your Aura.</title>
 
+        <meta name="robots" content="index,follow" />
+
         <!-- Default Open Graph / Twitter tags. Per-page values override these at
              runtime via useSeo() (frontend/src/lib/seo.js); these are the fallback
-             seen by crawlers that don't execute JS and by the very first paint. -->
+             seen by crawlers that don't execute JS and by the very first paint.
+             L4: "%REACT_APP_PUBLIC_SITE_URL%" here was NEVER a working CRA
+             substitution token (only %PUBLIC_URL% is natively interpolated by
+             CRA/craco - confirmed by inspecting the actual build output, which
+             shipped the literal unreplaced text to every non-JS crawler). Domain
+             is not configured anywhere in this repo yet; shopaayna.com is used
+             here as the task's stated launch-domain fallback and MUST be
+             corrected on this line if the real production domain differs. -->
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="AAYNA" />
         <meta property="og:title" content="AAYNA — Reflect Your Aura." />
         <meta property="og:description" content="AAYNA - accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available." />
-        <meta property="og:url" content="%REACT_APP_PUBLIC_SITE_URL%/" />
-        <meta property="og:image" content="%REACT_APP_PUBLIC_SITE_URL%/og-image.svg" />
+        <meta property="og:url" content="https://shopaayna.com/" />
+        <meta property="og:image" content="https://shopaayna.com/og-image.svg" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="AAYNA — Reflect Your Aura." />
         <meta name="twitter:description" content="AAYNA - accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available." />
-        <meta name="twitter:image" content="%REACT_APP_PUBLIC_SITE_URL%/og-image.svg" />
+        <meta name="twitter:image" content="https://shopaayna.com/og-image.svg" />
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>

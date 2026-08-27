@@ -5,6 +5,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { useSettings } from "@/hooks/useStore";
+import { useJsonLd } from "@/lib/seo";
+import { isPlaceholder } from "@/lib/format";
 
 function MaintenanceScreen({ settings }) {
   return (
@@ -34,6 +36,35 @@ export default function Layout() {
   // PDP renders a sticky mobile Add to Cart bar (ProductDetail.jsx, md:hidden);
   // the floating WhatsApp button must clear it rather than sit on top.
   const hasStickyCommerceBar = location.pathname.startsWith("/product/");
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  // L4: site-wide Organization + WebSite schema. Only real, already-approved
+  // fields - no invented legal name, address, phone, email, or founding date.
+  // Instagram/Facebook are real launch-approved links (LAUNCH_SETTINGS_BASELINE.md);
+  // TikTok is deliberately excluded, matching L3.1's launch decision to keep it
+  // unsurfaced. SearchAction target is the real, working /shop?search= flow.
+  const sameAs = [settings?.instagram_url, settings?.facebook_url].filter(
+    (u) => u && !isPlaceholder(u)
+  );
+  useJsonLd("organization", {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "AAYNA",
+    url: origin + "/",
+    logo: origin + "/favicon.svg",
+    ...(sameAs.length ? { sameAs } : {}),
+  });
+  useJsonLd("website", {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "AAYNA",
+    url: origin + "/",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${origin}/shop?search={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  });
 
   if (settings?.maintenance_mode) {
     return <MaintenanceScreen settings={settings} />;
