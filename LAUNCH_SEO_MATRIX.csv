@@ -1,0 +1,32 @@
+route,page_type,indexable,in_sitemap,title_status,description_status,canonical_status,og_status,schema_type,issues,action
+/,home,yes,yes,ok - site default,ok - real hero subtitle or fallback,ok,ok - fallback og-image,Organization+WebSite,none,none
+/shop,listing,yes,yes,ok - unique,ok - unique,ok - strips query string,ok - fallback og-image,Organization+WebSite,none,none
+/shop?category=X,listing (query variant),yes,no (canonicalizes to /shop),ok,ok,ok - canonicalizes to /shop (no query leak),ok,Organization+WebSite,none,none
+/shop?search=X,listing (query variant),yes,no (canonicalizes to /shop),ok - "Search: X",ok,ok - canonicalizes to /shop,ok,Organization+WebSite,none,none
+/category/earrings,category (launch),yes,yes,ok - unique,ok - unique,ok,ok - real category image,Organization+WebSite,none,none
+/category/necklaces,category (launch),yes,yes,ok - unique,ok - unique,ok,ok - real category image,Organization+WebSite,none,none
+/category/rings,category (launch),yes,yes,ok - unique,ok - unique,ok,ok - real category image,Organization+WebSite,none,none
+/category/bracelets,category (non-launch),no - noindex,no,ok - unique (real),ok - unique (real),ok,ok - real category image,Organization+WebSite,real catalogue but not launch-promoted; no matching nav tab,fixed this milestone - noindex + excluded from sitemap
+/category/hair-accessories,category (non-launch),no - noindex,no,ok - unique (real),ok - unique (real),ok,ok - real category image,Organization+WebSite,same as bracelets,fixed this milestone - noindex + excluded from sitemap
+/category/gift-sets,category (non-launch),no - noindex,no,ok - unique (real),ok - unique (real),ok,ok - real category image,Organization+WebSite,same as bracelets,fixed this milestone - noindex + excluded from sitemap
+/category/:invalid-slug,error state,no - noindex,no,ok - "Category Not Found",ok - generic fallback,ok,ok - fallback og-image,Organization+WebSite,previously fell through to a fake generic indexable empty page,fixed this milestone - real not-found state + noindex
+/product/gold-pearl-hoop-earrings,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/rose-quartz-drop-earrings,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/minimal-silver-stud-earrings,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/heart-pendant-necklace,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/layered-gold-chain-necklace,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/adjustable-rose-stone-ring,product (launch/in-stock),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,none,added url field to Product/Offer + Breadcrumb this milestone
+/product/gold-stack-ring-set,product (launch/held OOS),yes,yes,ok - unique,ok - unique w/ live price,ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,legitimately out of stock; availability correctly OutOfStock,kept indexable - real, expected to return, in a launch category
+/product/pearl-charm-bracelet,product (non-launch/OOS),no - noindex,no,ok - unique (real),ok - unique (real),ok,ok - real product image,Product+Breadcrumb+Organization+WebSite,non-launch category product,fixed this milestone - noindex + excluded from sitemap
+/product/:invalid-slug,error state,no - noindex,no,ok - default fallback title,ok - default fallback description,ok,ok - fallback og-image,Organization+WebSite,previously: isLoading never settled to an error branch; indexable default-title page with no not-found messaging,fixed this milestone - isError handling + retry:1 + real not-found state + noindex
+/contact,static,yes,no (never was in SITEMAP_STATIC_PATHS),ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,page has no live support channel but does have real Instagram/Facebook links,kept indexable - judgment call, documented in LAUNCH_SEO_AUDIT.md #7
+/track-order,form,no - noindex,follow,no (removed this milestone),ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,per-customer lookup form has no unique content to rank on,fixed this milestone - noindex,follow + removed from SITEMAP_STATIC_PATHS
+/cart,private,no - noindex,nofollow,no (unchanged),ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none - already correct since D4
+/checkout,private,no - noindex,nofollow,no (unchanged),ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none - already correct since D5
+/order-confirmation,private,no - noindex,nofollow,no (unchanged),ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none - already correct since D6
+/privacy,policy,yes,yes,ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none
+/terms,policy,yes,yes,ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none
+/delivery-policy,policy,yes,yes,ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none
+/returns,policy,yes,yes,ok - unique,ok - unique,ok,ok - fallback og-image,Organization+WebSite,none,none
+/admin/*,private,no - noindex,nofollow,no (unchanged),n/a,n/a,n/a,none,none,none - already correct, set once in AdminLayout.jsx and inherited by every nested page
+/* (404 catch-all),error state,no - noindex,nofollow,no (unchanged),ok - unique,ok - unique,ok - fallback og-image,Organization+WebSite,none,none - already correct
