@@ -172,7 +172,7 @@ export default function ProductDetail() {
       </section>
 
       {/* ================= THE OBJECT — first viewport ================= */}
-      <section className="relative py-5 md:py-8">
+      <section className="relative py-5 md:py-8 overflow-hidden">
         <div
           aria-hidden="true"
           className="hidden md:block absolute rounded-full border border-aayna-burgundy/[0.08] w-[420px] h-[420px] right-[-10%] top-[-4%]"
