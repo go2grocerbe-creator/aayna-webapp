@@ -7,6 +7,8 @@ import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
 import { useSeo } from "@/lib/seo";
 import { effectivePrice, formatBDT, isOutOfStock } from "@/lib/format";
+import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 // The Digital Mirror homepage (D1.6). Replaces the previous module-stack
 // homepage (Shop by Category grid / New Arrivals grid / Material Trust
@@ -49,6 +51,7 @@ function useLocalPreference() {
 export default function Home() {
   const { data: settings } = useSettings();
   const { data: allCategories = [] } = useCategories();
+  const { addItem } = useCart();
   const availableMirror = MIRROR_CATEGORIES.filter((c) =>
     allCategories.some((real) => real.slug === c.slug && (real.product_count || 0) > 0)
   );
@@ -223,9 +226,7 @@ export default function Home() {
                   onBlur={() => setHovered(null)}
                   onClick={() => selectCategory(c.slug)}
                   style={{ marginLeft: i === 1 ? "14%" : i === 2 ? "4%" : 0 }}
-                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-opacity w-fit ${
-                    i === 1 ? "text-aayna-burgundy" : "text-aayna-charcoal"
-                  } ${
+                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-opacity w-fit text-aayna-burgundy ${
                     committed && committed !== c.slug && hovered !== c.slug ? "opacity-40" : "opacity-100"
                   } text-4xl sm:text-5xl md:text-[54px]`}
                 >
@@ -260,6 +261,19 @@ export default function Home() {
                 </p>
                 <p className="font-display italic text-aayna-charcoal">{previewProduct.product_name}</p>
                 <p className="font-bold text-aayna-burgundy text-sm">{formatBDT(effectivePrice(previewProduct))}</p>
+                <button
+                  type="button"
+                  data-testid="mirror-preview-add"
+                  disabled={isOutOfStock(previewProduct)}
+                  onClick={() => {
+                    if (isOutOfStock(previewProduct)) return;
+                    addItem(previewProduct, 1);
+                    toast.success(`${previewProduct.product_name} added to cart`);
+                  }}
+                  className="mt-4 inline-flex items-center justify-center min-h-[44px] px-7 text-xs font-semibold uppercase tracking-[0.14em] bg-aayna-burgundy text-aayna-cream hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-fit"
+                >
+                  {isOutOfStock(previewProduct) ? "Out of Stock" : "Add to Cart"}
+                </button>
               </div>
             ) : (
               <p className="font-display italic text-aayna-taupe text-sm">Explore an edit</p>
