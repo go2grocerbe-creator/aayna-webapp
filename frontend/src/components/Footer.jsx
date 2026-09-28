@@ -93,7 +93,7 @@ export default function Footer() {
 
         <div className="border-t border-white/10 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-aayna-beige/60">© {year} AAYNA. All rights reserved.</p>
-          <p className="text-xs text-aayna-beige/60">Made with care in Bangladesh</p>
+          <p className="text-xs text-aayna-beige/60">Contemporary, proudly Bangladeshi.</p>
         </div>
       </div>
     </footer>
