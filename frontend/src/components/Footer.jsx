@@ -92,7 +92,21 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/10 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <nav
+          aria-label="All pages"
+          className="border-t border-white/10 mt-12 pt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5"
+        >
+          <Link to="/" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Home</Link>
+          <Link to="/shop" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Shop</Link>
+          <Link to="/track-order" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Track Order</Link>
+          <Link to="/contact" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Contact Us</Link>
+          <Link to="/delivery-policy" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Delivery Policy</Link>
+          <Link to="/returns" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Returns & Exchange</Link>
+          <Link to="/privacy" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Terms & Conditions</Link>
+        </nav>
+
+        <div className="border-t border-white/10 mt-6 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-aayna-beige/60">© {year} AAYNA. All rights reserved.</p>
           <p className="text-xs text-aayna-beige/60">Contemporary, proudly Bangladeshi.</p>
         </div>

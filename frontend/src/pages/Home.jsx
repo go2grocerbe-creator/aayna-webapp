@@ -226,7 +226,9 @@ export default function Home() {
                   onBlur={() => setHovered(null)}
                   onClick={() => selectCategory(c.slug)}
                   style={{ marginLeft: i === 1 ? "14%" : i === 2 ? "4%" : 0 }}
-                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-opacity w-fit text-aayna-burgundy ${
+                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-all duration-300 w-fit ${
+                    hovered === c.slug || committed === c.slug ? "text-aayna-burgundy" : "text-aayna-charcoal"
+                  } ${
                     committed && committed !== c.slug && hovered !== c.slug ? "opacity-40" : "opacity-100"
                   } text-4xl sm:text-5xl md:text-[54px]`}
                 >
