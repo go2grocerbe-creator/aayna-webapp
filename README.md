@@ -430,3 +430,26 @@ cd backend
 python -m pytest tests/test_aayna_admin.py tests/test_aayna_storefront.py -q
 ```
 Tests read admin credentials from the environment (`backend/.env`), not hardcoded values.
+
+## Real inventory import (spreadsheet + product photos)
+
+`scripts/import_inventory.py` turns `AAYNA_Product_Inventory.xlsx` + the
+Higgsfield photo folder into **draft** products using the existing products
+collection and object storage. Nothing is guessed: rows without a
+`Selling price (BDT)` column value are skipped.
+
+```bash
+# 1. Dry run - writes a manifest, touches nothing (manifest holds costs: do not commit)
+python scripts/import_inventory.py manifest --xlsx "<path>/AAYNA_Product_Inventory.xlsx" \
+    --photos "<path>/Product_Photos_Higgsfield" --out import_manifest.json
+# 2. One product first, then everything (uses MONGO_URL / DB_NAME / EMERGENT_LLM_KEY from backend/.env)
+python scripts/import_inventory.py import --manifest import_manifest.json \
+    --public-base https://<backend-host> --only AYN-RNG-CLS-GLD
+python scripts/import_inventory.py import --manifest import_manifest.json --public-base https://<backend-host>
+```
+
+Photos: `<Name words> <Colour> <n>.png` - `1` is the hero; images are uploaded
+as optimised WebP (max 1600px), originals are untouched. Re-running is safe:
+matched by SKU, never changes status or live (non-draft) stock, never
+re-uploads identical images. Publish from Admin > Products after review.
+Offline tests: `pip install mongomock-motor pytest && pytest backend/tests_import -q`.
