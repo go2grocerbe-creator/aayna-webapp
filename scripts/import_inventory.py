@@ -23,16 +23,18 @@ Rules this script enforces (see task brief):
   * The spreadsheet is the source of truth. Nothing is invented: no selling
     price, discount, material, description or category is guessed. A product
     without a selling price is NOT ready and is skipped.
-  * Selling price comes only from a "Selling price (BDT)" column the founder
-    adds to the spreadsheet (optional "Discount price (BDT)").
+  * Selling price comes from a "Selling price (BDT)" column if present, else
+    from --temp-price (founder-approved temporary price, flagged
+    price_is_temporary). Final prices are managed in Admin > Products.
   * Images go through the app's existing object storage (storage.put_object +
     db.files record), exactly like the admin upload endpoint. Local Windows
     paths never reach a product record. Originals are never modified; an
     optimised WebP copy (max 1600px) is uploaded instead of 2-8 MB PNGs.
-  * Idempotent: products are matched by SKU. Re-running updates spreadsheet
-    fields but never changes status, never touches stock once the product is
-    no longer a draft (live stock is owned by orders), and never re-uploads an
-    image whose bytes were already uploaded (sha256 on db.files).
+  * Idempotent: products are matched by SKU. Re-running only refreshes
+    spreadsheet-owned fields (name, category, colour, size, cost, notes).
+    Selling/discount price, status, images and stock are owned by Admin once
+    the product exists and are never overwritten. Identical image bytes are
+    never re-uploaded (sha256 on db.files).
   * New products are created with status "draft", which the public API
     already hides (it only serves "active" / "out_of_stock").
   * Unit cost -> cost_price and Notes -> internal_notes: both admin-only. The
@@ -128,7 +130,7 @@ def read_inventory(xlsx_path):
     return {"sheet": ws.title, "header": header or [], "products": products}
 
 
-def map_row(raw):
+def map_row(raw, temp_price=None):
     mapped, warnings, blockers = {}, [], []
     for h, v in raw.items():
         if h == "_row":
@@ -169,6 +171,12 @@ def map_row(raw):
             continue
         if not isinstance(v, (int, float)) or v < 0:
             blockers.append(f"Invalid {f}: {v!r}")
+    if "selling_price" not in mapped and temp_price is not None:
+        # Founder-approved TEMPORARY price; final price is set in Admin.
+        # Never written back to the spreadsheet.
+        mapped["selling_price"] = float(temp_price)
+        mapped["price_is_temporary"] = True
+        warnings.append(f"Temporary price {temp_price:g} BDT - set final price in Admin")
     if "selling_price" not in mapped:
         blockers.append("Missing selling price (BDT) - not in spreadsheet")
     elif mapped["selling_price"] <= 0:
@@ -243,11 +251,11 @@ def match_photos(products, photos):
 # ---------------------------------------------------------------------------
 # Manifest
 # ---------------------------------------------------------------------------
-def build_manifest(xlsx, photo_dir):
+def build_manifest(xlsx, photo_dir, temp_price=None):
     inv = read_inventory(xlsx)
     records = []
     for raw in inv["products"]:
-        mapped, warnings, blockers = map_row(raw)
+        mapped, warnings, blockers = map_row(raw, temp_price)
         records.append({"source_row": raw["_row"], **mapped, "_w": warnings, "_b": blockers})
 
     # duplicates
@@ -369,6 +377,25 @@ async def import_products(manifest, photo_dir, public_base, only=None, db=None, 
             cat = await db.categories.find_one({"slug": rec["category_slug"]}, {"_id": 0})
             if not cat:
                 raise RuntimeError(f"category '{rec['category_slug']}' missing in DB")
+            # Spreadsheet-owned fields: refreshed on every run.
+            fields = {
+                "product_name": rec["display_name"], "sku": sku,
+                "category_slug": cat["slug"], "category_name": cat["name"],
+                "cost_price": float(rec.get("cost_price") or 0),
+                "color": rec.get("color") or "", "size": rec.get("size") or "",
+                "internal_notes": rec.get("internal_notes") or "",
+                "source": {"type": "inventory_xlsx", "row": rec["source_row"]},
+                "updated_at": storage.now_iso(),
+            }
+            if rec.get("material"):
+                fields["material"] = rec["material"]
+            existing = await db.products.find_one({"sku": sku})
+            if existing:
+                # Admin-owned after creation: selling/discount price, status,
+                # images and stock are never overwritten by a re-run.
+                await db.products.update_one({"sku": sku}, {"$set": fields})
+                report["updated"].append(sku)
+                continue
             images = []
             for i, rel in enumerate(rec["images"]):
                 stored, new = await upload_image(db, storage, Path(photo_dir) / rel, public_base)
@@ -378,48 +405,27 @@ async def import_products(manifest, photo_dir, public_base, only=None, db=None, 
                     "alt_text": f"{rec['display_name']} - image {i + 1}",
                     "is_main": i == 0, "sort_order": i,
                 })
-            fields = {
-                "product_name": rec["display_name"], "sku": sku,
-                "category_slug": cat["slug"], "category_name": cat["name"],
+            slug = slugify(rec["display_name"])
+            if await db.products.find_one({"slug": slug}):
+                slug = f"{slug}-{slugify(sku)}"
+            doc = {
+                "id": str(uuid.uuid4()), "slug": slug, **fields,
                 "selling_price": float(rec["selling_price"]),
                 "discount_price": float(rec["discount_price"]) if rec.get("discount_price") else None,
-                "cost_price": float(rec.get("cost_price") or 0),
-                "color": rec.get("color") or "", "size": rec.get("size") or "",
-                "internal_notes": rec.get("internal_notes") or "",
+                "price_is_temporary": bool(rec.get("price_is_temporary")),  # admin-only marker
                 "images": images,
-                "source": {"type": "inventory_xlsx", "row": rec["source_row"]},
-                "updated_at": storage.now_iso(),
+                "stock_quantity": rec["stock_quantity"], "low_stock_alert": 3,
+                "short_description": "", "full_description": "", "material": fields.get("material", ""),
+                "weight": None, "status": "draft",
+                "is_featured": False, "is_best_seller": False, "is_new_arrival": False,
+                "tags": [], "category_id": None, "brand_id": None, "seller_id": None,
+                "created_at": storage.now_iso(),
             }
-            if rec.get("material"):
-                fields["material"] = rec["material"]
-            existing = await db.products.find_one({"sku": sku})
-            if existing:
-                if existing.get("status") == "draft":
-                    fields["stock_quantity"] = rec["stock_quantity"]
-                    prev = int(existing.get("stock_quantity", 0))
-                    if prev != rec["stock_quantity"]:
-                        await _log_inventory(existing["id"], "adjustment", rec["stock_quantity"] - prev,
-                                             prev, rec["stock_quantity"], "Inventory spreadsheet import", None)
-                await db.products.update_one({"sku": sku}, {"$set": fields})
-                report["updated"].append(sku)
-            else:
-                slug = slugify(rec["display_name"])
-                if await db.products.find_one({"slug": slug}):
-                    slug = f"{slug}-{slugify(sku)}"
-                doc = {
-                    "id": str(uuid.uuid4()), "slug": slug, **fields,
-                    "stock_quantity": rec["stock_quantity"], "low_stock_alert": 3,
-                    "short_description": "", "full_description": "", "material": fields.get("material", ""),
-                    "weight": None, "status": "draft",
-                    "is_featured": False, "is_best_seller": False, "is_new_arrival": False,
-                    "tags": [], "category_id": None, "brand_id": None, "seller_id": None,
-                    "created_at": storage.now_iso(),
-                }
-                await db.products.insert_one({**doc})
-                if doc["stock_quantity"] > 0:
-                    await _log_inventory(doc["id"], "stock_in", doc["stock_quantity"], 0,
-                                         doc["stock_quantity"], "Inventory spreadsheet import", None)
-                report["created"].append(sku)
+            await db.products.insert_one({**doc})
+            if doc["stock_quantity"] > 0:
+                await _log_inventory(doc["id"], "stock_in", doc["stock_quantity"], 0,
+                                     doc["stock_quantity"], "Inventory spreadsheet import", None)
+            report["created"].append(sku)
         except Exception as exc:  # noqa: BLE001
             report["failed"].append({"sku": sku, "error": str(exc)})
     return report
@@ -432,6 +438,8 @@ def main():
     m.add_argument("--xlsx", required=True)
     m.add_argument("--photos", required=True)
     m.add_argument("--out", default="import_manifest.json")
+    m.add_argument("--temp-price", type=float,
+                   help="founder-approved temporary selling price (BDT) for rows without one; products stay draft")
     i = sub.add_parser("import")
     i.add_argument("--manifest", required=True)
     i.add_argument("--photos", help="override photo dir from manifest")
@@ -441,7 +449,7 @@ def main():
     a = ap.parse_args()
 
     if a.cmd == "manifest":
-        man = build_manifest(a.xlsx, a.photos)
+        man = build_manifest(a.xlsx, a.photos, a.temp_price)
         Path(a.out).write_text(json.dumps(man, indent=2, ensure_ascii=False), encoding="utf-8")
         print(json.dumps(man["summary"], indent=2, ensure_ascii=False))
         return

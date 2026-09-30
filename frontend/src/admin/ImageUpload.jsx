@@ -3,6 +3,14 @@ import { Loader2, Upload, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, fullImageUrl } from "@/admin/adminApi";
 
+// The storefront shows images[0] as the product photo, so the Main image is
+// always kept first and sort_order always matches array position.
+const normalize = (list) => {
+  const mainIdx = Math.max(0, list.findIndex((im) => im.is_main));
+  const ordered = list.length ? [list[mainIdx], ...list.filter((_, i) => i !== mainIdx)] : [];
+  return ordered.map((im, i) => ({ ...im, is_main: i === 0, sort_order: i }));
+};
+
 export default function ImageUpload({ images = [], onChange }) {
   const [busy, setBusy] = useState(false);
 
@@ -16,9 +24,7 @@ export default function ImageUpload({ images = [], onChange }) {
         const d = await uploadImage(f);
         uploaded.push({ image_url: fullImageUrl(d.url_path), alt_text: f.name, is_main: false, sort_order: 0 });
       }
-      let next = [...images, ...uploaded];
-      if (!next.some((i) => i.is_main) && next.length) next[0].is_main = true;
-      onChange(next);
+      onChange(normalize([...images, ...uploaded]));
       toast.success(`${uploaded.length} image(s) uploaded`);
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Upload failed");
@@ -28,12 +34,8 @@ export default function ImageUpload({ images = [], onChange }) {
     }
   };
 
-  const setMain = (idx) => onChange(images.map((im, i) => ({ ...im, is_main: i === idx })));
-  const remove = (idx) => {
-    let next = images.filter((_, i) => i !== idx);
-    if (next.length && !next.some((i) => i.is_main)) next[0].is_main = true;
-    onChange(next);
-  };
+  const setMain = (idx) => onChange(normalize(images.map((im, i) => ({ ...im, is_main: i === idx }))));
+  const remove = (idx) => onChange(normalize(images.filter((_, i) => i !== idx)));
 
   return (
     <div>
@@ -46,11 +48,11 @@ export default function ImageUpload({ images = [], onChange }) {
             )}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               {!im.is_main && (
-                <button type="button" onClick={() => setMain(idx)} title="Set as main" className="bg-white rounded-full p-1.5">
+                <button type="button" data-testid={`img-set-main-${idx}`} onClick={() => setMain(idx)} title="Set as main" className="bg-white rounded-full p-1.5">
                   <Star className="h-4 w-4 text-aayna-gold" />
                 </button>
               )}
-              <button type="button" onClick={() => remove(idx)} title="Remove" className="bg-white rounded-full p-1.5">
+              <button type="button" data-testid={`img-remove-${idx}`} onClick={() => remove(idx)} title="Remove" className="bg-white rounded-full p-1.5">
                 <X className="h-4 w-4 text-red-600" />
               </button>
             </div>
