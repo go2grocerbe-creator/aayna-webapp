@@ -240,7 +240,9 @@ async def health_ready():
             validate_security_config()
         except Exception:
             ready = False
-    payload = {"status": "ready" if ready else "not_ready", "app": "aayna", "environment": _current_env()}
+    from storage import storage_backend
+    payload = {"status": "ready" if ready else "not_ready", "app": "aayna", "environment": _current_env(),
+               "image_storage": storage_backend()}  # backend name only, never credentials
     if not ready:
         return JSONResponse(status_code=503, content=payload)
     return payload

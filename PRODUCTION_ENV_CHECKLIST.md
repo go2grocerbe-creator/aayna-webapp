@@ -18,7 +18,7 @@ never committed, never in this repo.
 |---|---|---|---|---|---|
 | `APP_ENV` | Yes | No | `development` | `production` (known, not yet set) | Must literally be `production`; `validate_security_config()` gates everything below on this |
 | `MONGO_URL` | Yes | Yes | `mongodb://localhost:27017` | NO — Atlas Flex (Singapore) connection string, founder/system must generate | Must point at a real, separate production MongoDB instance — never `aayna_dev`/`aayna_pytest`/`aayna_test` |
-| `DB_NAME` | Yes | No | `aayna_dev` | `aayna_prod` (known, not yet set) | Dedicated production database name — never one of the three existing dev/test names |
+| `DB_NAME` | Yes | No | `aayna_dev` | `aayna_prod` (known, not yet set) | Dedicated production database name — never one of the three existing dev/test names. Enforced: production startup refuses a `DB_NAME` containing `dev`/`test` and a localhost `MONGO_URL` |
 | `JWT_SECRET` | Yes | Yes | dev fallback string | NO — founder/system must generate (`python -c "import secrets;print(secrets.token_hex(32))"`) | Startup **refuses to boot** if missing, or equal to the known dev fallback value |
 | `ADMIN_EMAIL` | Yes | Yes | `admin@aayna.xyz` | NO — founder-chosen | Startup refuses to boot in production if unset |
 | `ADMIN_PASSWORD` | Yes | Yes | dev default | NO — founder-chosen, strong, unique | Startup refuses to boot if unset or equal to the known dev default |
@@ -29,7 +29,8 @@ never committed, never in this repo.
 | `ORDER_WEBHOOK_SECRET` | Optional | Yes | empty | NO | Adds an HMAC signature header if set; not required |
 | `NOTIFICATION_ROUTER_NAME` | Optional | No | `generic_webhook` | Unchanged | Metadata/logging label only |
 | `NOTIFICATION_ROUTER_MODE` | Optional | No | `webhook` | Unchanged | Metadata/logging label only |
-| `EMERGENT_LLM_KEY` | Not required at launch | Yes | empty (fails safe) | Deferred — object storage decision postponed, `INFRASTRUCTURE_BASELINE.md` | Only needed if Admin image upload is used; without it uploads fail cleanly (502), app doesn't crash |
+| `OBJECT_STORAGE_BUCKET` / `OBJECT_STORAGE_ENDPOINT` / `OBJECT_STORAGE_ACCESS_KEY` / `OBJECT_STORAGE_SECRET_KEY` | Yes (for Admin image upload) | Yes (keys) | empty | Cloudflare R2: bucket `aayna-product-images` (private), endpoint `https://<account_id>.r2.cloudflarestorage.com`, an R2 API token scoped to that bucket with Object Read & Write | `storage.py` uses these when all four are set; images are always served via `/api/files/...`, so the bucket stays private. `/api/health/ready` reports `image_storage: s3` once configured |
+| `EMERGENT_LLM_KEY` | No (dev fallback only) | Yes | empty | Leave unset in production | Used only when `OBJECT_STORAGE_*` is not set (local development) |
 | `APP_VERSION` | Optional | No | unset (defaults `1.0.0`) | Optional | Cosmetic, shown at `/api/health/version` |
 | `PORT` | Yes | No | `8000`/`8001` (manual, dev) | Set automatically by Railway | Railway injects this; the start command in `backend/railway.json` already reads `$PORT` — do not hardcode a port |
 
@@ -47,7 +48,7 @@ never committed, never in this repo.
 
 | Variable | Status |
 |---|---|
-| `OBJECT_STORAGE_BUCKET` / `OBJECT_STORAGE_ENDPOINT` / `OBJECT_STORAGE_ACCESS_KEY` / `OBJECT_STORAGE_SECRET_KEY` | Present (empty) in `backend/.env.test` but **not read anywhere in the codebase** — `storage.py` only uses `EMERGENT_LLM_KEY`. Dead/legacy placeholders from an earlier iteration; not required for anything. Noted here so nobody spends time trying to configure them. |
+| `OBJECT_STORAGE_*` | Now used by `storage.py` (S3-compatible / Cloudflare R2) - see the backend table above |
 
 ## Summary
 

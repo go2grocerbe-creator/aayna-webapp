@@ -103,6 +103,14 @@ def validate_security_config():
     if os.environ.get("JWT_SECRET") == _DEV_FALLBACK_SECRET:
         raise RuntimeError("Refusing to start in production with the development JWT_SECRET. Set a strong JWT_SECRET.")
 
+    # Production must never run against a development/test database.
+    db_name = (os.environ.get("DB_NAME") or "").strip().lower()
+    mongo_url = (os.environ.get("MONGO_URL") or "").strip().lower()
+    if not db_name or "dev" in db_name or "test" in db_name:
+        raise RuntimeError("DB_NAME must be the production database (e.g. aayna_prod) in production, not a dev/test database.")
+    if "localhost" in mongo_url or "127.0.0.1" in mongo_url:
+        raise RuntimeError("MONGO_URL must point to the managed production database in production, not localhost.")
+
     # Milestone 4A — additional production safety checks.
     site_url = (os.environ.get("PUBLIC_SITE_URL") or "").strip()
     if not site_url or "localhost" in site_url or "127.0.0.1" in site_url:

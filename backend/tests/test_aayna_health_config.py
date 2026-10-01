@@ -40,6 +40,8 @@ SAFE_PROD = {
     "CORS_ORIGINS": "https://www.aayna.com.bd",
     "ORDER_WEBHOOK_ENABLED": "false",
     "ORDER_WEBHOOK_URL": "",
+    "DB_NAME": "aayna_prod",
+    "MONGO_URL": "mongodb+srv://user:pass@cluster.example.mongodb.net",
 }
 
 

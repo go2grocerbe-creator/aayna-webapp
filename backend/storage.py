@@ -15,6 +15,40 @@ APP_NAME = "aayna"
 
 _storage_key = None
 
+# ---------------------------------------------------------------------------
+# Backend selection. Production uses any S3-compatible bucket (Cloudflare R2
+# recommended) configured through OBJECT_STORAGE_*. The Emergent object store
+# is kept only as a development fallback when those are not set. The bucket
+# stays private: images are always served through /api/files/<path> below,
+# so stored product URLs never depend on the storage vendor.
+# ---------------------------------------------------------------------------
+S3_BUCKET = (os.environ.get("OBJECT_STORAGE_BUCKET") or "").strip()
+S3_ENDPOINT = (os.environ.get("OBJECT_STORAGE_ENDPOINT") or "").strip()
+S3_ACCESS_KEY = (os.environ.get("OBJECT_STORAGE_ACCESS_KEY") or "").strip()
+S3_SECRET_KEY = (os.environ.get("OBJECT_STORAGE_SECRET_KEY") or "").strip()
+_s3_client = None
+
+
+def storage_backend() -> str:
+    if S3_BUCKET and S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
+        return "s3"
+    if EMERGENT_KEY:
+        return "emergent"
+    return "none"
+
+
+def _s3():
+    global _s3_client
+    if _s3_client is None:
+        import boto3
+        from botocore.config import Config
+        _s3_client = boto3.client(
+            "s3", endpoint_url=S3_ENDPOINT, aws_access_key_id=S3_ACCESS_KEY,
+            aws_secret_access_key=S3_SECRET_KEY, region_name="auto",
+            config=Config(signature_version="s3v4", retries={"max_attempts": 3}),
+        )
+    return _s3_client
+
 MIME_TYPES = {
     "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
     "gif": "image/gif", "webp": "image/webp",
@@ -27,6 +61,11 @@ files_router = APIRouter(prefix="/api")
 
 def init_storage():
     global _storage_key
+    if storage_backend() == "s3":
+        _s3()  # build client; object-scoped R2 tokens may not allow HeadBucket
+        return "s3"
+    if storage_backend() == "none":
+        raise RuntimeError("No object storage configured (set OBJECT_STORAGE_* )")
     if _storage_key:
         return _storage_key
     resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
@@ -38,12 +77,15 @@ def init_storage():
 def init_storage_safe():
     try:
         init_storage()
-        logger.info("Object storage initialized")
+        logger.info("Object storage initialized (%s)", storage_backend())
     except Exception as exc:  # noqa: BLE001
         logger.error("Storage init failed: %s", exc)
 
 
 def put_object(path: str, data: bytes, content_type: str) -> dict:
+    if storage_backend() == "s3":
+        _s3().put_object(Bucket=S3_BUCKET, Key=path, Body=data, ContentType=content_type)
+        return {"path": path, "size": len(data)}
     key = init_storage()
     resp = requests.put(
         f"{STORAGE_URL}/objects/{path}",
@@ -65,6 +107,9 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
 
 
 def get_object(path: str):
+    if storage_backend() == "s3":
+        obj = _s3().get_object(Bucket=S3_BUCKET, Key=path)
+        return obj["Body"].read(), obj.get("ContentType", "application/octet-stream")
     key = init_storage()
     resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
     if resp.status_code == 403:
