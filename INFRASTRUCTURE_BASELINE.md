@@ -36,7 +36,7 @@ so L4's behavior is unaffected either way.
 | Healthcheck | `GET /api/health/ready` | Same file — pings MongoDB and re-validates production config before Railway promotes a deploy; confirmed this leaks no secrets |
 | Restart policy | `ON_FAILURE` | Same file |
 | Region | `asia-southeast1-eqsg3a` (Singapore) | Same file, via `deploy.multiRegionConfig`, `numReplicas: 1` (Hobby-appropriate — not attempting horizontal scaling) |
-| Python version | `3.13` | Pinned via `backend/.python-version` (added this milestone, matches the actual local dev venv — Railway's Python builder respects this file) |
+| Python version | `3.12` | Pinned via `backend/.python-version`. Changed from 3.13: the pinned `pymongo==4.6.3` has no 3.13 wheel, so the first Railway build failed. All pinned packages have 3.12 wheels (verified) |
 | Custom domain | `api.shopaayna.com` — **not yet added** | Railway generates the required CNAME/verification record only once the domain is attached to an existing service; nothing is guessed here (§Domain below) |
 
 ## Database — MongoDB Atlas Flex (Singapore)
