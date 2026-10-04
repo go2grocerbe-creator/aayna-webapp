@@ -1,9 +1,12 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+// The storefront can render without a live API. In production the real API URL
+// should be supplied through REACT_APP_BACKEND_URL. An empty value deliberately
+// falls back to same-origin /api instead of producing "undefined/api".
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
+export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
-const client = axios.create({ baseURL: API });
+const client = axios.create({ baseURL: API, timeout: 10000 });
 
 export const getSettings = () => client.get("/settings").then((r) => r.data);
 export const getCategories = () => client.get("/categories").then((r) => r.data);
