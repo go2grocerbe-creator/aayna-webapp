@@ -1,95 +1,52 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { Toaster } from "@/components/ui/sonner";
-import { CartProvider } from "@/context/CartContext";
-import Layout from "@/components/Layout";
-import Analytics from "@/components/Analytics";
-import Home from "@/pages/Home";
-import Shop from "@/pages/Shop";
-import Category from "@/pages/Category";
-import ProductDetail from "@/pages/ProductDetail";
-import Cart from "@/pages/Cart";
-import Checkout from "@/pages/Checkout";
-import OrderConfirmation from "@/pages/OrderConfirmation";
-import TrackOrder from "@/pages/TrackOrder";
-import Contact from "@/pages/Contact";
-import StaticPage from "@/pages/StaticPage";
-import NotFound from "@/pages/NotFound";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
-import { AdminAuthLayout } from "@/admin/AdminAuthContext";
-import AdminLayout, { AdminProtected } from "@/admin/AdminLayout";
-import AdminLogin from "@/admin/AdminLogin";
-import Dashboard from "@/admin/pages/Dashboard";
-import Products from "@/admin/pages/Products";
-import ProductForm from "@/admin/pages/ProductForm";
-import Categories from "@/admin/pages/Categories";
-import Orders from "@/admin/pages/Orders";
-import OrderDetail from "@/admin/pages/OrderDetail";
-import Inventory from "@/admin/pages/Inventory";
-import Customers from "@/admin/pages/Customers";
-import CustomerDetail from "@/admin/pages/CustomerDetail";
-import Settings from "@/admin/pages/Settings";
-
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [pathname]);
-  return null;
-}
-
-function App() {
+function DemoHome() {
   return (
-    <div className="App">
-      <CartProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Analytics />
-          <Routes>
-            {/* Storefront */}
-            <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/category/:slug" element={<Category />} />
-              <Route path="/product/:slug" element={<ProductDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
-              <Route path="/track-order" element={<TrackOrder />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/delivery-policy" element={<StaticPage pageKey="delivery" />} />
-              <Route path="/returns" element={<StaticPage pageKey="returns" />} />
-              <Route path="/privacy" element={<StaticPage pageKey="privacy" />} />
-              <Route path="/terms" element={<StaticPage pageKey="terms" />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            {/* Admin */}
-            <Route path="/admin" element={<AdminAuthLayout />}>
-              <Route path="login" element={<AdminLogin />} />
-              <Route element={<AdminProtected />}>
-                <Route element={<AdminLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="products" element={<Products />} />
-                  <Route path="products/new" element={<ProductForm />} />
-                  <Route path="products/:id" element={<ProductForm />} />
-                  <Route path="categories" element={<Categories />} />
-                  <Route path="orders" element={<Orders />} />
-                  <Route path="orders/:orderNumber" element={<OrderDetail />} />
-                  <Route path="inventory" element={<Inventory />} />
-                  <Route path="customers" element={<Customers />} />
-                  <Route path="customers/:id" element={<CustomerDetail />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-              </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-        <Toaster position="top-center" richColors />
-      </CartProvider>
+    <div className="min-h-screen bg-aayna-cream text-aayna-charcoal">
+      <header className="border-b border-aayna-beige px-5 md:px-10 h-20 flex items-center justify-between">
+        <Link to="/" className="font-display text-3xl font-semibold text-aayna-burgundy tracking-[0.08em]">AAYNA</Link>
+        <div className="text-sm text-aayna-burgundy">Reflect Your Aura.</div>
+      </header>
+      <main>
+        <section className="min-h-[78vh] flex items-end">
+          <div className="max-w-7xl mx-auto w-full px-5 md:px-10 pb-20 md:pb-28 pt-24">
+            <p className="text-aayna-burgundy font-bold text-xs tracking-[0.24em] uppercase mb-5">AAYNA · Bangladesh</p>
+            <h1 className="font-display font-semibold leading-[0.95] tracking-tight">
+              <span className="block text-aayna-charcoal text-5xl sm:text-7xl md:text-8xl">Reflect Your</span>
+              <span className="block text-aayna-burgundy text-6xl sm:text-8xl md:text-9xl mt-2">Aura.</span>
+            </h1>
+            <p className="mt-7 max-w-xl text-aayna-taupe text-base md:text-lg">
+              Accessible premium jewellery, shaped by a modern Bangladeshi point of view.
+            </p>
+            <a href="#edit" className="inline-block mt-8 text-aayna-coral-dark font-semibold border-b border-aayna-coral-dark pb-1">Enter the Edit →</a>
+          </div>
+        </section>
+        <section id="edit" className="border-t border-aayna-beige py-20">
+          <div className="max-w-7xl mx-auto px-5 md:px-10">
+            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase">The Digital Mirror</p>
+            <h2 className="font-display text-4xl md:text-6xl text-aayna-burgundy mt-4">What are you drawn to today?</h2>
+            <div className="mt-12 grid md:grid-cols-3 gap-4">
+              {["Earrings","Necklaces","Rings"].map((x) => (
+                <div key={x} className="border border-aayna-beige min-h-52 p-7 flex items-end">
+                  <span className="font-display text-4xl text-aayna-charcoal">{x}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-12 text-sm text-aayna-taupe">AAYNA · Current collection preview</p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="*" element={<DemoHome />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
