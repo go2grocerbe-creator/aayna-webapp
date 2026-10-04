@@ -52,7 +52,7 @@ export default function AdminLogin() {
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(""); }}
             placeholder="admin@aayna.xyz"
-            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose mb-4"
+            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy mb-4"
             required
           />
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
@@ -62,7 +62,7 @@ export default function AdminLogin() {
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(""); }}
             placeholder="••••••••"
-            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose mb-4"
+            className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy mb-4"
             required
           />
           {error && (
@@ -74,7 +74,7 @@ export default function AdminLogin() {
             data-testid="admin-login-submit"
             type="submit"
             disabled={busy}
-            className="w-full h-11 bg-aayna-rose text-white font-semibold rounded-md hover:bg-aayna-rose-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-11 bg-aayna-burgundy text-white font-semibold rounded-md hover:bg-aayna-burgundy-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             Sign in

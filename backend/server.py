@@ -24,7 +24,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from db import db, client, now_iso, effective_price
-from auth import auth_router, seed_admin, ensure_indexes, validate_security_config
+from auth import auth_router, seed_admin, ensure_indexes, validate_security_config, IS_PRODUCTION
 from storage import storage_router, files_router, init_storage_safe
 from admin_routes import admin_router
 
@@ -32,6 +32,30 @@ app = FastAPI(title="AAYNA API")
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger("aayna")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+class _RedactTokenFilter(logging.Filter):
+    """GET /api/orders/{order_number} takes its confirmation token as a query
+    param (see get_order_confirmation below) - uvicorn's access log records
+    the full request line, so the raw token would otherwise land in routine
+    logs. Redact it there; the token's own hashing/validation is untouched."""
+    _pattern = re.compile(r'(token=)[^&\s"]+')
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Uvicorn's AccessFormatter unpacks record.args by fixed position
+        # (client_addr, method, full_path, http_version, status_code) - it
+        # does not just %-render record.msg like a normal logger. Clearing
+        # or reshaping record.args breaks that unpacking, so redact only the
+        # matching string elements in place and keep the tuple's shape.
+        if isinstance(record.args, tuple) and record.args:
+            record.args = tuple(
+                self._pattern.sub(r'\1REDACTED', a) if isinstance(a, str) and "token=" in a else a
+                for a in record.args
+            )
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_RedactTokenFilter())
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +158,17 @@ class TrackRequest(BaseModel):
 # Seeding
 # ---------------------------------------------------------------------------
 async def seed_database():
+    # Demo catalogue/settings seeding is only ever meant for local dev/QA.
+    # Production must not silently fill an empty launch DB with placeholder
+    # products - that requires explicit intent (L1 - seed protection).
+    if IS_PRODUCTION and str(os.environ.get("ALLOW_PRODUCTION_SEED", "")).strip().lower() not in ("1", "true", "yes", "on"):
+        if await db.categories.count_documents({}) == 0 and await db.products.count_documents({}) == 0:
+            logger.warning(
+                "Skipping demo catalogue seed: APP_ENV=production and ALLOW_PRODUCTION_SEED is not set. "
+                "Set ALLOW_PRODUCTION_SEED=true if you actually want the demo catalogue seeded here."
+            )
+        return
+
     if await db.categories.count_documents({}) == 0:
         await db.categories.insert_many([{**c} for c in SEED_CATEGORIES])
         logger.info("Seeded %d categories", len(SEED_CATEGORIES))
@@ -171,11 +206,15 @@ async def root():
 
 @api_router.get("/health")
 async def health():
-    """Public liveness check. Fast and safe — does NOT touch the database."""
+    """Public liveness check. Fast and safe — does NOT touch the database.
+    `database` is the configured DB_NAME (never the Mongo URI/credentials) so
+    automated tests can assert they're pointed at an isolated test database
+    before running anything - see backend/tests/conftest.py and ENVIRONMENTS.md."""
     return {
         "status": "ok",
         "app": "aayna",
         "environment": (os.environ.get("APP_ENV", "development") or "development").strip().lower(),
+        "database": os.environ.get("DB_NAME", ""),
     }
 
 
@@ -296,7 +335,14 @@ async def list_products(
 
 @api_router.get("/products/{slug}")
 async def get_product(slug: str):
-    product = await db.products.find_one({"slug": slug}, PUBLIC_PRODUCT_FIELDS)
+    # L2.1: this lookup had no status filter, unlike list_products() and the
+    # related-products query four lines below - an inactive/draft product's
+    # direct PDP route stayed publicly reachable by slug regardless of its
+    # status. Matches the same filter already used everywhere else public
+    # product data is read.
+    product = await db.products.find_one(
+        {"slug": slug, "status": {"$in": ["active", "out_of_stock"]}}, PUBLIC_PRODUCT_FIELDS
+    )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
@@ -740,10 +786,22 @@ async def track_order(req: TrackRequest):
 # Served under /api (externally reachable) AND at root paths for direct/
 # deployment-level routing. Absolute URLs come from PUBLIC_SITE_URL.
 # ---------------------------------------------------------------------------
+# L4: /track-order deliberately excluded - a per-customer lookup form has no
+# unique content to rank on. The route itself stays public and reachable;
+# only its indexability changed (see frontend/src/pages/TrackOrder.jsx,
+# noindex,follow).
 SITEMAP_STATIC_PATHS = [
-    "/", "/shop", "/contact", "/track-order",
+    "/", "/shop", "/contact",
     "/delivery-policy", "/returns", "/privacy", "/terms",
 ]
+
+# L4: mirrors the frontend's launch-scope allowlist (Shop.jsx/Category.jsx/
+# ProductDetail.jsx EDIT_CATEGORY_SLUGS). Bracelets/Hair Accessories/Gift
+# Sets are real, active catalogue - not deleted, not deactivated - but not
+# launch-promoted; those pages are noindex on the frontend, so they are kept
+# out of the sitemap rather than sending crawlers a page and a noindex
+# signal at once. Update both lists together if launch scope changes.
+LAUNCH_CATEGORY_SLUGS = {"earrings", "necklaces", "rings"}
 
 
 def _public_site_url() -> str:
@@ -762,11 +820,13 @@ async def _collect_sitemap_urls() -> list:
     base = _public_site_url()
     urls = [(base + p, None) for p in SITEMAP_STATIC_PATHS]
     cats = await db.categories.find(
-        {"status": "active"}, {"_id": 0, "slug": 1, "updated_at": 1}
+        {"status": "active", "slug": {"$in": list(LAUNCH_CATEGORY_SLUGS)}},
+        {"_id": 0, "slug": 1, "updated_at": 1},
     ).to_list(1000)
     urls += [(f"{base}/category/{c['slug']}", c.get("updated_at")) for c in cats if c.get("slug")]
     prods = await db.products.find(
-        {"status": {"$in": ["active", "out_of_stock"]}}, {"_id": 0, "slug": 1, "updated_at": 1}
+        {"status": {"$in": ["active", "out_of_stock"]}, "category_slug": {"$in": list(LAUNCH_CATEGORY_SLUGS)}},
+        {"_id": 0, "slug": 1, "updated_at": 1},
     ).to_list(5000)
     urls += [(f"{base}/product/{p['slug']}", p.get("updated_at")) for p in prods if p.get("slug")]
     return urls

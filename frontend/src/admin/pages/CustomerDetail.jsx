@@ -10,12 +10,12 @@ export default function CustomerDetail() {
   const { data: customer, isLoading } = useQuery({ queryKey: ["admin-customer", id], queryFn: () => getCustomer(id) });
 
   if (isLoading || !customer) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-rose" /></div>;
+    return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
   }
 
   return (
     <div className="max-w-4xl">
-      <Link to="/admin/customers" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-rose mb-4"><ArrowLeft className="h-4 w-4" /> Back to customers</Link>
+      <Link to="/admin/customers" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-burgundy mb-4"><ArrowLeft className="h-4 w-4" /> Back to customers</Link>
       <h1 className="text-2xl font-bold text-aayna-charcoal mb-1">{customer.full_name}</h1>
 
       <div className="grid md:grid-cols-3 gap-6 mt-5">
@@ -41,7 +41,7 @@ export default function CustomerDetail() {
                     <span className="text-xs text-gray-400 ml-2">{new Date(o.created_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-aayna-rose font-medium">{formatBDT(o.total_amount)}</span>
+                    <span className="text-aayna-burgundy font-medium">{formatBDT(o.total_amount)}</span>
                     <span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(o.order_status)}`}>{o.order_status}</span>
                   </div>
                 </Link>

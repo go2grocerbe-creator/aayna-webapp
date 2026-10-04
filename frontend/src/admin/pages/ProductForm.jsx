@@ -68,11 +68,11 @@ export default function ProductForm() {
     }
   };
 
-  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose focus:ring-1 focus:ring-aayna-rose text-sm";
+  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy text-sm";
 
   return (
     <div className="max-w-3xl">
-      <Link to="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-rose mb-4"><ArrowLeft className="h-4 w-4" /> Back to products</Link>
+      <Link to="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-burgundy mb-4"><ArrowLeft className="h-4 w-4" /> Back to products</Link>
       <h1 className="text-2xl font-bold text-aayna-charcoal mb-6">{isEdit ? "Edit Product" : "Add Product"}</h1>
 
       <form onSubmit={submit} className="space-y-6">
@@ -158,7 +158,7 @@ export default function ProductForm() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button data-testid="pf-save" type="submit" disabled={saving} className="h-11 px-6 bg-aayna-rose text-white rounded-md font-semibold hover:bg-aayna-rose-dark disabled:opacity-60 flex items-center gap-2">
+          <button data-testid="pf-save" type="submit" disabled={saving} className="h-11 px-6 bg-aayna-burgundy text-white rounded-md font-semibold hover:bg-aayna-burgundy-dark disabled:opacity-60 flex items-center gap-2">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} {isEdit ? "Save Changes" : "Create Product"}
           </button>
           <Link to="/admin/products" className="h-11 px-6 border border-gray-300 rounded-md font-medium flex items-center hover:bg-gray-50">Cancel</Link>

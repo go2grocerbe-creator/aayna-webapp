@@ -1,3 +1,12 @@
+// Policy content audited against CLAUDE.md's "never invent business policy
+// details" rule (Storefront Milestone 2, Part A). Specific timing/exclusion
+// commitments that had no founder confirmation or settings backing (delivery
+// SLA in days/hours, 3-day exchange window, earrings exclusion, no-change-of-
+// mind, order-cancellation cutoff) were removed rather than replaced with a
+// different invented figure. Delivery charge figures are NOT duplicated here
+// as static text - StaticPage.jsx injects them live from /api/settings (the
+// same settings Checkout.jsx already uses to compute the real total), so this
+// page can never drift from what a customer is actually charged.
 export const STATIC_PAGES = {
   delivery: {
     title: "Delivery Policy",
@@ -5,50 +14,45 @@ export const STATIC_PAGES = {
     sections: [
       {
         heading: "Delivery Areas",
-        body: "We deliver to all 64 districts of Bangladesh. Orders are processed within 24 hours of confirmation.",
+        body: "We deliver to all 64 districts of Bangladesh.",
       },
-      {
-        heading: "Estimated Delivery Time",
-        list: [
-          "Inside Dhaka: 1–2 working days",
-          "Outside Dhaka: 3–5 working days",
-        ],
-      },
-      {
-        heading: "Delivery Charges",
-        list: [
-          "Inside Dhaka: BDT 80",
-          "Outside Dhaka: BDT 130",
-        ],
-      },
+      // "Delivery Charges" section is injected dynamically by StaticPage.jsx
+      // from live settings — see DELIVERY_CHARGE_SECTION_KEY below.
       {
         heading: "Cash on Delivery",
-        body: "Cash on Delivery (COD) is available across Bangladesh. You can pay the full amount in cash when your order arrives.",
+        body: "Cash on Delivery (COD) is available. You can pay in cash when your order arrives.",
       },
     ],
   },
   returns: {
+    // L3.1, founder-approved rules only. Deliberately not specified because
+    // no founder decision exists yet: who pays return shipping, packaging/
+    // tags requirements, what evidence (e.g. photos) is needed, refund
+    // processing time, refund method, courier collection process, or any
+    // category exclusions. None of that is invented here - see
+    // LAUNCH_BUSINESS_SETTINGS_AUDIT.md.
     title: "Return & Exchange Policy",
-    intro: "Your satisfaction matters to us. Please read our exchange policy below.",
+    intro: "Here is how exchanges and refunds work at AAYNA.",
     sections: [
       {
         heading: "Exchange Window",
-        body: "Exchanges are accepted within 3 days of delivery. To start an exchange, please contact us on WhatsApp with your order ID.",
+        body: "You may request an exchange within 7 days of delivery.",
       },
       {
-        heading: "Damaged or Wrong Items",
-        body: "If you receive a damaged or wrong item, we will happily exchange it. Please share a photo of the item over WhatsApp within 3 days.",
+        heading: "Condition for a Standard Exchange",
+        body: "For a standard exchange, the item must be undamaged and in the condition you received it.",
       },
       {
-        heading: "Non-Exchangeable Items",
-        list: [
-          "Earrings cannot be exchanged for hygiene reasons.",
-          "We do not offer returns for change of mind.",
-        ],
+        heading: "Damaged or Wrong Item",
+        body: "If your order arrives damaged, or you received the wrong item, it's eligible for assessment. Depending on the outcome, we will offer a replacement or a refund.",
       },
       {
-        heading: "How to Request an Exchange",
-        body: "Contact our team on WhatsApp. Once approved, we will guide you through the exchange process.",
+        heading: "Refunds",
+        body: "Refund eligibility is determined after assessment of the reported damage or quality issue.",
+      },
+      {
+        heading: "How to Reach Us",
+        body: "Visit our Contact page for the best way to reach our team.",
       },
     ],
   },
@@ -62,7 +66,7 @@ export const STATIC_PAGES = {
       },
       {
         heading: "How We Use It",
-        body: "Your information is used solely to confirm, deliver, and support your orders. We may contact you about your order via phone, WhatsApp, or SMS.",
+        body: "Your information is used solely to confirm, deliver, and support your orders. We may use the contact information you provide to communicate with you about your order.",
       },
       {
         heading: "Data Sharing",
@@ -84,7 +88,7 @@ export const STATIC_PAGES = {
       },
       {
         heading: "Order Cancellation",
-        body: "Orders can be cancelled before they are sent to courier. Once shipped, an order cannot be cancelled.",
+        body: "If you need to cancel or change an order, please contact us as soon as possible and we'll do what we can before it ships.",
       },
       {
         heading: "Delivery Responsibility",

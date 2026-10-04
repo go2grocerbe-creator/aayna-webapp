@@ -1,81 +1,64 @@
-import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
-import { getProducts, getCategory } from "@/lib/api";
-import ProductGrid from "@/components/ProductGrid";
+import { getCategory } from "@/lib/api";
+import { useCategories } from "@/hooks/useStore";
+import TheEdit from "@/components/TheEdit";
 import { useSeo } from "@/lib/seo";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-const SORTS = [
-  { value: "newest", label: "Newest" },
-  { value: "price_low", label: "Price: Low to High" },
-  { value: "price_high", label: "Price: High to Low" },
-  { value: "best_seller", label: "Best Sellers" },
-];
+// /category/:slug — same D2 "The Edit" presentation as /shop, just with the
+// current category already active. Switching to a different category in the
+// nav navigates to that category's own route (real per-category SEO/URL,
+// not client-side-only filtering), preserving existing route architecture.
+const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
 
 export default function Category() {
   const { slug } = useParams();
-  const [sort, setSort] = useState("newest");
+  const navigate = useNavigate();
+  const { data: allCategories = [] } = useCategories();
+  const categories = allCategories.filter((c) => EDIT_CATEGORY_SLUGS.includes(c.slug));
 
-  const { data: category } = useQuery({
+  const { data: category, isLoading, isError } = useQuery({
     queryKey: ["category", slug],
     queryFn: () => getCategory(slug),
+    retry: 1,
   });
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", "category", slug, sort],
-    queryFn: () => getProducts({ category: slug, sort }),
-  });
+  // L4: an unknown slug used to fall through to a generic "Category" page,
+  // fully indexable, with no products and no explanation - a fake empty SEO
+  // page. A real but not-yet-launched category (Bracelets, Hair Accessories,
+  // Gift Sets) still renders normally, just noindex - it's not "not found",
+  // it just has no launch inventory to rank on yet.
+  const notFound = !isLoading && (isError || !category);
+  const isLaunchCategory = !!category && EDIT_CATEGORY_SLUGS.includes(category.slug);
 
   useSeo({
-    title: category?.name || "Category",
+    title: category?.name || (notFound ? "Category Not Found" : "Category"),
     description: category?.description
       ? `${category.description} Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`
       : `Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`,
     image: category?.image_url,
+    noindex: notFound ? true : !isLaunchCategory,
   });
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe mb-6">
-        <Link to="/" className="hover:text-aayna-rose">Home</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link to="/shop" className="hover:text-aayna-rose">Shop</Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-aayna-charcoal">{category?.name || slug}</span>
-      </nav>
+  const handleCategoryChange = (nextSlug) => {
+    navigate(nextSlug ? `/category/${nextSlug}` : "/shop");
+  };
 
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-aayna-charcoal">
-            {category?.name || "Category"}
-          </h1>
-          {category?.description && (
-            <p className="text-aayna-taupe mt-2 max-w-2xl">{category.description}</p>
-          )}
-        </div>
-        <div className="w-full md:w-56">
-          <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger data-testid="category-sort" className="bg-white border-aayna-beige h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORTS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+  if (notFound) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <p className="text-aayna-charcoal text-lg mb-2">Category not found.</p>
+        <p className="text-aayna-taupe text-sm mb-6">This category may have been renamed or the link is incorrect.</p>
+        <Link to="/shop" className="text-aayna-burgundy underline underline-offset-2 text-sm">Browse The Edit</Link>
       </div>
+    );
+  }
 
-      <p className="text-sm text-aayna-taupe mb-4">{products.length} products</p>
-      <ProductGrid products={products} loading={isLoading} emptyText="No products in this category yet." />
-    </div>
+  return (
+    <TheEdit
+      categories={categories}
+      activeCategory={slug}
+      onCategoryChange={handleCategoryChange}
+      contextLabel={category?.name ? `The Edit — ${category.name}` : undefined}
+    />
   );
 }

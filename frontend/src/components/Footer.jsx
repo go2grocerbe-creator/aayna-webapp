@@ -1,21 +1,38 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Mail, Phone } from "lucide-react";
+import { Instagram, Facebook, Phone } from "lucide-react";
 import { useSettings, useCategories } from "@/hooks/useStore";
+import { isPlaceholder } from "@/lib/format";
 
 export default function Footer() {
   const { data: settings } = useSettings();
   const { data: categories = [] } = useCategories();
   const year = new Date().getFullYear();
 
+  // L3.1: WhatsApp/phone only renders once it's a real, non-placeholder
+  // number - same isPlaceholder() gate WhatsAppFloat/PDP already use, now
+  // applied here too. Support email is intentionally not shown as a launch
+  // contact channel yet - founder has not approved one for production (not
+  // a placeholder-detection question, a launch-readiness one); see
+  // LAUNCH_BUSINESS_SETTINGS_AUDIT.md. "We accept" only lists methods that
+  // are actually selectable at checkout today, instead of a hardcoded list
+  // that claimed bKash/Nagad were accepted while Checkout disabled both.
+  const hasWhatsapp = !isPlaceholder(settings?.whatsapp_number);
+  const paymentBadges = [
+    settings?.cod_available !== false && "Cash on Delivery",
+    !isPlaceholder(settings?.bkash_number) && "bKash",
+    !isPlaceholder(settings?.nagad_number) && "Nagad",
+  ].filter(Boolean);
+
   return (
-    <footer data-testid="site-footer" className="bg-aayna-charcoal text-aayna-beige mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <footer data-testid="site-footer" className="bg-aayna-burgundy-dark text-aayna-beige mt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           <div className="col-span-2 md:col-span-1">
-            <span className="font-display text-2xl font-extrabold text-aayna-cream tracking-tight">AAYNA</span>
+            {/* FOUNDER ASSET REQUIRED — FINAL LOGO: text wordmark, see Header.jsx */}
+            <span className="font-display text-2xl font-semibold text-aayna-cream tracking-[0.08em]">AAYNA</span>
             <p className="mt-3 text-sm text-aayna-beige/80 leading-relaxed max-w-xs">
-              {settings?.tagline || "Reflect your everyday style."} Affordable, trendy and feminine
-              accessories delivered across Bangladesh.
+              {settings?.tagline || "Reflect Your Aura."} Accessible premium jewelry for
+              everyday wear, delivered across Bangladesh.
             </p>
             <div className="flex items-center gap-3 mt-5">
               <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-aayna-gold transition-colors">
@@ -54,18 +71,17 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-aayna-cream mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
-                <Phone className="h-4 w-4 text-aayna-gold" /> {settings?.whatsapp_number}
-              </li>
-              <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
-                <Mail className="h-4 w-4 text-aayna-gold" /> {settings?.support_email}
-              </li>
+              {hasWhatsapp && (
+                <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
+                  <Phone className="h-4 w-4 text-aayna-gold" /> {settings.whatsapp_number}
+                </li>
+              )}
               <li><Link to="/contact" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Contact Us</Link></li>
             </ul>
             <div className="mt-5">
               <p className="text-xs text-aayna-beige/60 mb-2">We accept</p>
               <div className="flex flex-wrap gap-2">
-                {["Cash on Delivery", "bKash", "Nagad"].map((m) => (
+                {paymentBadges.map((m) => (
                   <span key={m} className="text-[11px] font-semibold bg-white/10 border border-white/15 px-2.5 py-1 rounded-sm">
                     {m}
                   </span>

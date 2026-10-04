@@ -58,9 +58,18 @@ class TestSitemap:
     def test_sitemap_includes_public_pages(self):
         base = _sitemap_base()
         body = requests.get(f"{API}/sitemap.xml", timeout=30).text
-        for path in ["/", "/shop", "/contact", "/track-order",
+        for path in ["/", "/shop", "/contact",
                      "/delivery-policy", "/returns", "/privacy", "/terms"]:
             assert f"<loc>{base}{path}</loc>" in body, f"missing {path}"
+
+    def test_sitemap_excludes_track_order(self):
+        # L4: track-order is a per-customer lookup form with no unique
+        # content to rank on - deliberately noindex'd and dropped from the
+        # sitemap. The route itself stays public (checked elsewhere); this
+        # only asserts it is not advertised for indexing.
+        base = _sitemap_base()
+        body = requests.get(f"{API}/sitemap.xml", timeout=30).text
+        assert f"<loc>{base}/track-order</loc>" not in body
 
     def test_sitemap_includes_active_categories_and_products(self):
         base = _sitemap_base()

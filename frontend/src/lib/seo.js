@@ -2,9 +2,9 @@ import { useEffect } from "react";
 
 const SITE_NAME = "AAYNA";
 const SITE_URL = (process.env.REACT_APP_PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
-const DEFAULT_TITLE = "AAYNA — Reflect your everyday style.";
+const DEFAULT_TITLE = "AAYNA — Reflect Your Aura.";
 const DEFAULT_DESC =
-  "AAYNA — trendy, affordable women's accessories in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
+  "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.";
 
 function siteOrigin() {
   return SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
@@ -40,7 +40,8 @@ export function useSeo({ title, description, image, noindex } = {}) {
     const url = siteOrigin() + window.location.pathname;
     document.title = fullTitle;
     upsertMeta("name", "description", desc);
-    upsertMeta("name", "robots", noindex ? "noindex,nofollow" : "index,follow");
+    const robots = noindex === "follow" ? "noindex,follow" : noindex ? "noindex,nofollow" : "index,follow";
+    upsertMeta("name", "robots", robots);
 
     upsertMeta("property", "og:site_name", SITE_NAME);
     upsertMeta("property", "og:type", "website");

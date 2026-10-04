@@ -35,14 +35,14 @@ export default function Inventory() {
     } finally { setSaving(false); }
   };
 
-  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-rose text-sm";
+  const field = "w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy text-sm";
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Inventory</h1>
         <label className="flex items-center gap-2 text-sm text-gray-600">
-          <input data-testid="low-stock-toggle" type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="accent-aayna-rose h-4 w-4" />
+          <input data-testid="low-stock-toggle" type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="accent-aayna-burgundy h-4 w-4" />
           Low stock only
         </label>
       </div>
@@ -62,7 +62,7 @@ export default function Inventory() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-rose mx-auto" /></td></tr>
+                <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
               ) : products.map((p) => (
                 <tr key={p.id} data-testid={`inv-row-${p.sku}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-aayna-charcoal font-medium">{p.product_name}</td>
@@ -76,7 +76,7 @@ export default function Inventory() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openAdjust(p)} data-testid={`adjust-stock-${p.sku}`} className="px-2.5 py-1.5 text-xs border border-gray-300 rounded-md flex items-center gap-1 hover:bg-gray-50"><Plus className="h-3.5 w-3.5" /> Adjust</button>
-                      <button onClick={() => setLogsFor(p)} className="p-2 text-gray-500 hover:text-aayna-rose" title="View log"><History className="h-4 w-4" /></button>
+                      <button onClick={() => setLogsFor(p)} className="p-2 text-gray-500 hover:text-aayna-burgundy" title="View log"><History className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -113,7 +113,7 @@ export default function Inventory() {
           </div>
           <DialogFooter>
             <button onClick={() => setAdjustFor(null)} className="h-10 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
-            <button data-testid="adjust-save" onClick={saveAdjust} disabled={saving} className="h-10 px-5 bg-aayna-rose text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Apply</button>
+            <button data-testid="adjust-save" onClick={saveAdjust} disabled={saving} className="h-10 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Apply</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
