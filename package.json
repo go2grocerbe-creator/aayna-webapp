@@ -1,0 +1,8 @@
+{
+  "name": "aayna-webapp-deployment",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "yarn --cwd frontend install --frozen-lockfile && yarn --cwd frontend build"
+  }
+}
