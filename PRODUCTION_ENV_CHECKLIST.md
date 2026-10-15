@@ -18,7 +18,7 @@ never committed, never in this repo.
 |---|---|---|---|---|---|
 | `APP_ENV` | Yes | No | `development` | `production` (known, not yet set) | Must literally be `production`; `validate_security_config()` gates everything below on this |
 | `MONGO_URL` | Yes | Yes | `mongodb://localhost:27017` | NO — Atlas Flex (Singapore) connection string, founder/system must generate | Must point at a real, separate production MongoDB instance — never `aayna_dev`/`aayna_pytest`/`aayna_test` |
-| `DB_NAME` | Yes | No | `aayna_dev` | `aayna_prod` (known, not yet set) | Dedicated production database name — never one of the three existing dev/test names |
+| `DB_NAME` | Yes | No | `aayna_dev` | `aayna_prod` (known, not yet set) | Dedicated production database name — never one of the three existing dev/test names. Enforced: production startup refuses a `DB_NAME` containing `dev`/`test` and a localhost `MONGO_URL` |
 | `JWT_SECRET` | Yes | Yes | dev fallback string | NO — founder/system must generate (`python -c "import secrets;print(secrets.token_hex(32))"`) | Startup **refuses to boot** if missing, or equal to the known dev fallback value |
 | `ADMIN_EMAIL` | Yes | Yes | `admin@aayna.xyz` | NO — founder-chosen | Startup refuses to boot in production if unset |
 | `ADMIN_PASSWORD` | Yes | Yes | dev default | NO — founder-chosen, strong, unique | Startup refuses to boot if unset or equal to the known dev default |
