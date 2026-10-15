@@ -1,74 +1,95 @@
 import "@/App.css";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { CartProvider } from "@/context/CartContext";
+import Layout from "@/components/Layout";
+import Analytics from "@/components/Analytics";
+import Home from "@/pages/Home";
+import Shop from "@/pages/Shop";
+import Category from "@/pages/Category";
+import ProductDetail from "@/pages/ProductDetail";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import OrderConfirmation from "@/pages/OrderConfirmation";
+import TrackOrder from "@/pages/TrackOrder";
+import Contact from "@/pages/Contact";
+import StaticPage from "@/pages/StaticPage";
+import NotFound from "@/pages/NotFound";
 
-const categories = [
-  { name: "Earrings", mark: "E", line: "Light at the edge of the face." },
-  { name: "Necklaces", mark: "N", line: "A quiet centre of attention." },
-  { name: "Rings", mark: "R", line: "Small details. Strong presence." },
-];
+import { AdminAuthLayout } from "@/admin/AdminAuthContext";
+import AdminLayout, { AdminProtected } from "@/admin/AdminLayout";
+import AdminLogin from "@/admin/AdminLogin";
+import Dashboard from "@/admin/pages/Dashboard";
+import Products from "@/admin/pages/Products";
+import ProductForm from "@/admin/pages/ProductForm";
+import Categories from "@/admin/pages/Categories";
+import Orders from "@/admin/pages/Orders";
+import OrderDetail from "@/admin/pages/OrderDetail";
+import Inventory from "@/admin/pages/Inventory";
+import Customers from "@/admin/pages/Customers";
+import CustomerDetail from "@/admin/pages/CustomerDetail";
+import Settings from "@/admin/pages/Settings";
 
-export default function App() {
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
+}
+
+function App() {
   return (
-    <div className="min-h-screen bg-aayna-cream text-aayna-charcoal overflow-x-hidden">
-      <header className="fixed inset-x-0 top-0 z-50 bg-aayna-cream/95 backdrop-blur border-b border-aayna-beige/70">
-        <div className="h-[68px] px-5 flex items-center justify-between max-w-7xl mx-auto">
-          <span className="font-display text-[25px] font-semibold text-aayna-burgundy tracking-[0.12em]">AAYNA</span>
-          <a href="#mirror" className="text-[11px] uppercase tracking-[0.18em] text-aayna-burgundy font-semibold">The Edit</a>
-        </div>
-      </header>
+    <div className="App">
+      <CartProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Analytics />
+          <Routes>
+            {/* Storefront */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/category/:slug" element={<Category />} />
+              <Route path="/product/:slug" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
+              <Route path="/track-order" element={<TrackOrder />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/delivery-policy" element={<StaticPage pageKey="delivery" />} />
+              <Route path="/returns" element={<StaticPage pageKey="returns" />} />
+              <Route path="/privacy" element={<StaticPage pageKey="privacy" />} />
+              <Route path="/terms" element={<StaticPage pageKey="terms" />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
 
-      <main>
-        <section className="relative min-h-[100svh] px-5 pt-[120px] pb-14 flex flex-col justify-between">
-          <div aria-hidden="true" className="absolute -right-28 top-24 w-72 h-72 rounded-full border border-aayna-burgundy/10" />
-          <div aria-hidden="true" className="absolute -right-16 top-36 w-48 h-48 rounded-full border border-aayna-coral/10" />
-          <div className="relative z-10">
-            <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-aayna-coral-dark">Jewellery · Bangladesh</p>
-            <h1 className="font-display mt-8 font-semibold leading-[0.88] tracking-[-0.045em]">
-              <span className="block text-[15vw] sm:text-7xl text-aayna-charcoal">Reflect</span>
-              <span className="block text-[15vw] sm:text-7xl text-aayna-charcoal">Your</span>
-              <span className="block text-[20vw] sm:text-8xl text-aayna-burgundy italic -ml-1">Aura.</span>
-            </h1>
-            <p className="mt-8 max-w-[310px] text-[15px] leading-6 text-aayna-taupe">
-              Modern adornment with a Bangladeshi point of view — expressive, feminine and made for everyday ritual.
-            </p>
-          </div>
-          <div className="relative z-10 flex items-end justify-between mt-14">
-            <a href="#mirror" className="inline-flex items-center gap-3 text-sm font-semibold text-aayna-burgundy border-b border-aayna-burgundy pb-1">
-              Enter the mirror <span>↓</span>
-            </a>
-            <span className="font-bangla text-4xl text-aayna-burgundy/15">আয়না</span>
-          </div>
-        </section>
-
-        <section id="mirror" className="px-5 py-20 border-t border-aayna-beige">
-          <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-aayna-coral-dark">The Digital Mirror</p>
-          <h2 className="font-display mt-4 text-[39px] leading-[1.02] font-semibold text-aayna-burgundy-dark max-w-sm">
-            What are you drawn to today?
-          </h2>
-          <p className="font-display italic mt-4 text-aayna-taupe text-sm">A mirror doesn't create you. It reveals you.</p>
-
-          <div className="mt-12 border-t border-aayna-beige">
-            {categories.map((c, i) => (
-              <div key={c.name} className="relative py-7 border-b border-aayna-beige flex items-center justify-between gap-5">
-                <div>
-                  <p className="font-display text-[34px] leading-none text-aayna-charcoal">{c.name}</p>
-                  <p className="mt-2 text-xs text-aayna-taupe">{c.line}</p>
-                </div>
-                <span className="font-display text-[64px] leading-none text-aayna-burgundy/[0.08]">{c.mark}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-5 mb-5 bg-aayna-burgundy text-aayna-cream px-6 py-12">
-          <p className="text-[10px] tracking-[0.22em] uppercase text-aayna-beige">AAYNA</p>
-          <p className="font-display text-4xl leading-tight mt-3">Your reflection,<br/><span className="italic text-aayna-gold">your edit.</span></p>
-          <p className="text-sm leading-6 text-aayna-beige/80 mt-5">A new jewellery experience is taking shape in Bangladesh.</p>
-        </section>
-      </main>
-
-      <footer className="px-5 py-8 flex justify-between items-center text-[11px] text-aayna-taupe">
-        <span>© 2026 AAYNA</span><span>Reflect Your Aura.</span>
-      </footer>
+            {/* Admin */}
+            <Route path="/admin" element={<AdminAuthLayout />}>
+              <Route path="login" element={<AdminLogin />} />
+              <Route element={<AdminProtected />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="products" element={<Products />} />
+                  <Route path="products/new" element={<ProductForm />} />
+                  <Route path="products/:id" element={<ProductForm />} />
+                  <Route path="categories" element={<Categories />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="orders/:orderNumber" element={<OrderDetail />} />
+                  <Route path="inventory" element={<Inventory />} />
+                  <Route path="customers" element={<Customers />} />
+                  <Route path="customers/:id" element={<CustomerDetail />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-center" richColors />
+      </CartProvider>
     </div>
   );
 }
+
+export default App;
