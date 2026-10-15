@@ -1,0 +1,232 @@
+[
+  {
+    "name": "[320px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=320 clientWidth=320 offenders=div.flex-none,a.group,div.relative,div.pt-3,h3.font-display"
+  },
+  {
+    "name": "[320px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[320px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[360px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=360 clientWidth=360 offenders=div.flex-none,a.group,div.relative,div.pt-3,h3.font-display"
+  },
+  {
+    "name": "[360px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[360px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[375px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=375 clientWidth=375 offenders=div.flex-none,a.group,div.relative,div.pt-3,h3.font-display"
+  },
+  {
+    "name": "[375px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[375px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[390px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=390 clientWidth=390 offenders=div.flex-none,a.group,div.relative,div.pt-3,h3.font-display"
+  },
+  {
+    "name": "[390px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[390px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[430px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=430 clientWidth=430 offenders=div.flex-none,a.group,div.relative,div.pt-3,h3.font-display"
+  },
+  {
+    "name": "[430px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[430px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[768px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=768 clientWidth=768"
+  },
+  {
+    "name": "[768px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[768px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[820px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=820 clientWidth=820"
+  },
+  {
+    "name": "[820px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[820px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1024px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=1024 clientWidth=1024"
+  },
+  {
+    "name": "[1024px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[1024px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1280px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=1280 clientWidth=1280"
+  },
+  {
+    "name": "[1280px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[1280px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1440px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=1440 clientWidth=1440"
+  },
+  {
+    "name": "[1440px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[1440px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1920px] no horizontal overflow",
+    "ok": true,
+    "detail": "scrollWidth=1920 clientWidth=1920"
+  },
+  {
+    "name": "[1920px] hero headline not clipped",
+    "ok": true,
+    "detail": "\"Reflect Your Aura.\""
+  },
+  {
+    "name": "[1920px] no uncaught errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "hero headline is 'Reflect Your Aura.'",
+    "ok": true,
+    "detail": "Reflect Your Aura."
+  },
+  {
+    "name": "Bracelets present in Digital Mirror categories",
+    "ok": true,
+    "detail": "earrings,necklaces,rings,bracelets"
+  },
+  {
+    "name": "mirror category tap targets >= 44px",
+    "ok": true,
+    "detail": "0 below 44px"
+  },
+  {
+    "name": "INFO hero 'shop now' CTA height (pre-existing, Phase 3)",
+    "ok": true,
+    "detail": "after 25px, before 25px"
+  },
+  {
+    "name": "footer bottom nav links all 8 pages",
+    "ok": true,
+    "detail": "/ /shop /track-order /contact /delivery-policy /returns /privacy /terms"
+  },
+  {
+    "name": "footer tagline 'Contemporary, proudly Bangladeshi.'",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mirror sheen applied and animating",
+    "ok": true,
+    "detail": "aayna-mirror-sheen"
+  },
+  {
+    "name": "INFO footer nav link tap height",
+    "ok": true,
+    "detail": "min 16px (<44px; Phase 3 item)"
+  },
+  {
+    "name": "mirror sheen disabled under prefers-reduced-motion",
+    "ok": true,
+    "detail": "animation-name=none"
+  },
+  {
+    "name": "footer nav link navigates (Returns)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1024 touch] tapping Bracelets shows preview with Add to Cart (no hover)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "[1024 touch] preview Add to Cart adds the previewed product",
+    "ok": true,
+    "detail": "label=\"ADD TO CART\" badge=\"1\" item=pearl-charm-bracelet"
+  },
+  {
+    "name": "[390 touch] tapping Bracelets selects it and shows bracelet products",
+    "ok": true,
+    "detail": "pref=bracelets braceletLinks=2"
+  }
+]

@@ -1,0 +1,656 @@
+[
+  {
+    "w": 320,
+    "label": "after",
+    "sw": 320,
+    "cw": 320,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 320,
+    "label": "before",
+    "sw": 320,
+    "cw": 320,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 360,
+    "label": "after",
+    "sw": 360,
+    "cw": 360,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 360,
+    "label": "before",
+    "sw": 360,
+    "cw": 360,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 375,
+    "label": "after",
+    "sw": 375,
+    "cw": 375,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 375,
+    "label": "before",
+    "sw": 375,
+    "cw": 375,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 390,
+    "label": "after",
+    "sw": 390,
+    "cw": 390,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 390,
+    "label": "before",
+    "sw": 390,
+    "cw": 390,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 430,
+    "label": "after",
+    "sw": 430,
+    "cw": 430,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 430,
+    "label": "before",
+    "sw": 430,
+    "cw": 430,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [
+      "div.flex-none",
+      "a.group",
+      "div.relative",
+      "div.pt-3",
+      "h3.font-display"
+    ],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 768,
+    "label": "after",
+    "sw": 768,
+    "cw": 768,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 768,
+    "label": "before",
+    "sw": 768,
+    "cw": 768,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 820,
+    "label": "after",
+    "sw": 820,
+    "cw": 820,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 820,
+    "label": "before",
+    "sw": 820,
+    "cw": 820,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 1024,
+    "label": "after",
+    "sw": 1024,
+    "cw": 1024,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 1024,
+    "label": "before",
+    "sw": 1024,
+    "cw": 1024,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 1280,
+    "label": "after",
+    "sw": 1280,
+    "cw": 1280,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 1280,
+    "label": "before",
+    "sw": 1280,
+    "cw": 1280,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 1440,
+    "label": "after",
+    "sw": 1440,
+    "cw": 1440,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 1440,
+    "label": "before",
+    "sw": 1440,
+    "cw": 1440,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  },
+  {
+    "w": 1920,
+    "label": "after",
+    "sw": 1920,
+    "cw": 1920,
+    "h1": "Reflect Your Aura.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings",
+      "bracelets"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [
+      "/",
+      "/shop",
+      "/track-order",
+      "/contact",
+      "/delivery-policy",
+      "/returns",
+      "/privacy",
+      "/terms"
+    ],
+    "footerLinkMinH": 16,
+    "footerTagline": true,
+    "sheen": true,
+    "sheenAnim": "aayna-mirror-sheen",
+    "errors": 0
+  },
+  {
+    "w": 1920,
+    "label": "before",
+    "sw": 1920,
+    "cw": 1920,
+    "h1": "Everyday Luxury, Reflected.",
+    "h1Clipped": false,
+    "offenders": [],
+    "mirrorCats": [
+      "earrings",
+      "necklaces",
+      "rings"
+    ],
+    "smallTargets": 0,
+    "heroCtaH": 25,
+    "footerLinks": [],
+    "footerLinkMinH": null,
+    "footerTagline": false,
+    "sheen": false,
+    "sheenAnim": null,
+    "errors": 0
+  }
+]

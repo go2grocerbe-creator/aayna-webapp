@@ -1,0 +1,30 @@
+PASS  unauthenticated GET /admin/products refused  — HTTP 401
+PASS  unauthenticated GET /admin/orders refused  — HTTP 401
+PASS  unauthenticated GET /admin/customers refused  — HTTP 401
+PASS  unauthenticated GET /admin/dashboard refused  — HTTP 401
+PASS  draft: product detail is 404
+PASS  draft: not in public product list  — 0 hits
+PASS  draft: cart/validate marks unavailable  — {"product_id": "2d320b12-53be-401a-8a42-3e0fe91f683f", "available": false, "reason": "Product no longer available", "qua
+PASS  draft: checkout by known id refused  — HTTP 400 {"detail":"A product in your cart is no longer available"}
+PASS  draft: stock untouched
+PASS  inactive: product detail is 404
+PASS  inactive: not in public product list  — 0 hits
+PASS  inactive: cart/validate marks unavailable  — {"product_id": "78f4c8c9-009a-4047-8cd3-e6e54fca143c", "available": false, "reason": "Product no longer available", "qua
+PASS  inactive: checkout by known id refused  — HTTP 400 {"detail":"A product in your cart is no longer available"}
+PASS  inactive: stock untouched
+PASS  active: public detail has no private fields  — leaks=[]
+PASS  public product list has no private fields  — leaks=[]
+PASS  public categories have no private fields
+PASS  active: checkout qty 2 succeeds  — HTTP 200
+PASS  order response has no private fields  — leaks=[]
+PASS  stock decremented 3 -> 1  — stock=1
+PASS  oversell (qty 2 of 1 left) refused, stock unchanged  — HTTP 400, stock=1
+PASS  last unit sells; status flips to out_of_stock  — stock=0 status=out_of_stock
+PASS  out_of_stock product cannot be bought  — HTTP 400
+PASS  order confirmation without token is 404  — HTTP 404
+PASS  order confirmation (with token) has no private fields  — HTTP 200 leaks=[]
+PASS  admin price change clears price_is_temporary  — HTTP 200 flag=False
+PASS  admin restock returns product to active  — status=active
+PASS  admin restock keeps a draft as draft  — status=draft
+
+28/28 checks passed

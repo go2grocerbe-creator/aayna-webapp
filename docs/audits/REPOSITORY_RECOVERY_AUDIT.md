@@ -11,7 +11,7 @@ Status legend: **VERIFIED** (executed, evidence below) · **NOT VERIFIED** (coul
 | Item | Finding | Evidence |
 |---|---|---|
 | Branch audited | `chore/production-consolidation-20261015` @ `744db79`, fresh clone from GitHub, clean working tree | `git status -sb` |
-| Founder's local checkout `E:\deMarkt\aayna-webapp` | **NOT VERIFIED** — folder access was requested from the session and not granted in time. Any unpushed local work there has not been inspected. | — |
+| Founder's local checkout `E:\deMarkt\aayna-webapp` | **VERIFIED 2026-10-15 (see §8)** — no unpushed commits, no stash; only an untracked `.claude/settings.local.json`. (At the time of the Phase 1 audit this was not yet accessible.) | §8 |
 | `E:\deMarkt\deMarkt` (connected folder) | Contains only the separate BuyOS repo (`aayna-product-scout-agent`, branch `chore/buyos-ai-memory`) and planning docs. Not modified. | `ls`, `.git/HEAD` |
 | `main` | `5885d59` (2026-10-04) — the Vercel "meeting showcase". **Not touched.** | `git log origin/main` |
 
@@ -66,7 +66,7 @@ Status legend: **VERIFIED** (executed, evidence below) · **NOT VERIFIED** (coul
 |---|---|
 | API failures were shown as "Product/Category not found" or "0 pieces" | **Fixed** in Phase 2 (see §4). |
 | `frontend/package.json` devDependency `@emergentbase/visual-edits` fetched from `assets.emergent.sh` — blocks `yarn install --frozen-lockfile` on any host that cannot reach Emergent | **Fixed** — removed; `craco.config.js` already treats it as optional (dev-only overlay). Lockfile diff is exactly that 4-line entry. |
-| `backend/requirements.txt` pins `emergentintegrations` and `litellm @ https://customer-assets.emergentagent.com/...` — unused by backend code (`grep` finds no import), blocks clean `pip install` off-Emergent | **OPEN** — a fix exists on `feat/aayna-real-inventory-v1` (`9ded808`); bring in with that branch decision. |
+| `backend/requirements.txt` pins `emergentintegrations` and `litellm @ https://customer-assets.emergentagent.com/...` — unused by backend code (`grep` finds no import), blocks clean `pip install` off-Emergent | **Fixed** in `ff41837` (recovered from `9ded808`, see §8). |
 | `backend/storage.py` uploads via Emergent object storage (`integrations.emergentagent.com`) — fails off-Emergent (logged at startup in test) | **OPEN** — R2 replacement exists on `feat/aayna-real-inventory-v1`; storage provider is a founder/hosting decision. |
 | Seed/demo product images hosted on `static.prod-images.emergentagent.com` | **OPEN** — real product images must be migrated before launch. |
 | Admin dashboard: a failed-login toast remains visible after a subsequent successful login | **OPEN** (cosmetic). |
@@ -129,9 +129,71 @@ Evidence screenshots: `docs/audits/evidence/phase2/`.
 
 ## 6. Risks and decisions needed
 
-1. **`feat/aayna-real-inventory-v1`** — 11 unmerged commits including founder-approved Home/Footer edits and the real-inventory importer. Recommend cherry-picking the storefront/inventory commits (founder edits, importer, draft-product cart block) onto this branch, and deferring R2/Railway/Cloudflare-Pages commits until hosting and storage are chosen. Requires founder confirmation.
+1. ~~`feat/aayna-real-inventory-v1`~~ — **done**: storefront, inventory and safety work selectively recovered; provider-specific parts deferred (see §8).
 2. **Emergent platform dependencies** remain in backend requirements, image storage and image URLs — the app is not yet deployable off Emergent end-to-end.
 3. Local checkout at `E:\deMarkt\aayna-webapp` not inspected.
 
 ## 7. Next recommended task
 Founder decision on item 6.1, then Phase 3 responsive audit across the full viewport matrix using `scripts/verify/storefront_routes.js` as the regression gate, run against real MongoDB with real product images reachable.
+
+
+---
+
+## 8. Inventory & design recovery (2026-10-15, follows Phase 2)
+
+Base: `5a1821f`. Head after this step: see commit list below. Source branch `feat/aayna-real-inventory-v1` (`9ded808`) was **not** merged wholesale; each commit was reviewed and applied selectively.
+
+### 8.1 Local checkout check — VERIFIED
+Read-only inspection of `E:\deMarkt\aayna-webapp\Aayna-Webapp` (git run with `GIT_OPTIONAL_LOCKS=0`, nothing written, no lock files left):
+- Checked-out branch `launch/aayna-readiness-v1` @ `13d6c0c`; local refs last fetched ~2026-09-30 (stale, not a problem).
+- `git status`: only `?? .claude/settings.local.json` (local editor settings — not app code, left untouched).
+- No stash. `git log <branch> --not --remotes` is empty for every local branch.
+- Local-only branches `chore/aayna-webapp-ai-memory` (`9d000b8`), `fix/webapp-hardening-batch` (`070ca7e`), `fix/webapp-security-launch-blockers` (`9c81e06`) have no upstream, but all three commits are already contained in `origin/main` and in this consolidation branch.
+- **Conclusion: no local work is at risk.** Recommend `git fetch` + switching the local checkout to `chore/production-consolidation-20261015` when convenient (not done — local repo not modified).
+
+### 8.2 Commit-by-commit decisions for `feat/aayna-real-inventory-v1`
+
+| Source | Content | Decision | Recovered as |
+|---|---|---|---|
+| `eaabfe3` | Visual round 1: hero fixed to "Reflect Your Aura.", remove "আয়না — mirror." subline, glassy mirror-disc sheen (reduced-motion aware), Bracelets in Digital Mirror, footer tagline | **Recovered** (frontend paths) | `443346f` |
+| `b50dea5`, `fd98a89`, `9ac08b8`, `3b991d8` | `.emergent` marker toggles / agent log messages, no code | Skipped | — |
+| `df65c6a` | Visual round 2: burgundy category accent, Add to Cart under mirror preview, footer brand copy | **Recovered** (frontend paths; marker file excluded) | `a4186e9` |
+| `2b23813` | Visual round 3: charcoal→burgundy on hover/focus/active, footer bottom nav to all 8 pages | **Recovered** (frontend paths; marker excluded) | `0c5951c` |
+| `509bd26` | `scripts/import_inventory.py` (xlsx + photos → **draft** products, dry-run manifest, idempotent by SKU), offline tests, **cart/validate + checkout reject non-public statuses**, manifest gitignored | **Recovered whole** | `0a7c6be` |
+| `1e1c322` | `--temp-price` flagged `price_is_temporary`; re-imports never overwrite admin-owned price/status/images/live stock; admin price save clears the flag; Main image kept at `images[0]` | **Recovered whole** | `21d871b` |
+| `1340203` | (a) production DB guard in `auth.py` + tests; (b) S3/R2 storage backend; (c) `image_storage` on `/api/health/ready`; (d) Cloudflare Pages functions; (e) R2 checklist rows | **(a) only** — b–e are provider decisions | `2c89acb` |
+| `9ded808` | (a) drop unused Emergent-hosted `emergentintegrations` / `litellm` requirements; (b) `.python-version` 3.13→3.12 for Railway; (c) Railway baseline doc | **(a) only** | `ff41837` |
+
+Recovered files match the source branch byte-for-byte for `Home.jsx`, `Footer.jsx`, `index.css`, `import_inventory.py`, `test_inventory_import.py`, `ImageUpload.jsx`, `admin_routes.py`. `server.py` differs from the source only by the excluded `image_storage` health field.
+
+**Explicitly not present on this branch:** `frontend/functions/`, S3/R2 code in `storage.py`, `OBJECT_STORAGE_*` usage, Railway `.python-version` change. No product media migrated; no production or development database touched.
+
+### 8.3 Validation
+
+Environment as §5 (isolated `aayna_pytest` on FerretDB, generated throwaway credentials, Chromium via Playwright). DB reset before each suite.
+
+| Check | Result |
+|---|---|
+| `pip install -r backend/requirements.txt` in a fresh venv, **unmodified file** | **PASS** (previously failed on the Emergent-hosted wheel) |
+| `rm -rf node_modules && yarn install --frozen-lockfile` | **PASS** |
+| `CI=true yarn build` | **PASS** — 194.9 kB JS / 13.3 kB CSS gzip |
+| Backend `pytest backend/tests` | **120 passed, 1 skipped, 3 failed** — same 3 FerretDB `NotImplemented` cases as §5 (no regression); **NOT VERIFIED** on real MongoDB |
+| Offline `pytest backend/tests_import` (importer + DB guard) | **7/7 PASS** |
+| `scripts/verify/inventory_rules.py` (business rules over HTTP) | **28/28 PASS** (`evidence/inventory-recovery/inventory_rules_output.txt`) |
+| Same rules against pre-recovery backend `5a1821f` | **20/27** — draft and inactive products **could be ordered by id** (HTTP 200, stock decremented). Proves the recovered block is effective. |
+| `scripts/verify/storefront_routes.js` (Phase 2 gate) | **60/60 PASS** — routing, cart, checkout, admin guard, API-down states unchanged |
+| `scripts/verify/home_footer_layout.js`, 11 widths 320→1920, before vs after | **46/46 PASS** |
+
+Business rules verified (28): admin endpoints refuse unauthenticated requests; draft and inactive products are absent from public list/detail, flagged unavailable by `/cart/validate`, refused by `/checkout` even with a known id, stock untouched; active purchase decrements stock (3→1); oversell refused with stock unchanged; last unit flips status to `out_of_stock`; out-of-stock refused; public product list/detail, categories, checkout response and token-gated order confirmation contain none of `cost_price`, `internal_notes`, `supplier_*`, `landed_cost`, `margin`, `price_is_temporary`; order confirmation without token is 404; admin price change clears `price_is_temporary`; admin restock returns an out-of-stock product to `active` but keeps a draft as `draft`.
+
+Layout (after build): no horizontal overflow and no clipped hero headline at 320/360/375/390/430/768/820/1024/1280/1440/1920; no uncaught errors; Bracelets present; mirror category buttons ≥ 44 px; sheen animates and is disabled under `prefers-reduced-motion`; footer bottom nav lists and navigates to all 8 pages; tablet touch (1024 px, no hover): tap Bracelets → preview → Add to Cart adds the product; phone (390 px): the preview panel is hidden by design (`hidden md:flex`), tapping a category selects it and shows that category's products. Screenshots: `evidence/inventory-recovery/`.
+
+### 8.4 Findings and open items from this step
+| Item | Status |
+|---|---|
+| Hero headline is now fixed text (approved round 1); the admin **"hero headline" setting no longer affects the homepage** | Known effect of founder decision — confirm intended |
+| Hero "Enter the Edit" CTA is 25 px tall (same before and after) | **OPEN** — Phase 3 |
+| Footer bottom-nav links are ~16 px tall tap targets and duplicate the column links | **OPEN** — Phase 3 |
+| Mirror preview Add to Cart is tablet/desktop only by design; phones rely on the category edit below | Design note — Phase 3 review |
+| Importer uploads through the backend's current `storage.py` (still Emergent object storage) | **OPEN** — blocked on storage-provider decision; importer itself is provider-neutral |
+| 3 admin aggregation tests unverified on real MongoDB; image loading unverified in sandbox | **NOT VERIFIED** |
