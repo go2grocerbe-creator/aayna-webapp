@@ -1,0 +1,302 @@
+[
+  {
+    "name": "[mobile] route /",
+    "ok": true,
+    "detail": "h1=\"Everyday Luxury, Reflected.\" title=\"AAYNA — Reflect Your Aura.\" overflow=none reqfailed=2 (fonts.googleapis.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[mobile] route /shop",
+    "ok": true,
+    "detail": "h1=\"The Edit\" title=\"The Edit | AAYNA\" overflow=none reqfailed=8 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[mobile] route /category/earrings",
+    "ok": true,
+    "detail": "h1=\"The Edit\" title=\"Earrings | AAYNA\" overflow=none reqfailed=4 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[mobile] route /product/gold-butterfly-hair-clip",
+    "ok": true,
+    "detail": "h1=\"Gold Butterfly Hair Clip\" title=\"Gold Butterfly Hair Clip | AAYNA\" overflow=none reqfailed=3 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[mobile] route /cart",
+    "ok": true,
+    "detail": "h1=\"The Selection\" title=\"The Selection | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /checkout",
+    "ok": true,
+    "detail": "h1=\"Checkout\" title=\"Checkout | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /track-order",
+    "ok": true,
+    "detail": "h1=\"Track Your Order\" title=\"Track Your Order | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /contact",
+    "ok": true,
+    "detail": "h1=\"Get in Touch\" title=\"Contact Us | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /delivery-policy",
+    "ok": true,
+    "detail": "h1=\"Delivery Policy\" title=\"Delivery Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /returns",
+    "ok": true,
+    "detail": "h1=\"Return & Exchange Policy\" title=\"Return & Exchange Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /privacy",
+    "ok": true,
+    "detail": "h1=\"Privacy Policy\" title=\"Privacy Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /terms",
+    "ok": true,
+    "detail": "h1=\"Terms & Conditions\" title=\"Terms & Conditions | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /this-page-does-not-exist",
+    "ok": true,
+    "detail": "h1=\"Page not found\" title=\"Page Not Found | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[mobile] route /admin/login",
+    "ok": true,
+    "detail": "h1=\"Sign in\" title=\"Admin Login | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /",
+    "ok": true,
+    "detail": "h1=\"Everyday Luxury, Reflected.\" title=\"AAYNA — Reflect Your Aura.\" overflow=none reqfailed=3 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[desktop] route /shop",
+    "ok": true,
+    "detail": "h1=\"The Edit\" title=\"The Edit | AAYNA\" overflow=none reqfailed=8 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[desktop] route /category/earrings",
+    "ok": true,
+    "detail": "h1=\"The Edit\" title=\"Earrings | AAYNA\" overflow=none reqfailed=4 (fonts.googleapis.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[desktop] route /product/gold-butterfly-hair-clip",
+    "ok": true,
+    "detail": "h1=\"Gold Butterfly Hair Clip\" title=\"Gold Butterfly Hair Clip | AAYNA\" overflow=none reqfailed=2 (fonts.googleapis.com,static.prod-images.emergentagent.com)"
+  },
+  {
+    "name": "[desktop] route /cart",
+    "ok": true,
+    "detail": "h1=\"The Selection\" title=\"The Selection | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /checkout",
+    "ok": true,
+    "detail": "h1=\"Checkout\" title=\"Checkout | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /track-order",
+    "ok": true,
+    "detail": "h1=\"Track Your Order\" title=\"Track Your Order | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /contact",
+    "ok": true,
+    "detail": "h1=\"Get in Touch\" title=\"Contact Us | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /delivery-policy",
+    "ok": true,
+    "detail": "h1=\"Delivery Policy\" title=\"Delivery Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /returns",
+    "ok": true,
+    "detail": "h1=\"Return & Exchange Policy\" title=\"Return & Exchange Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /privacy",
+    "ok": true,
+    "detail": "h1=\"Privacy Policy\" title=\"Privacy Policy | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /terms",
+    "ok": true,
+    "detail": "h1=\"Terms & Conditions\" title=\"Terms & Conditions | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /this-page-does-not-exist",
+    "ok": true,
+    "detail": "h1=\"Page not found\" title=\"Page Not Found | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "[desktop] route /admin/login",
+    "ok": true,
+    "detail": "h1=\"Sign in\" title=\"Admin Login | AAYNA\" overflow=none reqfailed=1 (fonts.googleapis.com)"
+  },
+  {
+    "name": "mobile menu opens and exposes /shop link",
+    "ok": true,
+    "detail": "visible /shop links=1"
+  },
+  {
+    "name": "navigation reaches /shop via menu",
+    "ok": true,
+    "detail": "http://localhost:3000/shop"
+  },
+  {
+    "name": "product card → product detail",
+    "ok": true,
+    "detail": "/product/gold-stack-ring-set"
+  },
+  {
+    "name": "PDP price shown in BDT",
+    "ok": true,
+    "detail": "৳379"
+  },
+  {
+    "name": "add to cart updates header badge",
+    "ok": true,
+    "detail": "badge=\"2\" via add-to-cart-button-mobile"
+  },
+  {
+    "name": "cart persists across reload (localStorage aayna_cart)",
+    "ok": true,
+    "detail": "badge=\"2\""
+  },
+  {
+    "name": "cart page shows subtotal",
+    "ok": true,
+    "detail": "৳758"
+  },
+  {
+    "name": "checkout blocks empty submission (stays on /checkout)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "checkout creates order and shows confirmation (test DB)",
+    "ok": true,
+    "detail": "order ORD-1001"
+  },
+  {
+    "name": "cart cleared after order",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "journey: no uncaught page errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "unauthenticated /admin redirects to /admin/login",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/login"
+  },
+  {
+    "name": "unauthenticated /admin/products redirects to /admin/login",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/login"
+  },
+  {
+    "name": "unauthenticated /admin/orders redirects to /admin/login",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/login"
+  },
+  {
+    "name": "unauthenticated /admin/customers redirects to /admin/login",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/login"
+  },
+  {
+    "name": "admin login is noindex",
+    "ok": true,
+    "detail": "robots=noindex,nofollow"
+  },
+  {
+    "name": "wrong credentials rejected with message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "valid test-admin login reaches dashboard",
+    "ok": true,
+    "detail": "http://localhost:3000/admin"
+  },
+  {
+    "name": "authenticated /admin/products renders",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/products"
+  },
+  {
+    "name": "authenticated /admin/orders renders",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/orders"
+  },
+  {
+    "name": "authenticated /admin/inventory renders",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/inventory"
+  },
+  {
+    "name": "authenticated /admin/categories renders",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/categories"
+  },
+  {
+    "name": "authenticated /admin/settings renders",
+    "ok": true,
+    "detail": "http://localhost:3000/admin/settings"
+  },
+  {
+    "name": "test order visible in admin orders",
+    "ok": true,
+    "detail": "ORD-1001"
+  },
+  {
+    "name": "admin: no uncaught page errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "API down: / renders shell",
+    "ok": true,
+    "detail": "main=\"আয়না AAYNA · BANGLADESH Reflect Your Aura. আয়না— mirror. Enter the Edit → REFLECT THE DIGITAL MIRROR What are you drawn to today? A mirror doesn't crea\""
+  },
+  {
+    "name": "API down: /shop renders shell + retryable error state",
+    "ok": true,
+    "detail": "main=\"AAYNA · THE EDIT The Edit Earrings, necklaces and rings — the current AAYNA edit, ready to wear. All Sort: Newest Sort: Price, low to high Sort: Price, high \""
+  },
+  {
+    "name": "API down: /product/gold-butterfly-hair-clip renders shell + retryable error state",
+    "ok": true,
+    "detail": "main=\"We couldn't load this piece right now. This is a connection problem on our side, not your order or cart. Please try again in a moment. Try again Back to home\""
+  },
+  {
+    "name": "API down: /category/earrings renders shell + retryable error state",
+    "ok": true,
+    "detail": "main=\"We couldn't load this category right now. This is a connection problem on our side, not your order or cart. Please try again in a moment. Try again Back to ho\""
+  },
+  {
+    "name": "404 slug /product/no-such-piece shows not-found + noindex",
+    "ok": true,
+    "detail": "robots=noindex,nofollow"
+  },
+  {
+    "name": "404 slug /category/no-such-category shows not-found + noindex",
+    "ok": true,
+    "detail": "robots=noindex,nofollow"
+  },
+  {
+    "name": "NOT VERIFIED: external hosts unreachable from test sandbox",
+    "ok": true,
+    "detail": "fonts.googleapis.com, static.prod-images.emergentagent.com"
+  }
+]
