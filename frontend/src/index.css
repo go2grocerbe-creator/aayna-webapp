@@ -122,3 +122,35 @@ h1, h2, h3.font-display, .font-display {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
 }
+
+
+/* Digital Mirror hero disc — a soft glassy "mirror" sheen for the decorative
+   circle in Home Scene I. A stationary highlight gives depth; a very slow
+   conic sweep evokes light moving across a reflective surface. Purely
+   decorative (aria-hidden) and disabled for reduced-motion users. */
+.aayna-mirror-circle {
+    background:
+        radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 42%),
+        radial-gradient(circle at 68% 74%, rgba(90, 14, 26, 0.08), rgba(90, 14, 26, 0) 55%),
+        conic-gradient(
+            from 0deg,
+            rgba(90, 14, 26, 0.05),
+            rgba(200, 90, 66, 0.10),
+            rgba(255, 255, 255, 0.14),
+            rgba(90, 14, 26, 0.04),
+            rgba(200, 90, 66, 0.08),
+            rgba(90, 14, 26, 0.05)
+        );
+    box-shadow:
+        inset 0 2px 24px rgba(255, 255, 255, 0.35),
+        inset 0 -8px 40px rgba(90, 14, 26, 0.06);
+    animation: aayna-mirror-sheen 26s linear infinite;
+}
+
+@keyframes aayna-mirror-sheen {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aayna-mirror-circle { animation: none; }
+}

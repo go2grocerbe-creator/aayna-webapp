@@ -14,14 +14,15 @@ import { effectivePrice, formatBDT, isOutOfStock } from "@/lib/format";
 // Shop With AAYNA badges) with the three-scene Arrival -> Reflection ->
 // Your Edit sequence approved in concept-d1-6-single-hover-letter.html.
 //
-// Scoped to the three curated categories only (Earrings/Necklaces/Rings) -
-// Hair Accessories and any zero-inventory category are intentionally not
-// part of this experience, though they remain fully reachable via the
-// header/footer category links, which are unchanged.
+// Scoped to the curated in-stock categories (Earrings/Necklaces/Rings/
+// Bracelets) - Hair Accessories and any zero-inventory category are
+// intentionally not part of this experience, though they remain fully
+// reachable via the header/footer category links, which are unchanged.
 const MIRROR_CATEGORIES = [
   { slug: "earrings", label: "Earrings", letter: "E" },
   { slug: "necklaces", label: "Necklaces", letter: "N" },
   { slug: "rings", label: "Rings", letter: "R" },
+  { slug: "bracelets", label: "Bracelets", letter: "B" },
 ];
 const PREF_KEY = "aayna.selectedCategory";
 
@@ -87,7 +88,13 @@ export default function Home() {
     select: preferInStock,
     staleTime: 5 * 60_000,
   });
-  const previewQueries = { earrings: earringsPreview, necklaces: necklacesPreview, rings: ringsPreview };
+  const braceletsPreview = useQuery({
+    queryKey: ["products", "mirror-preview", "bracelets"],
+    queryFn: () => getProducts({ category: "bracelets", sort: "best_seller", limit: 3 }),
+    select: preferInStock,
+    staleTime: 5 * 60_000,
+  });
+  const previewQueries = { earrings: earringsPreview, necklaces: necklacesPreview, rings: ringsPreview, bracelets: braceletsPreview };
 
   const activeSlug = hovered || committed;
   const previewProduct = activeSlug ? previewQueries[activeSlug]?.data : null;
@@ -130,7 +137,7 @@ export default function Home() {
       <section className="relative min-h-screen flex flex-col justify-end overflow-hidden">
         <div
           aria-hidden="true"
-          className="absolute rounded-full border border-aayna-burgundy/[0.13] w-[600px] h-[600px] left-[44%] -top-[18%]"
+          className="aayna-mirror-circle absolute rounded-full border border-aayna-burgundy/[0.13] w-[600px] h-[600px] left-[44%] -top-[18%]"
         />
         <div
           aria-hidden="true"
@@ -148,24 +155,13 @@ export default function Home() {
               {(settings?.brand_name || "AAYNA").toUpperCase()} · Bangladesh
             </p>
             <h1 className="font-display font-semibold leading-[0.98] tracking-tight">
-              {settings?.hero_headline ? (
-                <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
-                  {settings.hero_headline}
-                </span>
-              ) : (
-                <>
-                  <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
-                    Reflect Your
-                  </span>
-                  <span className="block text-aayna-burgundy text-[52px] sm:text-7xl md:text-8xl lg:text-[124px] mt-1">
-                    Aura.
-                  </span>
-                </>
-              )}
+              <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
+                Reflect Your
+              </span>
+              <span className="block text-aayna-burgundy text-[52px] sm:text-7xl md:text-8xl lg:text-[124px] mt-1">
+                Aura.
+              </span>
             </h1>
-            <p className="mt-4 text-sm text-aayna-taupe">
-              <span className="font-bangla text-aayna-burgundy mr-1.5">আয়না</span>— mirror.
-            </p>
             <a
               href="#reflection"
               data-testid="hero-shop-now"
@@ -196,7 +192,7 @@ export default function Home() {
             style={{
               fontSize: "36vw",
               color:
-                hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#C85A42" : "#5A0E1A",
+                hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#C85A42" : hovered === "bracelets" ? "#8C6A2B" : "#5A0E1A",
               opacity: hovered ? 0.06 : 0,
             }}
           >
