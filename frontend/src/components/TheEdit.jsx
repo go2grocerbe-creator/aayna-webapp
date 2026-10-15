@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LoadError from "@/components/LoadError";
 import { useQuery } from "@tanstack/react-query";
 import { getProducts } from "@/lib/api";
 import { isOutOfStock } from "@/lib/format";
@@ -65,7 +66,7 @@ export default function TheEdit({
   // Hair Accessories or Bracelets leak into The Edit.
   const allowedSlugs = new Set(categories.map((c) => c.slug));
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["products", "the-edit", activeCategory, sort, search],
     queryFn: () =>
       getProducts({
@@ -81,6 +82,7 @@ export default function TheEdit({
       const inStock = data.filter((p) => !isOutOfStock(p));
       return activeCategory ? inStock : inStock.filter((p) => allowedSlugs.has(p.category_slug));
     },
+    retry: 1,
   });
 
   return (
@@ -133,7 +135,7 @@ export default function TheEdit({
               ))}
             </nav>
             <div className="relative flex items-center gap-4 text-xs text-aayna-taupe">
-              <span>{products.length} piece{products.length === 1 ? "" : "s"}</span>
+              {!isLoading && !isError && <span>{products.length} piece{products.length === 1 ? "" : "s"}</span>}
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
@@ -158,6 +160,8 @@ export default function TheEdit({
               <div key={i} className={`bg-aayna-mist animate-pulse aspect-[4/5] ${i === 0 ? "col-span-2 md:col-span-6" : "md:col-span-3"}`} />
             ))}
           </div>
+        ) : isError ? (
+          <LoadError what="The Edit" onRetry={refetch} />
         ) : products.length === 0 ? (
           <p className="text-aayna-taupe text-sm py-16 text-center">No pieces in this edit yet.</p>
         ) : (

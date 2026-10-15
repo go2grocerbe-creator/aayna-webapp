@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
+import LoadError, { isNotFoundError } from "@/components/LoadError";
 import { useQuery } from "@tanstack/react-query";
 import { getCategory } from "@/lib/api";
 import { useCategories } from "@/hooks/useStore";
@@ -17,7 +18,7 @@ export default function Category() {
   const { data: allCategories = [] } = useCategories();
   const categories = allCategories.filter((c) => EDIT_CATEGORY_SLUGS.includes(c.slug));
 
-  const { data: category, isLoading, isError } = useQuery({
+  const { data: category, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["category", slug],
     queryFn: () => getCategory(slug),
     retry: 1,
@@ -27,7 +28,9 @@ export default function Category() {
   // page. A real but not-yet-launched category (Bracelets, Hair Accessories,
   // Gift Sets) still renders normally, just noindex - it's not "not found",
   // it just has no launch inventory to rank on yet.
-  const notFound = !isLoading && (isError || !category);
+  // A network/server failure is reported separately (loadFailed), not as "not found".
+  const loadFailed = !isLoading && isError && !isNotFoundError(error);
+  const notFound = !isLoading && !loadFailed && (isError || !category);
   const isLaunchCategory = !!category && EDIT_CATEGORY_SLUGS.includes(category.slug);
 
   useSeo({
@@ -36,12 +39,16 @@ export default function Category() {
       ? `${category.description} Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`
       : `Shop ${category?.name || "accessories"} — women's accessories in Bangladesh from AAYNA.`,
     image: category?.image_url,
-    noindex: notFound ? true : !isLaunchCategory,
+    noindex: notFound || loadFailed ? true : !isLaunchCategory,
   });
 
   const handleCategoryChange = (nextSlug) => {
     navigate(nextSlug ? `/category/${nextSlug}` : "/shop");
   };
+
+  if (loadFailed) {
+    return <LoadError what="this category" onRetry={refetch} />;
+  }
 
   if (notFound) {
     return (

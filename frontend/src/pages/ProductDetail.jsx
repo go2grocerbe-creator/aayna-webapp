@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import LoadError, { isNotFoundError } from "@/components/LoadError";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ export default function ProductDetail() {
   const { data: settings } = useSettings();
   const [qty, setQty] = useState(1);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => getProduct(slug),
     retry: 1,
@@ -46,7 +47,9 @@ export default function ProductDetail() {
   const product = data?.product;
   // L4: a bad/deactivated slug used to leave isLoading:false with no product
   // and no noindex — page silently stayed indexable under the default title.
-  const notFound = !isLoading && (isError || !product);
+  // A network/server failure is reported separately (loadFailed), not as "not found".
+  const loadFailed = !isLoading && isError && !isNotFoundError(error);
+  const notFound = !isLoading && !loadFailed && (isError || !product);
   const isLaunchCategory = !!product && EDIT_CATEGORY_SLUGS.includes(product.category_slug);
   const pageUrl = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
 
@@ -56,7 +59,7 @@ export default function ProductDetail() {
       ? `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
       : undefined,
     image: product?.images?.[0]?.image_url,
-    noindex: notFound ? true : !isLaunchCategory,
+    noindex: notFound || loadFailed ? true : !isLaunchCategory,
   });
 
   useJsonLd(
@@ -113,6 +116,10 @@ export default function ProductDetail() {
         </div>
       </div>
     );
+  }
+
+  if (loadFailed) {
+    return <LoadError what="this piece" onRetry={refetch} />;
   }
 
   if (notFound) {
