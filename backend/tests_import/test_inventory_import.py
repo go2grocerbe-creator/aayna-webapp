@@ -98,6 +98,10 @@ def test_manifest_blocks_missing_price_and_matches_images(tmp_path):
     by = {p["sku"]: p for p in man["products"]}
     ring = by["AYN-RNG-CLS-GLD"]
     assert ring["images"] == ["Classic Statement Ring Golden 1.png", "Classic Statement Ring Golden 2.png"]
+    # founder-approved temporary price unblocks import without touching the sheet
+    tmp = imp.build_manifest(x, d, temp_price=999)
+    assert tmp["summary"]["ready"] == 3
+    assert all(r["selling_price"] == 999 and r["price_is_temporary"] for r in tmp["products"])
     assert ring["stock_quantity"] == 5 and ring["cost_price"] == 100 and ring["category_slug"] == "rings"
     assert by["AYN-EAR-FLR-SLV"]["images"] == ["Floral Bloom Earring Silver 1.png", "Floral Bloom Earring Silver 2.png"]
     assert by["AYN-EAR-FLR-GLD"]["display_name"].endswith("- Golden")
@@ -164,8 +168,10 @@ def test_import_is_draft_idempotent_and_private(seeded):
     v = c.post("/api/cart/validate", json={"items": [{"product_id": p["id"], "quantity": 1}]}).json()
     assert v["items"][0]["available"] is True and v["items"][0]["unit_price"] == 990
 
-    # re-import after publish must not touch status or live stock
-    asyncio.run(dbmod.db.products.update_one({"id": p["id"]}, {"$set": {"stock_quantity": 3}}))
+    # re-import after publish must not touch admin-owned fields
+    asyncio.run(dbmod.db.products.update_one({"id": p["id"]}, {"$set": {
+        "stock_quantity": 3, "selling_price": 1299, "images": p["images"][:1]}}))
     asyncio.run(imp.import_products(man, d, base, db=dbmod.db, storage=st))
     after = asyncio.run(dbmod.db.products.find_one({"id": p["id"]}))
     assert after["status"] == "active" and after["stock_quantity"] == 3
+    assert after["selling_price"] == 1299 and len(after["images"]) == 1

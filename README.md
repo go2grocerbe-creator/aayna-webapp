@@ -436,11 +436,11 @@ Tests read admin credentials from the environment (`backend/.env`), not hardcode
 `scripts/import_inventory.py` turns `AAYNA_Product_Inventory.xlsx` + the
 Higgsfield photo folder into **draft** products using the existing products
 collection and object storage. Nothing is guessed: rows without a
-`Selling price (BDT)` column value are skipped.
+`Selling price (BDT)` are skipped unless `--temp-price` (founder-approved temporary price) is given; final prices, discounts, images, stock and publishing are then managed in Admin > Products.
 
 ```bash
 # 1. Dry run - writes a manifest, touches nothing (manifest holds costs: do not commit)
-python scripts/import_inventory.py manifest --xlsx "<path>/AAYNA_Product_Inventory.xlsx" \
+python scripts/import_inventory.py manifest --xlsx "<path>/AAYNA_Product_Inventory.xlsx" --temp-price 999 \
     --photos "<path>/Product_Photos_Higgsfield" --out import_manifest.json
 # 2. One product first, then everything (uses MONGO_URL / DB_NAME / EMERGENT_LLM_KEY from backend/.env)
 python scripts/import_inventory.py import --manifest import_manifest.json \

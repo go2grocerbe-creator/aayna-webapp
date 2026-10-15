@@ -175,6 +175,9 @@ async def update_product(product_id: str, payload: ProductPayload):
             updates["status"] = "out_of_stock" if new_stock <= 0 else (
                 "active" if product.get("status") == "out_of_stock" else product.get("status"))
 
+    if updates.get("selling_price") is not None and updates["selling_price"] != product.get("selling_price"):
+        updates["price_is_temporary"] = False  # founder set a real price (inventory import marker)
+
     updates["updated_at"] = now_iso()
     await db.products.update_one({"id": product_id}, {"$set": updates})
     p = await db.products.find_one({"id": product_id}, {"_id": 0})
