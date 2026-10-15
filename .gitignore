@@ -91,3 +91,6 @@ credentials.json
 .design-research/
 .firecrawl/
 .frontend-design/
+
+# Inventory import manifests contain admin-only cost data - never commit
+import_manifest*.json

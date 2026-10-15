@@ -90,6 +90,10 @@ PUBLIC_PRODUCT_FIELDS = {
     "tags": 1,
 }
 
+# Only these statuses are ever visible or purchasable on the storefront.
+# "draft" (e.g. inventory imports awaiting founder review) and "inactive" are not.
+PUBLIC_PRODUCT_STATUSES = ["active", "out_of_stock"]
+
 PAYMENT_MAP = {
     "cod": "Cash on Delivery",
     "bkash": "bKash Manual",
@@ -376,7 +380,8 @@ async def validate_cart(req: CartValidateRequest):
     subtotal = 0.0
     has_issue = False
     for line in req.items:
-        product = await db.products.find_one({"id": line.product_id}, PUBLIC_PRODUCT_FIELDS)
+        product = await db.products.find_one(
+            {"id": line.product_id, "status": {"$in": PUBLIC_PRODUCT_STATUSES}}, PUBLIC_PRODUCT_FIELDS)
         if not product:
             lines.append({"product_id": line.product_id, "available": False,
                           "reason": "Product no longer available", "quantity": line.quantity})
@@ -589,7 +594,8 @@ async def checkout(req: CheckoutRequest):
     subtotal = 0.0
     stock_ops = []  # (product, qty)
     for line in req.items:
-        product = await db.products.find_one({"id": line.product_id})
+        # Draft/inactive products are not purchasable even if their id is known.
+        product = await db.products.find_one({"id": line.product_id, "status": {"$in": PUBLIC_PRODUCT_STATUSES}})
         if not product:
             raise HTTPException(status_code=400, detail="A product in your cart is no longer available")
         stock = int(product.get("stock_quantity", 0))
