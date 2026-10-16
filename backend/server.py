@@ -716,6 +716,23 @@ async def _place_order(req: CheckoutRequest):
 
         # 8. Upsert customer
         customer = await db.customers.find_one({"phone": phone})
+        new_customer_id = None
+        if not customer:
+            new_customer_id = str(uuid.uuid4())
+            try:
+                await db.customers.insert_one({
+                    "id": new_customer_id, "full_name": req.customer_name, "phone": phone,
+                    "email": req.customer_email or "", "default_address": req.delivery_address,
+                    "district": req.district, "total_orders": 1, "successful_orders": 0,
+                    "cancelled_orders": 0, "created_at": now_iso(), "updated_at": now_iso(),
+                })
+            except DuplicateKeyError:
+                # With the recommended unique index on customers.phone, a concurrent
+                # first order from the same phone created the record a moment ago.
+                new_customer_id = None
+                customer = await db.customers.find_one({"phone": phone})
+                if not customer:
+                    raise HTTPException(status_code=409, detail="Please try placing your order again.")
         if customer:
             customer_id = customer["id"]
             await db.customers.update_one(
@@ -727,13 +744,7 @@ async def _place_order(req: CheckoutRequest):
             )
             customer_undo = ("dec", customer_id)
         else:
-            customer_id = str(uuid.uuid4())
-            await db.customers.insert_one({
-                "id": customer_id, "full_name": req.customer_name, "phone": phone,
-                "email": req.customer_email or "", "default_address": req.delivery_address,
-                "district": req.district, "total_orders": 1, "successful_orders": 0,
-                "cancelled_orders": 0, "created_at": now_iso(), "updated_at": now_iso(),
-            })
+            customer_id = new_customer_id
             customer_undo = ("delete", customer_id)
 
         # 9-13. Create order
