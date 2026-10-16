@@ -9,6 +9,17 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60_000,
       refetchOnWindowFocus: false,
+      // A 4xx (not found, expired session, forbidden, validation) will not
+      // change on retry, so show it at once; other failures (network, 5xx)
+      // retry once. The previous default (3 retries with backoff) kept the
+      // admin on a spinner for ~8 s before any error appeared. Queries that
+      // set their own `retry` keep it.
+      retry: (failureCount, error) => {
+        const status = error?.response?.status;
+        if (status >= 400 && status < 500) return false;
+        return failureCount < 1;
+      },
+      retryDelay: 800,
     },
   },
 });
