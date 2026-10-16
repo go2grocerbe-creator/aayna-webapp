@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,7 +14,7 @@ export default function Products() {
   const [filters, setFilters] = useState({ category: "", status: "", search: "" });
   const [importing, setImporting] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-products", filters],
     queryFn: () => getAdminProducts({
       ...(filters.category ? { category: filters.category } : {}),
@@ -101,6 +102,8 @@ export default function Products() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
+              ) : isError ? (
+                <tr><td colSpan={7}><AdminLoadError compact what="products" error={error} onRetry={refetch} /></td></tr>
               ) : products.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No products found.</td></tr>
               ) : products.map((p) => (

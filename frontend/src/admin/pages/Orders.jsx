@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Download, Loader2, Eye } from "lucide-react";
@@ -10,7 +11,7 @@ export default function Orders() {
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-orders", status, search],
     queryFn: () => getAdminOrders({ status, ...(search ? { search } : {}) }),
   });
@@ -53,6 +54,8 @@ export default function Orders() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan={8} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
+              ) : isError ? (
+                <tr><td colSpan={8}><AdminLoadError compact what="orders" error={error} onRetry={refetch} /></td></tr>
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">No orders found.</td></tr>
               ) : orders.map((o) => (

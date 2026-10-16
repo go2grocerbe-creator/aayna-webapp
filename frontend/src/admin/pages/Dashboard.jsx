@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart, Clock, CheckCircle2, Truck, XCircle, TrendingUp, AlertTriangle, BellOff, Loader2,
@@ -22,7 +23,9 @@ function Card({ icon: Icon, label, value, accent, to, testid }) {
 }
 
 export default function Dashboard() {
-  const { data, isLoading } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getDashboard });
+  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getDashboard });
+
+  if (isError) return <AdminLoadError what="the dashboard" error={error} onRetry={refetch} />;
 
   if (isLoading || !data) {
     return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;

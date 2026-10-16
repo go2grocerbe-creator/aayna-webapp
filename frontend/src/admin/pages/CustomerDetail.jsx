@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Phone, Mail, MapPin } from "lucide-react";
 import { getCustomer } from "@/admin/adminApi";
@@ -7,7 +8,9 @@ import { statusStyle } from "@/admin/statusColors";
 
 export default function CustomerDetail() {
   const { id } = useParams();
-  const { data: customer, isLoading } = useQuery({ queryKey: ["admin-customer", id], queryFn: () => getCustomer(id) });
+  const { data: customer, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-customer", id], queryFn: () => getCustomer(id) });
+
+  if (isError) return <AdminLoadError what="this customer" error={error} onRetry={refetch} />;
 
   if (isLoading || !customer) {
     return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;

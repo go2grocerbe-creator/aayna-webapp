@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, History, AlertTriangle } from "lucide-react";
@@ -14,7 +15,7 @@ export default function Inventory() {
   const [adj, setAdj] = useState({ change_type: "stock_in", quantity_change: "", reason: "" });
   const [saving, setSaving] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery({ queryKey: ["admin-inventory", lowOnly], queryFn: () => getInventory(lowOnly) });
+  const { data: products = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-inventory", lowOnly], queryFn: () => getInventory(lowOnly) });
   const { data: logs = [] } = useQuery({ queryKey: ["inv-logs", logsFor?.id], queryFn: () => getInventoryLogs(logsFor.id), enabled: Boolean(logsFor) });
 
   const isLow = (p) => p.stock_quantity <= p.low_stock_alert;
@@ -63,6 +64,8 @@ export default function Inventory() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
+              ) : isError ? (
+                <tr><td colSpan={6}><AdminLoadError compact what="inventory" error={error} onRetry={refetch} /></td></tr>
               ) : products.map((p) => (
                 <tr key={p.id} data-testid={`inv-row-${p.sku}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-aayna-charcoal font-medium">{p.product_name}</td>

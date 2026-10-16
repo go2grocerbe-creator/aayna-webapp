@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Pencil, Loader2 } from "lucide-react";
@@ -17,7 +18,7 @@ export default function Categories() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
 
-  const { data: categories = [], isLoading } = useQuery({ queryKey: ["admin-categories"], queryFn: getAdminCategories });
+  const { data: categories = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-categories"], queryFn: getAdminCategories });
 
   const openNew = () => { setEditing(null); setForm(EMPTY); setOpen(true); };
   const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY, ...c }); setOpen(true); };
@@ -64,7 +65,9 @@ export default function Categories() {
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
               <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
-            ) : categories.map((c) => (
+            ) : isError ? (
+                <tr><td colSpan={6}><AdminLoadError compact what="categories" error={error} onRetry={refetch} /></td></tr>
+              ) : categories.map((c) => (
               <tr key={c.id} data-testid={`category-row-${c.slug}`} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Download, Loader2, Eye } from "lucide-react";
@@ -6,7 +7,7 @@ import { getCustomers, downloadCsv } from "@/admin/adminApi";
 
 export default function Customers() {
   const [search, setSearch] = useState("");
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-customers", search],
     queryFn: () => getCustomers(search ? { search } : {}),
   });
@@ -42,6 +43,8 @@ export default function Customers() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center"><Loader2 className="h-6 w-6 animate-spin text-aayna-burgundy mx-auto" /></td></tr>
+              ) : isError ? (
+                <tr><td colSpan={7}><AdminLoadError compact what="customers" error={error} onRetry={refetch} /></td></tr>
               ) : customers.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No customers yet.</td></tr>
               ) : customers.map((c) => (

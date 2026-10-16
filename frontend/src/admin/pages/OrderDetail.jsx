@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AdminLoadError from "@/admin/AdminLoadError";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ import { statusStyle, ORDER_STATUSES } from "@/admin/statusColors";
 export default function OrderDetail() {
   const { orderNumber } = useParams();
   const qc = useQueryClient();
-  const { data: order, isLoading } = useQuery({ queryKey: ["admin-order", orderNumber], queryFn: () => getAdminOrder(orderNumber) });
+  const { data: order, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-order", orderNumber], queryFn: () => getAdminOrder(orderNumber) });
 
   const [form, setForm] = useState({ order_status: "", courier_name: "", courier_tracking_code: "", admin_note: "" });
   const [saving, setSaving] = useState(false);
@@ -23,6 +24,8 @@ export default function OrderDetail() {
       admin_note: order.admin_note || "",
     });
   }, [order]);
+
+  if (isError) return <AdminLoadError what={`order ${orderNumber}`} error={error} onRetry={refetch} />;
 
   if (isLoading || !order) {
     return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
