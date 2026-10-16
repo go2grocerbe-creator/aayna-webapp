@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const BACKEND = process.env.REACT_APP_BACKEND_URL;
+// Same rule as lib/api.js: an unset REACT_APP_BACKEND_URL means same-origin,
+// never the literal "undefined/api" (which also broke uploaded image URLs).
+const BACKEND = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
 export const API = `${BACKEND}/api`;
 const TOKEN_KEY = "aayna_admin_token";
 
