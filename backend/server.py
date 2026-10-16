@@ -935,6 +935,20 @@ app.include_router(storage_router)
 app.include_router(files_router)
 app.include_router(admin_router)
 
+@app.middleware("http")
+async def json_errors_inside_cors(request, call_next):
+    """Unhandled exceptions would otherwise reach Starlette's outermost error
+    handler, outside CORSMiddleware: the browser then sees a CORS failure
+    instead of a 500 and the admin UI cannot tell the user what happened.
+    Registered before CORSMiddleware so CORS wraps it. Details go to the log
+    only; the client gets a generic message."""
+    try:
+        return await call_next(request)
+    except Exception:  # noqa: BLE001
+        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=500, content={"detail": "Something went wrong on the server. Please try again."})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
