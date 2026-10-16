@@ -24,12 +24,15 @@ import jwt
 import pymongo
 import requests
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from release_target_guard import require_safe  # noqa: E402
+
 API = os.environ.get("API", "http://localhost:8001/api")
 ORIGIN = os.environ.get("ORIGIN", "http://localhost:3000")
 DB_NAME = os.environ["DB_NAME"]
-if "test" not in DB_NAME.lower():
-    sys.exit(f"Refusing to run: DB_NAME={DB_NAME!r} is not a test database")
-db = pymongo.MongoClient(os.environ["MONGO_URL"])[DB_NAME]
+_client = pymongo.MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=15000)
+require_safe(os.environ["MONGO_URL"], DB_NAME, _client)  # exact allowlist + live privilege check
+db = _client[DB_NAME]
 SECRET = os.environ["JWT_SECRET"]
 results = []
 

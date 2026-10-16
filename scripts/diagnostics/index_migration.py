@@ -49,12 +49,15 @@ def dup_values(coll, field, partial=None):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--apply", action="store_true", help="apply the plan (only allowed on a database whose name contains 'test')")
+    ap.add_argument("--apply", action="store_true", help="apply the plan (only on an allowlisted test target, see scripts/verify/release_target_guard.py)")
     a = ap.parse_args()
     name = os.environ["DB_NAME"]
-    if a.apply and "test" not in name.lower():
-        sys.exit(f"Refusing --apply on '{name}': this script only applies to disposable test databases.")
-    db = pymongo.MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=8000)[name]
+    client = pymongo.MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=8000)
+    if a.apply:  # dry runs are read-only; --apply only on an allowlisted test target
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "verify"))
+        from release_target_guard import require_safe
+        require_safe(os.environ["MONGO_URL"], name, client)
+    db = client[name]
     blocked = 0
     failed = []
     print(f"Index plan for '{name}' ({'APPLY' if a.apply else 'dry run'})\n")

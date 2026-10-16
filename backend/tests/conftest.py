@@ -54,7 +54,19 @@ for candidate in ("/app/backend/.env", os.path.join(_BACKEND_DIR, ".env")):
 # overridden left this process's own DB_NAME resolved to the real
 # development database ("aayna_dev") - a distinct pollution path from the
 # HTTP-only one the session fixture below covers. Both guards are required.
+import sys  # noqa: E402
+
+sys.path.insert(0, os.path.join(_REPO_ROOT, "scripts", "verify"))
+from release_target_guard import UnsafeTarget, classify, verify_live  # noqa: E402
+
 _PROCESS_DB_NAME = (os.environ.get("DB_NAME") or "").strip()
+# Exact allowlist (aayna_pytest on loopback, or aayna_release_test on the approved
+# Atlas cluster). A name merely containing "test" is NOT enough: Emergent's
+# `test_database` holds real project data.
+try:
+    _TARGET = classify(os.environ.get("MONGO_URL", ""), _PROCESS_DB_NAME)
+except UnsafeTarget as _exc:
+    raise RuntimeError(f"Refusing to collect any tests: {_exc}. See scripts/verify/release_target_guard.py.") from None
 if "test" not in _PROCESS_DB_NAME.lower():
     raise RuntimeError(
         f"Refusing to collect any tests: this pytest process's own DB_NAME is "
@@ -120,10 +132,22 @@ def _isolated_test_database():
             f"DB_NAME set to the isolated test database before running pytest. "
             f"See ENVIRONMENTS.md."
         )
+    if db_name != _PROCESS_DB_NAME:
+        raise RuntimeError(
+            f"Refusing to run tests: the backend reports database {db_name!r} but this pytest "
+            f"process is configured for {_PROCESS_DB_NAME!r}; both must be the same test target."
+        )
     if environment == "production":
         raise RuntimeError(
             "Refusing to run tests: the backend under test reports APP_ENV=production."
         )
+
+    _client = pymongo.MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=15000)
+    try:
+        verify_live(_client, os.environ["MONGO_URL"], db_name)  # cluster identity + privilege check
+    except UnsafeTarget as exc:
+        _client.close()
+        raise RuntimeError(f"Refusing to run tests: {exc}") from None
 
     yield db_name
 
@@ -131,8 +155,12 @@ def _isolated_test_database():
     # Re-asserts the safety condition immediately before the only destructive
     # call in this file - never trust a value without re-checking it right
     # before using it destructively.
-    mongo_url = os.environ.get("MONGO_URL")
-    if mongo_url and "test" in db_name.lower():
-        client = pymongo.MongoClient(mongo_url)
-        client.drop_database(db_name)
-        client.close()
+    # Collections are dropped one by one (needs only readWrite, which is all the
+    # dedicated Atlas test user has); the target is re-verified first.
+    try:
+        verify_live(_client, os.environ["MONGO_URL"], db_name)
+        for name in _client[db_name].list_collection_names():
+            if not name.startswith("system."):
+                _client[db_name].drop_collection(name)
+    finally:
+        _client.close()
