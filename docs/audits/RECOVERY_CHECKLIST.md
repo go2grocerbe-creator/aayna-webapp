@@ -90,6 +90,15 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [ ] Apply unique indexes (incl. customers.phone, orders.client_request_id partial) after backup
 - [ ] Consider MongoDB transactions (replica set) to close crash windows; persistent login limiter before multiple workers
 
+## Database discovery & isolated verification (details: `DATABASE_DISCOVERY_AND_TEST_VERIFICATION.md`)
+- [x] Database identified: production NOT provisioned (Atlas Flex planned only, no credentials); real data only in the founder PC's local MongoDB (`aayna_dev`, backup `aayna_test`); Emergent/Vercel/live domain UNKNOWN or not inspectable
+- [x] Isolated official-MongoDB runner `scripts/verify/run_isolated_mongo_checks.py` (own mongod, fresh dir, non-default port, loopback, generated creds, webhook off, scrubbed logs)
+- [x] Release checks refuse non-loopback hosts and any instance holding real AAYNA data
+- [x] Runner plumbing + guards self-tested on a stand-in (verdict correctly NOT VERIFIED); suites unchanged
+- [~] NOT VERIFIED: the five MongoDB checks + duplicate-order/rollback re-run on official MongoDB; runner `--auth` path
+- [ ] FOUNDER: choose A (run runner on PC), B (allow `fastdl.mongodb.org`) or C (approve GitHub Actions workflow)
+- [ ] FOUNDER: back up local `aayna_dev`/`aayna_test` before any migration; authorize read-only diagnostics on it
+
 ## Phase 5 — Production readiness (not started)
 - [ ] Re-run backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (exit 0 required)
 - [ ] Migrate product images off Emergent; host-independent image URLs
