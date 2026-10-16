@@ -31,7 +31,22 @@ API = os.environ.get("API", "http://localhost:8001/api")
 DB_NAME = os.environ["DB_NAME"]
 if "test" not in DB_NAME.lower():
     sys.exit(f"Refusing to run: DB_NAME={DB_NAME!r} is not a test database")
-db = pymongo.MongoClient(os.environ["MONGO_URL"])[DB_NAME]
+_client = pymongo.MongoClient(os.environ["MONGO_URL"])
+# A test-named database on the instance that holds real data is not isolation:
+# refuse remote hosts and any instance that also contains a real AAYNA database.
+_hosts = {h for h, _ in _client.topology_description.server_descriptions()} or {os.environ["MONGO_URL"]}
+if os.environ.get("ALLOW_NONLOCAL_TEST_DB") != "1" and not all(
+        h in ("127.0.0.1", "localhost", "::1") for h in _hosts):
+    sys.exit("Refusing to run: MONGO_URL is not a loopback test instance (set ALLOW_NONLOCAL_TEST_DB=1 only for a "
+             "dedicated, separately provisioned test cluster)")
+try:
+    _shared = set(_client.list_database_names()) & {"aayna_dev", "aayna_test", "aayna_prod", "aayna_staging"}
+except pymongo.errors.OperationFailure:
+    _shared = set()  # user without listDatabases privilege: only its own DBs are visible anyway
+if _shared:
+    sys.exit(f"Refusing to run: this instance also holds real AAYNA data {sorted(_shared)} — use an isolated instance "
+             "(scripts/verify/run_isolated_mongo_checks.py)")
+db = _client[DB_NAME]
 build = db.command("buildInfo")
 FERRET = "ferretdbVersion" in build
 ENGINE = f"FerretDB {build['ferretdbVersion']}" if FERRET else f"MongoDB {build.get('version')}"
