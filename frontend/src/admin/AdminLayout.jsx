@@ -50,7 +50,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
         </a>
         <div className="px-3 py-2 text-xs text-gray-400">
           {user?.email}
-          <span className="block uppercase tracking-wide text-[11px] text-aayna-burgundy font-semibold">{user?.role}</span>
+          <span className="block uppercase tracking-wide text-xs text-aayna-burgundy font-semibold">{user?.role}</span>
         </div>
         <button
           data-testid="admin-logout"

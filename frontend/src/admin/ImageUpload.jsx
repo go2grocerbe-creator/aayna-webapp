@@ -39,20 +39,20 @@ export default function ImageUpload({ images = [], onChange }) {
 
   return (
     <div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 gap-3">
         {images.map((im, idx) => (
           <div key={idx} className="relative group aspect-square border border-gray-200 rounded-md overflow-hidden bg-gray-50">
             <img src={im.image_url} alt={im.alt_text} className="w-full h-full object-cover" />
             {im.is_main && (
-              <span className="absolute top-1 left-1 bg-aayna-gold text-aayna-charcoal text-[11px] font-bold px-1.5 py-0.5 rounded">Main</span>
+              <span className="absolute top-1 left-1 bg-aayna-gold text-aayna-charcoal text-xs font-bold px-1.5 py-0.5 rounded">Main</span>
             )}
             <div className="absolute inset-0 bg-black/40 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 flex items-center justify-center gap-2">
               {!im.is_main && (
-                <button type="button" data-testid={`img-set-main-${idx}`} onClick={() => setMain(idx)} title="Set as main" aria-label="Set as main image" className="bg-white rounded-full h-9 w-9 flex items-center justify-center">
+                <button type="button" data-testid={`img-set-main-${idx}`} onClick={() => setMain(idx)} title="Set as main" aria-label="Set as main image" className="bg-white rounded-full h-11 w-11 flex items-center justify-center">
                   <Star className="h-4 w-4 text-aayna-gold" />
                 </button>
               )}
-              <button type="button" data-testid={`img-remove-${idx}`} onClick={() => remove(idx)} title="Remove" aria-label="Remove image" className="bg-white rounded-full h-9 w-9 flex items-center justify-center">
+              <button type="button" data-testid={`img-remove-${idx}`} onClick={() => remove(idx)} title="Remove" aria-label="Remove image" className="bg-white rounded-full h-11 w-11 flex items-center justify-center">
                 <X className="h-4 w-4 text-red-600" />
               </button>
             </div>
