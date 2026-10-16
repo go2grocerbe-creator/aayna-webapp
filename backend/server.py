@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
+from pymongo.errors import DuplicateKeyError
+import asyncio
 import os
 import re
 import uuid
@@ -578,6 +580,44 @@ async def send_order_notification(order: dict):
 # ---------------------------------------------------------------------------
 @api_router.post("/checkout")
 async def checkout(req: CheckoutRequest):
+    """Idempotent order placement.
+
+    The client_request_id is claimed by inserting it as the _id of a
+    checkout_requests document. _id is always unique in MongoDB (no index or
+    migration needed), so of several concurrent submissions with the same key
+    (double tap, retry on a slow network) exactly one proceeds; the others wait
+    for that order and return it. If the claimed attempt fails, the claim is
+    released so the customer can try again.
+    """
+    rid = (req.client_request_id or "").strip()
+    if not rid:
+        return await _place_order(req)
+    if len(rid) > 100:
+        raise HTTPException(status_code=400, detail="Invalid request id")
+    existing = await db.orders.find_one({"client_request_id": rid}, {"_id": 0, "order_number": 1})
+    if existing:
+        return {"order_number": existing["order_number"], "duplicate": True}
+    try:
+        await db.checkout_requests.insert_one({"_id": rid, "status": "processing", "created_at": now_iso()})
+    except DuplicateKeyError:
+        for _ in range(40):  # up to ~10 s for the in-flight attempt to finish
+            existing = await db.orders.find_one({"client_request_id": rid}, {"_id": 0, "order_number": 1})
+            if existing:
+                return {"order_number": existing["order_number"], "duplicate": True}
+            if not await db.checkout_requests.find_one({"_id": rid}):
+                break  # the other attempt failed and released the key
+            await asyncio.sleep(0.25)
+        raise HTTPException(status_code=409, detail="This order is already being processed. Please wait a moment, then check Track Order before trying again.")
+    try:
+        result = await _place_order(req)
+    except BaseException:
+        await db.checkout_requests.delete_one({"_id": rid, "status": "processing"})
+        raise
+    await db.checkout_requests.update_one({"_id": rid}, {"$set": {"status": "done", "order_number": result["order_number"]}})
+    return result
+
+
+async def _place_order(req: CheckoutRequest):
     # 1-2. Validate required fields
     if not req.customer_name.strip():
         raise HTTPException(status_code=400, detail="Full name is required")
@@ -594,12 +634,6 @@ async def checkout(req: CheckoutRequest):
     phone = normalize_phone(req.customer_phone)
     if not phone:
         raise HTTPException(status_code=400, detail="Please enter a valid Bangladesh phone number")
-
-    # Idempotency: do not duplicate on refresh / double submit
-    if req.client_request_id:
-        existing = await db.orders.find_one({"client_request_id": req.client_request_id}, {"_id": 0})
-        if existing:
-            return {"order_number": existing["order_number"], "duplicate": True}
 
     # 4-5. Validate stock & recalc subtotal from DB
     order_items = []
@@ -671,72 +705,82 @@ async def checkout(req: CheckoutRequest):
             await db.products.update_one({"id": product["id"], "status": "active", "stock_quantity": {"$lte": 0}},
                                          {"$set": {"status": "out_of_stock"}})
 
-    # 6-7. Delivery + total
-    settings = await get_settings_map()
-    delivery_charge = delivery_charge_for(settings, req.district)
-    total = subtotal + delivery_charge
-
-    # 8. Upsert customer
-    customer = await db.customers.find_one({"phone": phone})
-    if customer:
-        customer_id = customer["id"]
-        await db.customers.update_one(
-            {"id": customer_id},
-            {"$set": {"full_name": req.customer_name, "default_address": req.delivery_address,
-                      "district": req.district, "email": req.customer_email or customer.get("email"),
-                      "updated_at": now_iso()},
-             "$inc": {"total_orders": 1}},
-        )
-    else:
-        customer_id = str(uuid.uuid4())
-        await db.customers.insert_one({
-            "id": customer_id, "full_name": req.customer_name, "phone": phone,
-            "email": req.customer_email or "", "default_address": req.delivery_address,
-            "district": req.district, "total_orders": 1, "successful_orders": 0,
-            "cancelled_orders": 0, "created_at": now_iso(), "updated_at": now_iso(),
-        })
-
-    # 9-13. Create order
-    order_number = await next_order_number()
-    payment_method_display = PAYMENT_MAP[req.payment_method]
-    payment_status = "COD_pending" if req.payment_method == "cod" else "pending"
-    # Random confirmation token: only its hash is stored, so a DB read alone
-    # (or a leaked order_number) can never reveal the order-confirmation page.
-    confirmation_token = secrets.token_urlsafe(32)
-    confirmation_token_hash = hashlib.sha256(confirmation_token.encode()).hexdigest()
-    order = {
-        "id": str(uuid.uuid4()),
-        "order_number": order_number,
-        "order_confirmation_token_hash": confirmation_token_hash,
-        "client_request_id": req.client_request_id,
-        "customer_id": customer_id,
-        "customer_name": req.customer_name,
-        "customer_phone": phone,
-        "customer_email": req.customer_email or "",
-        "delivery_address": req.delivery_address,
-        "district": req.district,
-        "delivery_note": req.delivery_note or "",
-        "subtotal": subtotal,
-        "delivery_charge": delivery_charge,
-        "discount_amount": 0,
-        "total_amount": total,
-        "payment_method": payment_method_display,
-        "payment_status": payment_status,
-        "order_status": "New",
-        "transaction_id": req.transaction_id or "",
-        "sender_number": req.sender_number or "",
-        "courier_name": None,
-        "courier_tracking_code": None,
-        "admin_note": None,
-        "notification_sent": False,
-        "items": order_items,
-        "created_at": now_iso(),
-        "updated_at": now_iso(),
-    }
+    # Everything after the reservation is rolled back together: if the customer
+    # write, order numbering or order insert fails, reserved stock is released.
+    customer_undo = None  # how to undo this request's customer write if the order fails
     try:
+        # 6-7. Delivery + total
+        settings = await get_settings_map()
+        delivery_charge = delivery_charge_for(settings, req.district)
+        total = subtotal + delivery_charge
+
+        # 8. Upsert customer
+        customer = await db.customers.find_one({"phone": phone})
+        if customer:
+            customer_id = customer["id"]
+            await db.customers.update_one(
+                {"id": customer_id},
+                {"$set": {"full_name": req.customer_name, "default_address": req.delivery_address,
+                          "district": req.district, "email": req.customer_email or customer.get("email"),
+                          "updated_at": now_iso()},
+                 "$inc": {"total_orders": 1}},
+            )
+            customer_undo = ("dec", customer_id)
+        else:
+            customer_id = str(uuid.uuid4())
+            await db.customers.insert_one({
+                "id": customer_id, "full_name": req.customer_name, "phone": phone,
+                "email": req.customer_email or "", "default_address": req.delivery_address,
+                "district": req.district, "total_orders": 1, "successful_orders": 0,
+                "cancelled_orders": 0, "created_at": now_iso(), "updated_at": now_iso(),
+            })
+            customer_undo = ("delete", customer_id)
+
+        # 9-13. Create order
+        order_number = await next_order_number()
+        payment_method_display = PAYMENT_MAP[req.payment_method]
+        payment_status = "COD_pending" if req.payment_method == "cod" else "pending"
+        # Random confirmation token: only its hash is stored, so a DB read alone
+        # (or a leaked order_number) can never reveal the order-confirmation page.
+        confirmation_token = secrets.token_urlsafe(32)
+        confirmation_token_hash = hashlib.sha256(confirmation_token.encode()).hexdigest()
+        order = {
+            "id": str(uuid.uuid4()),
+            "order_number": order_number,
+            "order_confirmation_token_hash": confirmation_token_hash,
+            "client_request_id": req.client_request_id,
+            "customer_id": customer_id,
+            "customer_name": req.customer_name,
+            "customer_phone": phone,
+            "customer_email": req.customer_email or "",
+            "delivery_address": req.delivery_address,
+            "district": req.district,
+            "delivery_note": req.delivery_note or "",
+            "subtotal": subtotal,
+            "delivery_charge": delivery_charge,
+            "discount_amount": 0,
+            "total_amount": total,
+            "payment_method": payment_method_display,
+            "payment_status": payment_status,
+            "order_status": "New",
+            "transaction_id": req.transaction_id or "",
+            "sender_number": req.sender_number or "",
+            "courier_name": None,
+            "courier_tracking_code": None,
+            "admin_note": None,
+            "notification_sent": False,
+            "items": order_items,
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+        }
         await db.orders.insert_one({**order})
-    except Exception:
+    except BaseException:
         await release_reserved()
+        if customer_undo and customer_undo[0] == "dec":
+            await db.customers.update_one({"id": customer_undo[1]}, {"$inc": {"total_orders": -1}})
+        elif customer_undo:
+            # created moments ago by this request and never referenced by an order
+            await db.customers.delete_one({"id": customer_undo[1], "total_orders": 1})
         raise
 
     # 11-12. Inventory log (stock was already reserved atomically above)
