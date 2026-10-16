@@ -4,7 +4,10 @@ Safe to run against development or production data: it only reads (find /
 aggregate / count / index_information). Use a read-only database user where
 possible. Nothing is fixed automatically; every finding needs a human decision.
 
-    MONGO_URL=... DB_NAME=aayna_dev python scripts/diagnostics/data_integrity.py [--json report.json]
+    MONGO_URL=... DB_NAME=aayna_dev python scripts/diagnostics/data_integrity.py [--json report.json] [--aggregate-only]
+
+--aggregate-only prints counts only (no SKUs, order numbers or values) - use it for
+real data. Phone numbers are never printed in any mode (shown as a short hash).
 
 Exit code: 2 if any BLOCKER finding, 1 if only REVIEW findings, 0 if clean.
 
@@ -17,7 +20,10 @@ Checks
   BLOCKER  invalid product status (not active/draft/inactive/out_of_stock)
   BLOCKER  public product with selling_price <= 0 or missing, or discount >= price
   REVIEW   drafts possibly published by the pre-Phase-4 stock bug (B-01)
-  REVIEW   duplicate customer phone records
+  REVIEW   duplicate customer phone records (exact, and after normalizing to +880...)
+  REVIEW   customer phones not stored in the normalized form checkout looks up
+  REVIEW   orders whose customer_id has no customer record
+  REVIEW   products without a SKU; public products without an image
   REVIEW   orders referencing products that no longer exist
   REVIEW   order totals that do not add up
   REVIEW   stock that does not match the inventory-log history
@@ -30,7 +36,28 @@ import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+import hashlib
+import re
+
 import pymongo
+
+PHONE_RE = re.compile(r'^(?:\+?880|0)1[3-9]\d{8}$')   # same as backend/server.py
+
+
+def normalize_phone(phone):
+    p = re.sub(r'[\s\-]', '', phone or '')
+    if not PHONE_RE.match(p):
+        return None
+    digits = re.sub(r'\D', '', p)
+    if digits.startswith('880'):
+        digits = digits[3:]
+    if digits.startswith('0'):
+        digits = digits[1:]
+    return '+880' + digits
+
+
+def mask(phone):
+    return "phone#" + hashlib.sha256(str(phone).encode()).hexdigest()[:8]
 
 STATUSES = {"active", "draft", "inactive", "out_of_stock"}
 PUBLIC = {"active", "out_of_stock"}
@@ -45,6 +72,7 @@ def dupes(coll, field, match=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
+    ap.add_argument("--aggregate-only", action="store_true")
     a = ap.parse_args()
     db = pymongo.MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=8000)[os.environ["DB_NAME"]]
     findings = []
@@ -65,8 +93,32 @@ def main():
     add("BLOCKER", "duplicate orders.order_number", dupes(db.orders, "order_number"))
     add("BLOCKER", "duplicate orders.client_request_id",
         dupes(db.orders, "client_request_id", {"client_request_id": {"$type": "string"}}))
-    add("REVIEW", "duplicate customers.phone", dupes(db.customers, "phone"),
+    add("REVIEW", "duplicate customers.phone", [dict(d, value=mask(d["value"])) for d in dupes(db.customers, "phone")],
         "checkout matches customers by phone; duplicates split one person's history")
+    custs = list(db.customers.find({}, {"_id": 0, "id": 1, "phone": 1}))
+    norm_groups = defaultdict(int)
+    for c in custs:
+        n = normalize_phone(c.get("phone"))
+        if n:
+            norm_groups[n] += 1
+    add("REVIEW", "duplicate customers after phone normalization",
+        [{"value": mask(k), "count": v} for k, v in norm_groups.items() if v > 1],
+        "merge with scripts/diagnostics/merge_duplicate_customers.py before the unique index")
+    add("REVIEW", "customer phones not stored in normalized form",
+        [{"customer_id": c["id"]} for c in custs if c.get("phone") and normalize_phone(c["phone"])
+         and c["phone"] != normalize_phone(c["phone"])],
+        "checkout looks up +880...; these records are invisible to it")
+    add("REVIEW", "customer phones that are not valid BD mobile numbers",
+        [{"customer_id": c["id"]} for c in custs if not normalize_phone(c.get("phone"))])
+    cust_ids = {c["id"] for c in custs}
+    add("REVIEW", "orders whose customer_id has no customer record",
+        [{"order_number": o.get("order_number")} for o in db.orders.find({}, {"_id": 0, "order_number": 1, "customer_id": 1})
+         if o.get("customer_id") not in cust_ids])
+    add("REVIEW", "products without a SKU", [{"id": p.get("id")} for p in products if not (p.get("sku") or "").strip()])
+    imgs = {p["id"]: p.get("images") for p in db.products.find({}, {"_id": 0, "id": 1, "images": 1})}
+    add("REVIEW", "public products without an image",
+        [{"sku": p.get("sku")} for p in products if p.get("status") in PUBLIC
+         and not any((i or {}).get("image_url") for i in (imgs.get(p.get("id")) or []))])
 
     # ---- order-number counter
     nums = []
@@ -159,11 +211,15 @@ def main():
 
     # ---- report
     print(f"AAYNA data-integrity diagnostics — database '{os.environ['DB_NAME']}' (read-only)")
-    print(f"products={len(products)} orders={len(orders)} customers={db.customers.count_documents({})}\n")
+    by_status = defaultdict(int)
+    for p in products:
+        by_status[p.get("status", "?")] += 1
+    print(f"products={len(products)} orders={len(orders)} customers={db.customers.count_documents({})}")
+    print(f"products by status: {dict(sorted(by_status.items()))} | variants: not modelled (one SKU per product)\n")
     for f in findings:
         mark = "ok " if f["count"] == 0 else f["level"]
         print(f"[{mark:7s}] {f['check']}: {f['count']}")
-        for it in f["items"][:10]:
+        for it in ([] if a.aggregate_only else f["items"][:10]):
             print(f"            {json.dumps(it, default=str)}")
         if f["count"] and f["note"]:
             print(f"            note: {f['note']}")
@@ -173,7 +229,8 @@ def main():
         print(f"  {coll}: " + ", ".join(f"{n}{' (unique)' if i.get('unique') else ''}" for n, i in info.items()))
     if a.json:
         with open(a.json, "w") as fh:
-            json.dump({"database": os.environ["DB_NAME"], "findings": findings}, fh, indent=2, default=str)
+            out = [dict(f, items=[]) for f in findings] if a.aggregate_only else findings
+            json.dump({"database": os.environ["DB_NAME"], "findings": out}, fh, indent=2, default=str)
     blockers = sum(f["count"] for f in findings if f["level"] == "BLOCKER")
     reviews = sum(f["count"] for f in findings if f["level"] == "REVIEW")
     print(f"\nBLOCKER findings: {blockers}   REVIEW findings: {reviews}")

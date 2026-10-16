@@ -1,7 +1,7 @@
 """Index migration plan for AAYNA — DRY RUN by default.
 
 Prints, for every recommended index, whether it already exists, can be created,
-or is BLOCKED by duplicate data (with the duplicates), and the exact operations
+or is BLOCKED by duplicate data (with the count of duplicated values), and the exact operations
 that would run. Nothing is changed unless --apply is given, and --apply is
 refused unless DB_NAME contains "test" (so it can be rehearsed on a disposable
 copy, never run against real data from this script).
@@ -9,8 +9,16 @@ copy, never run against real data from this script).
     MONGO_URL=... DB_NAME=aayna_dev   python scripts/diagnostics/index_migration.py            # plan only
     MONGO_URL=... DB_NAME=aayna_pytest python scripts/diagnostics/index_migration.py --apply   # rehearsal
 
-Production rollout (founder-approved, after a backup and after data_integrity.py
-reports no BLOCKER): run the printed operations in a maintenance window. The app
+Production rollout (founder-approved, in a maintenance window with checkout closed):
+  1. verified backup (scripts/backup/backup_local_db.py or the provider's snapshot)
+  2. data_integrity.py --aggregate-only: no BLOCKER
+  3. merge_duplicate_customers.py plan -> review -> apply; then `verify` must be all 0
+  4. this script (dry run) must show no BLOCKED line; then run the printed operations
+Rollback: each CREATE line names the index it replaces. To undo, drop the new index
+(db.<coll>.dropIndex('<field>_1')) and recreate the previous non-unique one with
+db.<coll>.createIndex({<field>: 1}). Indexes never change documents, so no data
+rollback is needed for this step (the customer merge has its own rollback).
+Output never prints duplicate VALUES (they can be phone numbers); only counts. The app
 does not create these indexes at startup on purpose: auth.ensure_indexes swallows
 errors, so a unique index blocked by duplicates would fail silently there.
 """
@@ -77,7 +85,7 @@ def main():
             d = dup_values(coll, keys[0][0], opts.get("partialFilterExpression"))
             if d:
                 blocked += 1
-                print(f"  BLOCKED  {label}: {len(d)}+ duplicate values, e.g. {d[:5]}  — resolve in data first ({why})")
+                print(f"  BLOCKED  {label}: {len(d)}{'+' if len(d) >= 20 else ''} duplicated value(s) — resolve in data first ({why})")
                 continue
         ops.append(f"db.{coll_name}.createIndex({dict(keys)}, {opts})")
         print(f"  CREATE   {label}  — {why}\n           " + "; ".join(ops))

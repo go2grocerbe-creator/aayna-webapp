@@ -32,7 +32,8 @@ def snapshot(db):
 
 def good_product(i, **kw):
     p = {"id": f"p{i}", "sku": f"SKU{i}", "slug": f"slug-{i}", "product_name": f"P{i}", "status": "active",
-         "selling_price": 500, "discount_price": None, "stock_quantity": 5}
+         "selling_price": 500, "discount_price": None, "stock_quantity": 5,
+         "images": [{"image_url": f"/api/files/aayna/uploads/{i}.jpg"}]}
     p.update(kw)
     return p
 
@@ -41,7 +42,7 @@ def order(n, items, **kw):
     sub = sum(it["unit_price"] * it["quantity"] for it in items)
     o = {"id": f"o{n}", "order_number": f"ORD-{1000 + n}", "client_request_id": f"rid{n}", "items": items,
          "subtotal": sub, "delivery_charge": 60, "discount_amount": 0, "total_amount": sub + 60,
-         "order_status": "New", "created_at": f"2026-10-0{n}T00:00:00+00:00"}
+         "order_status": "New", "created_at": f"2026-10-0{n}T00:00:00+00:00", "customer_id": "c1"}
     o.update(kw)
     return o
 
@@ -59,7 +60,7 @@ def test_clean_database_reports_nothing(monkeypatch, tmp_path):
     db.products.insert_many([good_product(1), good_product(2)])
     db.orders.insert_many([order(1, [{"product_id": "p1", "unit_price": 500, "quantity": 1}])])
     db.counters.insert_one({"_id": "order_number", "seq": 1})
-    db.customers.insert_one({"id": "c1", "phone": "8801700000001"})
+    db.customers.insert_one({"id": "c1", "phone": "+8801700000001"})
     mod = load(monkeypatch, client)
     code, counts = run(mod, monkeypatch, tmp_path)
     assert code == 0, counts
@@ -79,6 +80,8 @@ def test_every_planted_problem_is_found_and_nothing_is_written(monkeypatch, tmp_
         good_product(8, status="out_of_stock", stock_quantity=0,
                      source={"type": "inventory_xlsx", "row": 4}, price_is_temporary=True),   # imported draft now public
         good_product(9, status="out_of_stock", stock_quantity=0),         # zeroed by admin, never sold
+        good_product(10, sku=""),                                         # missing SKU
+        good_product(11, images=[]),                                      # public, no image
     ])
     db.inventory_logs.insert_many([
         {"product_id": "p9", "change_type": "damage", "quantity_change": -5, "previous_stock": 5, "new_stock": 0,
@@ -93,9 +96,12 @@ def test_every_planted_problem_is_found_and_nothing_is_written(monkeypatch, tmp_
         order(4, [{"product_id": "gone", "unit_price": 500, "quantity": 1}]),   # missing product
         order(5, it, total_amount=1),                                    # totals do not add up
         order(9, it),                                                    # ORD-1009 > counter
+        order(6, it, customer_id="ghost"),                               # customer record missing
     ])
     db.counters.insert_one({"_id": "order_number", "seq": 5})            # next would be ORD-1006, but 1009 exists
-    db.customers.insert_many([{"id": "c1", "phone": "8801700000001"}, {"id": "c2", "phone": "8801700000001"}])
+    db.customers.insert_many([{"id": "c1", "phone": "8801700000001"}, {"id": "c2", "phone": "8801700000001"},
+                              {"id": "c3", "phone": "01711111111"}, {"id": "c4", "phone": "+8801711111111"},
+                              {"id": "c5", "phone": "12345"}])
     db.checkout_requests.insert_one({"_id": "stuck", "status": "processing", "created_at": "2026-01-01T00:00:00+00:00"})
 
     before = snapshot(db)
@@ -110,8 +116,27 @@ def test_every_planted_problem_is_found_and_nothing_is_written(monkeypatch, tmp_
         "drafts possibly published by the pre-Phase-4 stock bug", "duplicate customers.phone",
         "orders referencing missing products", "order totals that do not add up",
         "stock differs from the latest inventory-log entry", "checkout_requests stuck in 'processing' > 15 min",
+        "duplicate customers after phone normalization", "customer phones not stored in normalized form",
+        "customer phones that are not valid BD mobile numbers", "orders whose customer_id has no customer record",
+        "products without a SKU", "public products without an image",
     ]
     missing = [e for e in expected if not c.get(e)]
     assert not missing, f"not detected: {missing} — {c}"
     assert c["public product with invalid price"] == 2
     assert c["drafts possibly published by the pre-Phase-4 stock bug"] == 2
+
+    assert c["duplicate customers after phone normalization"] == 2   # 8801700000001 x2, 017.../+880... pair
+
+
+def test_output_never_contains_phone_numbers(monkeypatch, tmp_path, capsys):
+    client = mongomock.MongoClient()
+    db = client["aayna_diag_test"]
+    db.customers.insert_many([{"id": "c1", "phone": "01711111111"}, {"id": "c2", "phone": "+8801711111111"},
+                              {"id": "c3", "phone": "+8801711111111"}])
+    mod = load(monkeypatch, client)
+    for argv in (["data_integrity.py"], ["data_integrity.py", "--aggregate-only", "--json", str(tmp_path / "a.json")]):
+        monkeypatch.setattr(sys, "argv", argv)
+        mod.main()
+    text = capsys.readouterr().out + (tmp_path / "a.json").read_text()
+    assert "1711111111" not in text
+    assert "phone#" in text or "--aggregate-only" in " ".join(argv)
