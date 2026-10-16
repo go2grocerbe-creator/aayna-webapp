@@ -23,6 +23,11 @@ export default function Footer() {
     !isPlaceholder(settings?.nagad_number) && "Nagad",
   ].filter(Boolean);
 
+  // Header and footer both hide categories with nothing to buy.
+  const shopCategories = categories.filter((c) => (c.product_count || 0) > 0);
+  const linkCls = "inline-flex items-center min-h-[44px] text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors";
+  const legalCls = "inline-flex items-center min-h-[44px] text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors";
+
   return (
     <footer data-testid="site-footer" className="bg-aayna-burgundy-dark text-aayna-beige mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
@@ -35,55 +40,52 @@ export default function Footer() {
               accessories for the everyday Bangladeshi woman — delivered
               nationwide, with care.
             </p>
-            <div className="flex items-center gap-3 mt-5">
-              <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-aayna-gold transition-colors">
+            <div className="flex items-center gap-1 mt-4 -ml-3">
+              <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="h-11 w-11 flex items-center justify-center hover:text-aayna-gold transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-aayna-gold transition-colors">
+              <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="h-11 w-11 flex items-center justify-center hover:text-aayna-gold transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
             </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-bold text-aayna-cream mb-4">Shop</h4>
-            <ul className="space-y-2.5">
-              {categories.map((c) => (
+          <nav aria-label="Shop">
+            <h4 className="text-sm font-bold text-aayna-cream mb-1">Shop</h4>
+            <ul>
+              <li><Link to="/shop" className={linkCls}>All jewellery</Link></li>
+              {shopCategories.map((c) => (
                 <li key={c.slug}>
-                  <Link to={`/category/${c.slug}`} className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">
-                    {c.name}
-                  </Link>
+                  <Link to={`/category/${c.slug}`} className={linkCls}>{c.name}</Link>
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
 
-          <div>
-            <h4 className="text-sm font-bold text-aayna-cream mb-4">Help</h4>
-            <ul className="space-y-2.5">
-              <li><Link to="/track-order" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Track Order</Link></li>
-              <li><Link to="/delivery-policy" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Delivery Policy</Link></li>
-              <li><Link to="/returns" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Returns & Exchange</Link></li>
-              <li><Link to="/privacy" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Terms & Conditions</Link></li>
+          <nav aria-label="Help">
+            <h4 className="text-sm font-bold text-aayna-cream mb-1">Help</h4>
+            <ul>
+              <li><Link to="/track-order" className={linkCls}>Track Order</Link></li>
+              <li><Link to="/delivery-policy" className={linkCls}>Delivery Policy</Link></li>
+              <li><Link to="/returns" className={linkCls}>Returns &amp; Exchange</Link></li>
             </ul>
-          </div>
+          </nav>
 
           <div>
-            <h4 className="text-sm font-bold text-aayna-cream mb-4">Contact</h4>
-            <ul className="space-y-3">
+            <h4 className="text-sm font-bold text-aayna-cream mb-1">Contact</h4>
+            <ul>
               {hasWhatsapp && (
-                <li className="flex items-center gap-2 text-sm text-aayna-beige/85">
+                <li className="flex items-center gap-2 min-h-[44px] text-sm text-aayna-beige/85">
                   <Phone className="h-4 w-4 text-aayna-gold" /> {settings.whatsapp_number}
                 </li>
               )}
-              <li><Link to="/contact" className="text-sm text-aayna-beige/85 hover:text-aayna-gold transition-colors">Contact Us</Link></li>
+              <li><Link to="/contact" className={linkCls}>Contact Us</Link></li>
             </ul>
-            <div className="mt-5">
+            <div className="mt-4">
               <p className="text-xs text-aayna-beige/60 mb-2">We accept</p>
               <div className="flex flex-wrap gap-2">
                 {paymentBadges.map((m) => (
-                  <span key={m} className="text-[11px] font-semibold bg-white/10 border border-white/15 px-2.5 py-1 rounded-sm">
+                  <span key={m} className="text-xs font-semibold bg-white/10 border border-white/15 px-2.5 py-1 rounded-sm">
                     {m}
                   </span>
                 ))}
@@ -92,23 +94,18 @@ export default function Footer() {
           </div>
         </div>
 
-        <nav
-          aria-label="All pages"
-          className="border-t border-white/10 mt-12 pt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5"
-        >
-          <Link to="/" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Home</Link>
-          <Link to="/shop" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Shop</Link>
-          <Link to="/track-order" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Track Order</Link>
-          <Link to="/contact" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Contact Us</Link>
-          <Link to="/delivery-policy" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Delivery Policy</Link>
-          <Link to="/returns" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Returns & Exchange</Link>
-          <Link to="/privacy" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Privacy Policy</Link>
-          <Link to="/terms" className="text-xs text-aayna-beige/70 hover:text-aayna-gold transition-colors">Terms & Conditions</Link>
-        </nav>
-
-        <div className="border-t border-white/10 mt-6 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-aayna-beige/60">© {year} AAYNA. All rights reserved.</p>
-          <p className="text-xs text-aayna-beige/60">Contemporary, proudly Bangladeshi.</p>
+        {/* Legal row. Each footer destination appears exactly once (Phase 3 removed
+            the round-3 "all pages" row that repeated six column links). */}
+        <div className="border-t border-white/10 mt-10 pt-4 flex flex-col-reverse md:flex-row md:items-center justify-between gap-x-6 gap-y-2">
+          <p className="text-xs text-aayna-beige/60 py-2">
+            <span className="block md:inline">© {year} AAYNA. All rights reserved.</span>
+            <span className="hidden md:inline"> · </span>
+            <span className="block md:inline">Contemporary, proudly Bangladeshi.</span>
+          </p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-6">
+            <Link to="/privacy" className={legalCls}>Privacy Policy</Link>
+            <Link to="/terms" className={legalCls}>Terms &amp; Conditions</Link>
+          </nav>
         </div>
       </div>
     </footer>
