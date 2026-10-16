@@ -1,0 +1,34 @@
+Index plan for 'aayna_pytest' (APPLY)
+
+  OK       products {id: 1} unique  (exists as id_1)
+  OK       products {sku: 1} unique  (exists as sku_1)
+  OK       products {slug: 1} unique  (exists as slug_1)
+  OK       orders {id: 1} unique  (exists as id_1)
+  OK       orders {order_number: 1} unique  (exists as order_number_1)
+  CREATE   orders {client_request_id: 1} unique  — second line of defence for idempotency (orders without a key are allowed)
+           db.orders.createIndex({'client_request_id': 1}, {'unique': True, 'partialFilterExpression': {'client_request_id': {'$type': 'string'}}})
+           FAILED on this server: Index option "partialFilterExpression" is not implemented yet
+  CREATE   orders {customer_id: 1, created_at: -1}  — customer detail / last order date
+           db.orders.createIndex({'customer_id': 1, 'created_at': -1}, {})
+           applied
+  CREATE   orders {created_at: -1}  — admin order list and dashboard
+           db.orders.createIndex({'created_at': -1}, {})
+           applied
+  CREATE   customers {id: 1} unique  — customer identity
+           db.customers.createIndex({'id': 1}, {'unique': True})
+           applied
+  CREATE   customers {phone: 1} unique  — checkout matches customers by phone; replaces the non-unique index
+           db.customers.dropIndex('phone_1'); db.customers.createIndex({'phone': 1}, {'unique': True})
+           applied
+  CREATE   categories {slug: 1} unique  — public category URL
+           db.categories.createIndex({'slug': 1}, {'unique': True})
+           applied
+  CREATE   files {storage_path: 1} unique  — /api/files lookup
+           db.files.createIndex({'storage_path': 1}, {'unique': True})
+           applied
+  CREATE   inventory_logs {product_id: 1, created_at: -1}  — inventory history per product
+           db.inventory_logs.createIndex({'product_id': 1, 'created_at': -1}, {})
+           applied
+  OK       users {email: 1} unique  (exists as email_1)
+
+blocked: 0   failed: 1 ['orders {client_request_id: 1} unique']

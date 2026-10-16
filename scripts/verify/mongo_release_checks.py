@@ -125,10 +125,12 @@ else:
 # Force a genuine insert failure on the TEST db: unique index on order_number plus a
 # placeholder that already holds the next number the counter will hand out.
 existing_idx = db.orders.index_information()
-dropped = [n for n, i in existing_idx.items() if i.get("key") == [("order_number", 1)]]
+already_unique = any(i.get("key") == [("order_number", 1)] and i.get("unique") for i in existing_idx.values())
+dropped = [] if already_unique else [n for n, i in existing_idx.items() if i.get("key") == [("order_number", 1)]]
 for n in dropped:  # the app's non-unique order_number index (TEST db only)
     db.orders.drop_index(n)
-db.orders.create_index("order_number", unique=True, name="test_unique_order_number")
+if not already_unique:
+    db.orders.create_index("order_number", unique=True, name="test_unique_order_number")
 counter = db.counters.find_one({"_id": "order_number"}) or {"seq": 0}
 next_num = f"ORD-{1000 + counter['seq'] + 1}"
 db.orders.insert_one({"order_number": next_num, "placeholder": True, "items": []})
@@ -146,7 +148,8 @@ rec("rollback: insert failure -> HTTP 500 JSON, stock restored, no customer left
 db.orders.delete_one({"order_number": next_num, "placeholder": True})
 r = checkout([{"product_id": pe["id"], "quantity": 2}], phone=phone_e, rid=rid_e)
 rec("rollback: the same request succeeds on retry", r.status_code == 200 and stock(pe) == 2, f"HTTP {r.status_code} stock={stock(pe)}")
-db.orders.drop_index("test_unique_order_number")
+if not already_unique:
+    db.orders.drop_index("test_unique_order_number")
 if dropped:
     db.orders.create_index("order_number")  # restore the app's index on the TEST db
 
