@@ -106,8 +106,11 @@ def read_atlas_env(path):
     if not os.path.isfile(path):
         sys.exit(f"Atlas env file not found: {path}")
     folder = os.path.dirname(path)
-    inside = subprocess.run(["git", "-C", folder, "rev-parse", "--is-inside-work-tree"],
-                            capture_output=True, text=True).stdout.strip() == "true"
+    try:
+        inside = subprocess.run(["git", "-C", folder, "rev-parse", "--is-inside-work-tree"],
+                                capture_output=True, text=True).stdout.strip() == "true"
+    except FileNotFoundError:  # git not installed: a folder git cannot see cannot be committed by it
+        inside = False
     if inside:
         tracked = subprocess.run(["git", "-C", folder, "ls-files", "--error-unmatch", path],
                                  capture_output=True).returncode == 0
@@ -247,7 +250,7 @@ def main():
             "EMERGENT_LLM_KEY": "", "ORDER_WEBHOOK_ENABLED": "false", "ORDER_WEBHOOK_URL": "",
             "ORDER_WEBHOOK_SECRET": "", "NOTIFICATION_ROUTER_MODE": "", "NOTIFICATION_ROUTER_NAME": "",
             "ALLOW_PRODUCTION_SEED": "false", "API": f"http://127.0.0.1:{bport}/api", "ORIGIN": ORIGIN,
-            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1",
         })
 
         def reset_test_db():
@@ -279,7 +282,8 @@ def main():
         def run(name, argv, cwd=REPO, timeout=1500):
             t = time.time()
             try:
-                p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+                p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, encoding="utf-8",
+                                   errors="replace", timeout=timeout)
                 code, text = p.returncode, p.stdout + p.stderr
             except subprocess.TimeoutExpired as exc:
                 code, text = "timeout", f"{exc}"
@@ -322,12 +326,14 @@ def main():
         with open(os.path.join(out, "summary.json"), "w", encoding="utf-8") as fh:
             fh.write(scrub(json.dumps(summary, indent=2)))
         print(f"report: {out}")
+    if summary.get("check_only"):
+        sys.exit(0)
 
     # data_integrity exits 1 on REVIEW items (expected after deliberate concurrency runs); 2 = BLOCKER
     ok = summary.get("engine_is_official_mongodb") and all(
         (v["exit"] == 0 or (k == "integrity" and v["exit"] == 1)) for k, v in summary["suites"].items())
     if not summary.get("engine_is_official_mongodb"):
-        print("VERDICT: NOT VERIFIED — engine is not official MongoDB")
+        print("VERDICT: NOT VERIFIED - engine is not official MongoDB")
     print("VERDICT:", "PASS" if ok else "NOT PASSED")
     sys.exit(0 if ok else 1)
 
