@@ -21,6 +21,8 @@ IS_PRODUCTION = APP_ENV in ("production", "prod")
 _KNOWN_LOCAL_ENVS = {"development", "dev", "local", "test", "testing"}
 _DEV_FALLBACK_SECRET = "dev-only-insecure-secret-do-not-use-in-production"
 _DEV_FALLBACK_ADMIN = ("admin@aayna.xyz", "ChangeMe123!")
+MIN_JWT_SECRET_LEN = 32
+MIN_ADMIN_PASSWORD_LEN = 12
 
 # Hosting-platform env vars that indicate this process is running on a real
 # deployment target rather than a developer's machine.
@@ -102,6 +104,13 @@ def validate_security_config():
         raise RuntimeError("Refusing to start in production with the default ADMIN_PASSWORD. Set a strong ADMIN_PASSWORD.")
     if os.environ.get("JWT_SECRET") == _DEV_FALLBACK_SECRET:
         raise RuntimeError("Refusing to start in production with the development JWT_SECRET. Set a strong JWT_SECRET.")
+    # Minimums: a short HS256 secret can be brute-forced offline from any issued
+    # token (forging admin sessions); a short admin password is easy to guess.
+    if len(os.environ.get("JWT_SECRET", "")) < MIN_JWT_SECRET_LEN:
+        raise RuntimeError(f"JWT_SECRET must be at least {MIN_JWT_SECRET_LEN} characters in production "
+                           "(e.g. python -c \"import secrets;print(secrets.token_hex(32))\").")
+    if len(os.environ.get("ADMIN_PASSWORD", "")) < MIN_ADMIN_PASSWORD_LEN:
+        raise RuntimeError(f"ADMIN_PASSWORD must be at least {MIN_ADMIN_PASSWORD_LEN} characters in production.")
 
     # Production must never run against a development/test database.
     db_name = (os.environ.get("DB_NAME") or "").strip().lower()
