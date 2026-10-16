@@ -1,0 +1,44 @@
+Index plan for 'aayna_release_test' (APPLY)
+
+  CREATE   products {id: 1} unique  — every admin/checkout lookup is by id
+           db.products.createIndex({'id': 1}, {'unique': True})
+           applied
+  CREATE   products {sku: 1} unique  — CSV/inventory import match on SKU
+           db.products.createIndex({'sku': 1}, {'unique': True})
+           applied
+  CREATE   products {slug: 1} unique  — public product URL; replaces the non-unique slug index
+           db.products.dropIndex('slug_1'); db.products.createIndex({'slug': 1}, {'unique': True})
+           applied
+  CREATE   orders {id: 1} unique  — order identity
+           db.orders.createIndex({'id': 1}, {'unique': True})
+           applied
+  CREATE   orders {order_number: 1} unique  — lookup, tracking, admin edits; replaces the non-unique index
+           db.orders.dropIndex('order_number_1'); db.orders.createIndex({'order_number': 1}, {'unique': True})
+           applied
+  CREATE   orders {client_request_id: 1} unique  — second line of defence for idempotency (orders without a key are allowed)
+           db.orders.createIndex({'client_request_id': 1}, {'unique': True, 'partialFilterExpression': {'client_request_id': {'$type': 'string'}}})
+           applied
+  CREATE   orders {customer_id: 1, created_at: -1}  — customer detail / last order date
+           db.orders.createIndex({'customer_id': 1, 'created_at': -1}, {})
+           applied
+  CREATE   orders {created_at: -1}  — admin order list and dashboard
+           db.orders.createIndex({'created_at': -1}, {})
+           applied
+  CREATE   customers {id: 1} unique  — customer identity
+           db.customers.createIndex({'id': 1}, {'unique': True})
+           applied
+  CREATE   customers {phone: 1} unique  — checkout matches customers by phone; replaces the non-unique index
+           db.customers.dropIndex('phone_1'); db.customers.createIndex({'phone': 1}, {'unique': True})
+           applied
+  CREATE   categories {slug: 1} unique  — public category URL
+           db.categories.createIndex({'slug': 1}, {'unique': True})
+           applied
+  CREATE   files {storage_path: 1} unique  — /api/files lookup
+           db.files.createIndex({'storage_path': 1}, {'unique': True})
+           applied
+  CREATE   inventory_logs {product_id: 1, created_at: -1}  — inventory history per product
+           db.inventory_logs.createIndex({'product_id': 1, 'created_at': -1}, {})
+           applied
+  OK       users {email: 1} unique  (exists as email_1)
+
+blocked: 0   failed: 0 

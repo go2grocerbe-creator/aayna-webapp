@@ -13,6 +13,10 @@ production needs, and should get, separate infrastructure/credentials).
 | Seed data permitted | yes (idempotent — only inserts when a collection is empty) | yes, but the test DB is dropped after every session so it starts empty each run | **no**, unless `ALLOW_PRODUCTION_SEED=true` is explicitly set |
 | Destructive test operations permitted | **no** | yes, but only against this DB | **no** |
 
+> **Note (2026-10-17):** a read-only search of the founder's Windows PC found **no MongoDB installation**
+> (no service, binary or data files on any drive). The local `aayna_dev` described below could not be
+> located; see `docs/audits/DATABASE_DISCOVERY_AND_TEST_VERIFICATION.md` §11 before relying on it.
+
 ## Why this exists
 
 Before this milestone, `backend/.env`'s `DB_NAME` was `aayna_test` — but that

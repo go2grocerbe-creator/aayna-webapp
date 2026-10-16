@@ -296,3 +296,116 @@ The five outstanding checks, plus the duplicate-order and rollback checks:
 - **Unique indexes were not applied** to the test DB during this run (`phone_1` and `order_number_1` were non-unique). Behaviour with the planned unique indexes is tested only on FerretDB.
 - **Storage:** with an empty storage key the backend still calls Emergent's storage `init` at startup and on upload. Emergent answered **403** from the founder's PC, so nothing can be written there, but it is still an outbound call.
 - **Not production evidence:** this is a dedicated test cluster. No production database exists yet.
+
+## 11. Phase 5A: local data protection and customer-phone migration (2026-10-17)
+
+### A. Local `aayna_dev`: NOT FOUND, so the backup could not be made (phase stopped for real data)
+
+The founder's local backend config points at `mongodb://localhost` / `aayna_dev`, but **no MongoDB exists on the founder's PC**. Read-only probes (evidence `docs/audits/evidence/phase5a/local_*`) found:
+- nothing listening on 27017
+- no MongoDB service and no `mongod` process
+- no `mongod.exe` on C:, D:, E: or F:
+- no WiredTiger data files anywhere
+- no MongoDB installer, uninstall entry or Compass
+- no compose file under `E:\deMarkt`
+- no "mongo" mention in Docker Desktop's logs
+
+Docker Desktop is installed but **stopped**. Its 6.5 GB virtual disk (last modified 2026-10-01) is the only place not inspected; starting Docker needs founder approval.
+
+`backup_local_db.py` ran and stopped safely: "Local MongoDB is not reachable". Nothing was written.
+
+The `ENVIRONMENTS.md` statement that a local `aayna_dev` holds real data (commit `3c09576`, 2026-08-25) is **not supported on this PC**. It may describe another machine, the Docker disk, or the Emergent environment.
+
+**Per the brief, no diagnostics, merge or index work was attempted on real data.**
+
+Ready for when the data is located: `scripts/backup/backup_local_db.py`. It:
+- refuses any non-loopback URI
+- uses `mongodump --gzip` if installed, otherwise an exact raw-BSON export in the `mongorestore` directory layout
+- verifies every collection by count **and** an order-independent SHA-256 of every document's raw bytes
+- writes `manifest.json` (counts and hashes only) and `RESTORE.txt` (restore into a new name first)
+
+Tested here: verified a backup, detected a one-byte change with equal counts, refused a remote URI.
+
+### B. Read-only diagnostics: tooling ready, not run (no real database available)
+
+`data_integrity.py` now also reports:
+- product counts by status, and that variants are not modelled (one SKU per product)
+- products without a SKU, and public products without an image
+- duplicates after **phone normalization**, phones not stored in the `+880…` form checkout looks up, and invalid phones
+- orders whose customer is missing
+
+It also gained `--aggregate-only` (counts only). **Phone numbers are never printed in any mode**; they appear as a short hash. `index_migration.py` likewise no longer prints duplicate values. Broken image references are covered by `scripts/storage/audit_image_refs.py --manifest --check-reachable`.
+
+### C. Customer merge and unique-index migration: ready, verified on test data, NOT applied to real data
+
+`scripts/diagnostics/merge_duplicate_customers.py` has four actions: `plan` (read-only), `apply`, `rollback` and `verify` (read-only).
+
+How the merge works:
+- Customers are grouped by **normalized** phone.
+- The survivor is the earliest `created_at`, then the smallest `id`.
+- Every order of a merged record is re-pointed to the survivor and keeps `merged_from_customer_id`.
+- Survivor counters are recomputed from its orders.
+- Empty survivor fields are filled from the most recently updated duplicate; non-empty fields are never overwritten.
+- Duplicates are archived in `customers_merged_archive` before removal.
+- Each step writes full before-images to `customer_merge_log`, so `rollback` restores the exact previous documents.
+- Singleton records stored in a non-normalized format are normalized, and that is logged too.
+
+Safety:
+- `apply` recomputes the plan and refuses unless its hash equals the reviewed `--confirm` value.
+- `apply` and `rollback` run **only on allowlisted test targets** in this phase.
+- Plan files hold ids, order numbers and phone hashes only (no names, phones, emails or addresses).
+- Tests: 7 offline mongomock tests, including exact rollback, hash-mismatch refusal, a no-PII check, and a CLI refusal for `aayna_dev`, `test_database` and `aayna_prod`. Normalization is proven identical to `server.normalize_phone`.
+
+Production order of operations (founder-approved maintenance window, checkout closed; also in the `index_migration.py` docstring):
+1. Verified backup.
+2. `data_integrity.py --aggregate-only`: no BLOCKER.
+3. Merge: `plan`, review, then `apply --confirm <hash>`; `verify` must be all 0.
+4. `index_migration.py` dry run shows no BLOCKED line; then apply.
+
+Rollback order: drop the unique `phone_1` index first, then run `merge_duplicate_customers.py rollback --run-id`. Index rollback is documented per index.
+
+`auth.ensure_indexes` now creates each baseline index only if no index exists on that key, and one failure no longer skips the others. So the unique indexes survive restarts; there's an offline test for this.
+
+### D. Atlas verification with the unique indexes (official MongoDB 8.0.34, `aayna-dev` / `aayna_release_test`)
+
+Run with `run_isolated_mongo_checks.py --atlas-env .env.release-test --suites merge,release,backend,pytest --apply-indexes`. Overall verdict: **PASS**. Evidence: `docs/audits/evidence/phase5a/atlas_*`. The isolation checks were as in §10, and the test database was emptied afterwards.
+
+| Suite | Result |
+|---|---|
+| Merge rehearsal (synthetic duplicates, reserved fake 0139 numbers) | **10/10**:<br>• before the merge, the unique phone index is blocked<br>• plan is 2 groups / 3 merged / 4 orders re-pointed / 1 normalized, and deterministic<br>• apply leaves `verify` all zero, survivor counters (4,1,1) and order totals unchanged<br>• **rollback restores identical documents**<br>• re-apply, then the unique index builds, then a second record for the same phone is **rejected** |
+| Index plan applied before every suite | 0 blocked, 0 failed (all unique indexes, including the partial `client_request_id`) |
+| Release checks | **22 passed / 0 failed / 0 NOT VERIFIED** |
+| Backend admin checks | **62/62** with the unique indexes in place |
+| Backend pytest | **123 passed, 1 skipped** (image upload; storage disabled) with the unique indexes in place |
+| `data_integrity.py` | 0 BLOCKER; 13 REVIEW, all test artefacts: 10 release-test products created without images, plus 3 inventory-log snapshot ordering cases as explained in §10 (stock asserted correct) |
+
+The required verifications:
+
+| Requirement | Result |
+|---|---|
+| Exactly one customer per normalized phone | **PASS**. 10 simultaneous **first-time** orders from one new phone: all 10 HTTP 200 (`200s=10`), **1 customer**, all 10 orders on it. Database-wide invariant: one record per phone. |
+| Successful orders keep valid customer references | **PASS**: 0 orphaned orders database-wide |
+| Stock and order totals correct | **PASS**: stock 20 → 10, `total_orders` = 10, subtotal sum 2000, every total = subtotal + delivery; customer counters equal their orders database-wide; earlier stock checks (10 vs 3, multi-item) still pass |
+| Duplicate-order protection | **PASS**: 8 concurrent same-key submissions → 1 order; no duplicate `client_request_id`; no duplicate order numbers |
+| Failed checkout leaves nothing inconsistent | **PASS**: forced insert failure → stock restored, no stray customer, key released; partial multi-item failure → nothing changed |
+
+This closes **REVIEW 1 from §10** (the duplicate-customer race) **for databases that have the unique index**. Real data still needs the merge and then the index.
+
+After the Atlas run, one line changed: the order-number invariant is now marked NOT VERIFIED on FerretDB. That flag has no effect on MongoDB, so the Atlas results stand for the committed code.
+
+### E. Storage startup dependency removed
+
+Cause: `init_storage()` posted to Emergent's `/init` even with an empty key, and startup called it unconditionally.
+
+Fix: with an empty or blank `EMERGENT_LLM_KEY`, nothing contacts Emergent:
+- startup logs "Object storage disabled" and makes no network call
+- `/api/admin/upload` answers **503** "Image uploads are not configured"
+- `/api/files/...` answers 404
+
+With a key set, behaviour is unchanged. Offline tests:
+- the request library is patched to fail on *any* call in disabled mode
+- the configured path's init → put → serve flow is still tested
+
+Local backend log after the change: "Object storage disabled" ×1, "Storage init failed" ×0.
+
+Offline suite: **111 passed** (was 94). Local suites unchanged: rules 28/28, backend 61/61, pytest 120 passed / 1 skipped / 3 failed (the MongoDB-only tests, failing as expected on FerretDB).

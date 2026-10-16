@@ -1,0 +1,28 @@
+target: atlas / aayna_release_test
+database engine: MongoDB 8.0.34
+
+PASS         dashboard: keys present  — []
+PASS         dashboard: today's orders and sales (cancelled excluded) match raw data  — api=2/280.0 raw=2/280.0
+PASS         dashboard: low_stock_count matches raw data (drafts excluded)  — api=1 raw=1
+PASS         inventory low_only: exactly the non-draft products at/below their alert  — api=1 raw=1
+PASS         inventory: no cost_price in response
+PASS         customers list: last_order_date is the newest order  — api=2026-10-16T18:53:22.955325+00:00 raw=2026-10-16T18:53:22.955325+00:00
+PASS         customer detail: all orders, newest first  — ['ORD-1002', 'ORD-1001']
+PASS         rollback: insert failure -> HTTP 500 JSON, stock restored, no customer left behind, key released  — HTTP 500 stock=4 customer=none
+PASS         rollback: the same request succeeds on retry  — HTTP 200 stock=2
+PASS         concurrency: 10 orders for 3 units -> exactly 3 orders, stock 0, out_of_stock, 3 sale logs  — 200s=3 orders=3 stock=0 status=out_of_stock logs=3
+PASS         partial: failing multi-item order leaves every product unchanged, no order, no customer  — HTTP 400 A=5 B=1
+PASS         partial (concurrent): 10 two-item orders, scarce item has 3 -> 3 orders, A=7, B=0  — 200s=3 orders=3 A=7 B=0
+PASS         idempotency: 8 concurrent submissions with one key -> exactly 1 order, all answers name it  — orders=1 distinct numbers={'ORD-1011'} codes=[200]
+PASS         idempotency: stock decremented once  — stock=19
+(customers.phone unique index present: True)
+PASS         first-time same phone (concurrent): 10 orders -> exactly 1 customer record, all 10 orders on it  — 200s=10 customers=1 orders=10 unique_index=True
+PASS         first-time same phone: customer total_orders == 10, stock 20 -> 10, totals consistent  — total_orders=[10] stock=10 subtotal_sum=2000.0
+PASS         invariant: no product has negative stock  — 0 negative
+PASS         invariant: no duplicate client_request_id  — 0 duplicated keys
+PASS         invariant: no duplicate order numbers  — 0 duplicated
+PASS         invariant: exactly one customer record per phone  — 0 phone(s) with >1 record
+PASS         invariant: every order references an existing customer  — 0 orphaned orders
+PASS         invariant: customer counters equal their orders  — 0 customer(s) out of step
+
+22 passed, 0 failed, 0 NOT VERIFIED on MongoDB 8.0.34

@@ -1,0 +1,52 @@
+AAYNA data-integrity diagnostics — database 'aayna_release_test' (read-only)
+products=21 orders=20 customers=4
+products by status: {'active': 18, 'draft': 1, 'out_of_stock': 2} | variants: not modelled (one SKU per product)
+
+[ok     ] duplicate products.id: 0
+[ok     ] duplicate products.sku: 0
+[ok     ] duplicate products.slug: 0
+[ok     ] duplicate orders.id: 0
+[ok     ] duplicate orders.order_number: 0
+[ok     ] duplicate orders.client_request_id: 0
+[ok     ] duplicate customers.phone: 0
+[ok     ] duplicate customers after phone normalization: 0
+[ok     ] customer phones not stored in normalized form: 0
+[ok     ] customer phones that are not valid BD mobile numbers: 0
+[ok     ] orders whose customer_id has no customer record: 0
+[ok     ] products without a SKU: 0
+[REVIEW ] public products without an image: 10
+            {"sku": "REL-9f0f54b8"}
+            {"sku": "REL-470cbba5"}
+            {"sku": "REL-add19926"}
+            {"sku": "REL-d27aa1dd"}
+            {"sku": "REL-4305aa89"}
+            {"sku": "REL-a94ec126"}
+            {"sku": "REL-69fc7f54"}
+            {"sku": "REL-a20abfda"}
+            {"sku": "REL-a62d8885"}
+            {"sku": "REL-6e080e2b"}
+[ok     ] order-number counter behind highest existing order number: 0
+[ok     ] negative or non-integer stock_quantity: 0
+[ok     ] invalid product status: 0
+[ok     ] public product with invalid price: 0
+[ok     ] drafts possibly published by the pre-Phase-4 stock bug: 0
+[ok     ] orders referencing missing products: 0
+[ok     ] order totals that do not add up: 0
+[REVIEW ] stock differs from the latest inventory-log entry: 3
+            {"sku": "REL-d27aa1dd", "stock_quantity": 0, "last_logged_new_stock": 1, "last_log_at": "2026-10-16T18:53:29.848746+00:00"}
+            {"sku": "REL-69fc7f54", "stock_quantity": 7, "last_logged_new_stock": 4, "last_log_at": "2026-10-16T18:53:33.047702+00:00"}
+            {"sku": "REL-6e080e2b", "stock_quantity": 10, "last_logged_new_stock": 14, "last_log_at": "2026-10-16T18:53:37.748912+00:00"}
+            note: Expected after CSV imports (they set stock without a log) or direct database edits.
+[ok     ] checkout_requests stuck in 'processing' > 15 min: 0
+
+indexes:
+  products: _id_, id_1 (unique), sku_1 (unique), slug_1 (unique)
+  orders: _id_, id_1 (unique), order_number_1 (unique), client_request_id_1 (unique), customer_id_1_created_at_-1, created_at_-1
+  customers: _id_, id_1 (unique), phone_1 (unique)
+  users: _id_, email_1 (unique)
+  files: _id_, storage_path_1 (unique)
+  categories: _id_, slug_1 (unique)
+  inventory_logs: _id_, product_id_1_created_at_-1
+  checkout_requests: _id_
+
+BLOCKER findings: 0   REVIEW findings: 13

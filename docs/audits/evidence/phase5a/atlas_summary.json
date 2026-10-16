@@ -1,0 +1,74 @@
+{
+  "started_utc": "2026-10-16T18:52:54+00:00",
+  "mode": "atlas",
+  "test_db": "aayna_release_test",
+  "isolation": {
+    "kind": "atlas",
+    "db": "aayna_release_test",
+    "cluster": "aayna-dev",
+    "host": "<redacted>",
+    "engine": "MongoDB 8.0.34",
+    "official_mongodb": true,
+    "visible_databases": [],
+    "replica_set": true,
+    "members": 3,
+    "roles": [
+      "readWrite@aayna_release_test"
+    ],
+    "privileges": [
+      "{'db': 'aayna_release_test', 'collection': ''}: changeStream,cleanupStructuredEncryptionData,collStats,compactStructuredEncryptionData,convertToCapped,createCollection,createIndex,createSearchIndexes,dbHash,dbStats,dropCollection,dropIndex,dropSearchIndex,find,insert,killCursors,listCollections,listIndexes,listSearchIndexes,planCacheRead,remove,renameCollectionSameDB,update,updateSearchIndex",
+      "{'db': 'aayna_release_test', 'collection': 'system.js'}: changeStream,cleanupStructuredEncryptionData,collStats,compactStructuredEncryptionData,convertToCapped,createCollection,createIndex,createSearchIndexes,dbHash,dbStats,dropCollection,dropIndex,dropSearchIndex,find,insert,killCursors,listCollections,listIndexes,listSearchIndexes,planCacheRead,remove,renameCollectionSameDB,update,updateSearchIndex"
+    ],
+    "write_privileges_outside_test_db": "none",
+    "collections_in_test_db_at_start": 0,
+    "order_webhook": "disabled",
+    "emergent_storage_key": "empty"
+  },
+  "suites": {
+    "merge": {
+      "exit": 0,
+      "seconds": 8,
+      "last_line": "10 passed, 0 failed (merge rehearsal on atlas / aayna_release_test)"
+    },
+    "indexes_release": {
+      "exit": 0,
+      "seconds": 5,
+      "last_line": "blocked: 0   failed: 0"
+    },
+    "release": {
+      "exit": 0,
+      "seconds": 20,
+      "last_line": "22 passed, 0 failed, 0 NOT VERIFIED on MongoDB 8.0.34"
+    },
+    "integrity": {
+      "exit": 1,
+      "seconds": 3,
+      "last_line": "BLOCKER findings: 0   REVIEW findings: 13"
+    },
+    "indexes_backend": {
+      "exit": 0,
+      "seconds": 5,
+      "last_line": "blocked: 0   failed: 0"
+    },
+    "backend": {
+      "exit": 0,
+      "seconds": 24,
+      "last_line": "62/62 checks passed"
+    },
+    "indexes_pytest": {
+      "exit": 0,
+      "seconds": 5,
+      "last_line": "blocked: 0   failed: 0"
+    },
+    "pytest": {
+      "exit": 0,
+      "seconds": 29,
+      "last_line": "123 passed, 1 skipped, 6 warnings in 26.80s"
+    }
+  },
+  "engine": "MongoDB 8.0.34",
+  "engine_is_official_mongodb": true,
+  "apply_indexes": true,
+  "test_db_emptied_after_run": true,
+  "finished_utc": "2026-10-16T18:54:57+00:00"
+}

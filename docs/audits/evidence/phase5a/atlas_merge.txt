@@ -1,0 +1,12 @@
+PASS  before: unique customers.phone is blocked by duplicates  — 2 exact duplicate value(s)
+PASS  before: verify() sees the duplicates  — {"duplicate_normalized_phones": 2, "non_normalized_phones": 2, "orders_with_missing_customer": 0, "customer_counter_mismatch": 3}
+PASS  plan: 2 groups, 3 records merged away, 4 orders re-pointed, 2 phones normalized  — {"customers": 6, "duplicate_phone_groups": 2, "records_to_merge_away": 3, "orders_to_repoint": 4, "fields_to_fill": 2, "singleton_phones_to_normalize": 1, "invalid_phone_customers": 0}
+PASS  plan: deterministic (same hash twice)
+PASS  apply: verify() all zero  — {"duplicate_normalized_phones": 0, "non_normalized_phones": 0, "orders_with_missing_customer": 0, "customer_counter_mismatch": 0}
+PASS  apply: survivor keeps all 4 orders and correct counters  — counters=(4,1,1)
+PASS  apply: order totals unchanged
+PASS  rollback: documents identical to before  — 3 step(s) undone
+PASS  after merge: unique customers.phone index builds
+PASS  after index: a second record for the same phone is rejected
+
+10 passed, 0 failed (merge rehearsal on atlas / aayna_release_test)

@@ -1,0 +1,11 @@
+== mongod.exe on F:
+INFO: Could not find files for the given pattern(s).
+== mongodb installers/archives in Downloads/Desktop
+File Not Found
+File Not Found
+== installed programs mentioning MongoDB
+
+End of search: 0 match(es) found.
+
+End of search: 0 match(es) found.
+done 

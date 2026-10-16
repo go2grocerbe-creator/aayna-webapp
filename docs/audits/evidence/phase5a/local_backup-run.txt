@@ -1,0 +1,2 @@
+Local MongoDB is not reachable (ServerSelectionTimeoutError). Is the MongoDB service running?
+exit code 1 

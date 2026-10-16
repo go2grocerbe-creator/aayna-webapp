@@ -109,6 +109,17 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] REVIEW explained: inventory-log `new_stock` is a snapshot that can include other requests' in-flight reservations; stock itself correct (sum of logged changes = movement). Optional later: refine the log fields or the integrity heuristic
 - [ ] FOUNDER: back up local `aayna_dev`/`aayna_test` before any migration; authorize read-only diagnostics on it
 
+## Phase 5A — Local data protection & customer-phone migration (details: DATABASE_DISCOVERY_AND_TEST_VERIFICATION.md §11)
+- [~] Back up local `aayna_dev`: BLOCKED. No MongoDB on the founder PC (all drives, services, registry checked); Docker Desktop stopped and not inspected
+- [ ] FOUNDER: say where the real AAYNA data lives (other PC? Docker container? Emergent only?) or approve starting Docker Desktop for a read-only look
+- [x] Backup tool with content-hash verification + RESTORE.txt (`scripts/backup/backup_local_db.py`), tested
+- [x] Read-only diagnostics extended (normalized-phone dupes, SKU/image gaps, orphan orders), phone numbers never printed; `--aggregate-only`
+- [x] Deterministic, logged, reversible customer merge (`merge_duplicate_customers.py`), 7 offline tests; test targets only
+- [x] `index_migration.py`: preflight/rollback documented, duplicate values redacted; `ensure_indexes` keeps unique indexes
+- [x] Atlas with unique indexes: merge rehearsal 10/10 (exact rollback), release 22/0/0, backend 62/62, pytest 123+1 skip; first-time same-phone x10 -> 1 customer
+- [x] Emergent storage not contacted when the key is empty (startup, upload 503, files 404); offline tests
+- [ ] On real data (after backup + founder approval, maintenance window): diagnostics -> merge plan -> review -> apply -> verify -> unique indexes
+
 ## Phase 5 — Production readiness (not started)
 - [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17
 - [ ] Repeat against the provisioned production-shaped staging DB before launch (with unique indexes)

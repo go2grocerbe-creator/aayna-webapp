@@ -1,0 +1,19 @@
+engine: MongoDB 8.0.34  |  target: atlas  |  db aayna_release_test
+  cluster: aayna-dev
+  replica_set: True
+  members: 3
+  roles: ['readWrite@aayna_release_test']
+  write_privileges_outside_test_db: none
+  visible_databases: []
+  collections already in aayna_release_test: 0 (dropped before each suite)
+  merge      exit=0  10 passed, 0 failed (merge rehearsal on atlas / aayna_release_test)
+  indexes_release exit=0  blocked: 0   failed: 0
+  release    exit=0  22 passed, 0 failed, 0 NOT VERIFIED on MongoDB 8.0.34
+  integrity  exit=1  BLOCKER findings: 0   REVIEW findings: 13
+  indexes_backend exit=0  blocked: 0   failed: 0
+  backend    exit=0  62/62 checks passed
+  indexes_pytest exit=0  blocked: 0   failed: 0
+  pytest     exit=0  123 passed, 1 skipped, 6 warnings in 26.80s
+report: ..\aayna-release-report-5a
+VERDICT: PASS
+exit code 0 

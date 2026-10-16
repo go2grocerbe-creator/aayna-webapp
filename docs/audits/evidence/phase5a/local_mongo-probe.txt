@@ -1,0 +1,11 @@
+== services named *mongo*
+== mongod / mongodump executables
+The system cannot find the file specified.
+INFO: Could not find files for the given pattern(s).
+== listening on 27017
+== mongod processes
+INFO: No tasks are running which match the specified criteria.
+== default data/config locations
+The system cannot find the file specified.
+The system cannot find the file specified.
+done 
