@@ -28,7 +28,13 @@ from auth import auth_router, seed_admin, ensure_indexes, validate_security_conf
 from storage import storage_router, files_router, init_storage_safe
 from admin_routes import admin_router
 
-app = FastAPI(title="AAYNA API")
+# Interactive API docs list every admin endpoint; keep them off in production.
+app = FastAPI(
+    title="AAYNA API",
+    docs_url=None if IS_PRODUCTION else "/docs",
+    redoc_url=None if IS_PRODUCTION else "/redoc",
+    openapi_url=None if IS_PRODUCTION else "/openapi.json",
+)
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger("aayna")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
