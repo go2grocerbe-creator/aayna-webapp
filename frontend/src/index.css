@@ -101,6 +101,26 @@ h1, h2, h3.font-display, .font-display {
     }
 }
 
+@layer base {
+    /* Visible keyboard focus everywhere (WCAG 2.4.7). :where() keeps this at
+       pseudo-class specificity inside the base layer, so components that set
+       their own focus treatment (inputs with focus:ring, outline-none) win. */
+    :where(a, button, [role="button"], [role="radio"], [role="switch"], [role="checkbox"], summary, select):focus-visible {
+        outline: 2px solid var(--aayna-burgundy, #5A0E1A);
+        outline-offset: 3px;
+    }
+}
+
+/* Reduced motion: stop decorative animation, transitions and smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 @layer utilities {
     .font-display { font-family: var(--font-heading); }
     .font-body { font-family: var(--font-body); }
