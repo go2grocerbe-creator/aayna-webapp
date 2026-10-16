@@ -180,7 +180,7 @@ export default function Home() {
             </p>
             <h1 data-testid="hero-headline" className="font-display font-semibold leading-[0.98] tracking-tight">
               {heroOverride ? (
-                <span className="block text-aayna-charcoal text-[42px] sm:text-6xl md:text-7xl lg:text-[96px] [@media(max-height:500px)]:text-5xl">{heroOverride}</span>
+                <span className="block text-aayna-charcoal text-[42px] sm:text-6xl md:text-7xl lg:text-[96px] [@media(max-height:500px)]:text-5xl [overflow-wrap:anywhere]">{heroOverride}</span>
               ) : (
                 <>
                   <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px] [@media(max-height:500px)]:text-5xl">
