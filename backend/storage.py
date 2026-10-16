@@ -11,8 +11,15 @@ from auth import get_current_admin
 logger = logging.getLogger("aayna.storage")
 
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
 APP_NAME = "aayna"
+
+
+class StorageDisabled(RuntimeError):
+    """Object storage is not configured (EMERGENT_LLM_KEY empty); no network call is made."""
+
+
+def storage_enabled() -> bool:
+    return bool((os.environ.get("EMERGENT_LLM_KEY") or "").strip())
 
 _storage_key = None
 
@@ -28,15 +35,21 @@ files_router = APIRouter(prefix="/api")
 
 def init_storage():
     global _storage_key
+    if not storage_enabled():
+        raise StorageDisabled("object storage is not configured")
     if _storage_key:
         return _storage_key
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
+    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": os.environ["EMERGENT_LLM_KEY"].strip()},
+                         timeout=30)
     resp.raise_for_status()
     _storage_key = resp.json()["storage_key"]
     return _storage_key
 
 
 def init_storage_safe():
+    if not storage_enabled():
+        logger.info("Object storage disabled (EMERGENT_LLM_KEY empty): skipping initialization, uploads off")
+        return
     try:
         init_storage()
         logger.info("Object storage initialized")
@@ -79,6 +92,8 @@ def get_object(path: str):
 
 @storage_router.post("/upload")
 async def upload_image(file: UploadFile = File(...), current=Depends(get_current_admin)):
+    if not storage_enabled():
+        raise HTTPException(status_code=503, detail="Image uploads are not configured on this server.")
     ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()
     if ext not in ALLOWED_EXT:
         raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP or GIF images are allowed")
@@ -116,7 +131,7 @@ async def serve_file(path: str):
     if not path.startswith(f"{APP_NAME}/uploads/") or ".." in path.split("/"):
         raise HTTPException(status_code=404, detail="File not found")
     record = await db.files.find_one({"storage_path": path, "is_deleted": False})
-    if not record:
+    if not record or not storage_enabled():
         raise HTTPException(status_code=404, detail="File not found")
     try:
         data, content_type = await asyncio.to_thread(get_object, path)

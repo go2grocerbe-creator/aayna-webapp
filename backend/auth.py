@@ -295,10 +295,16 @@ async def seed_admin():
 
 
 async def ensure_indexes():
-    try:
-        await db.users.create_index("email", unique=True)
-        await db.products.create_index("slug")
-        await db.orders.create_index("order_number")
-        await db.customers.create_index("phone")
-    except Exception:
-        pass
+    """Baseline indexes. Each is created only if no index on that key exists yet, so the
+    stricter unique indexes applied by scripts/diagnostics/index_migration.py are kept
+    as they are, and one failure never skips the others."""
+    wanted = [(db.users, "email", {"unique": True}), (db.products, "slug", {}),
+              (db.orders, "order_number", {}), (db.customers, "phone", {})]
+    for coll, field, opts in wanted:
+        try:
+            existing = await coll.index_information()
+            if any(list(i.get("key", [])) == [(field, 1)] for i in existing.values()):
+                continue
+            await coll.create_index(field, **opts)
+        except Exception:  # noqa: BLE001 - startup must not fail on an index; diagnostics report it
+            logging.getLogger("aayna").warning("could not ensure index %s.%s", coll.name, field)
