@@ -256,9 +256,15 @@ async def health_version():
     }
 
 
+# Only storefront-facing settings are public. Admin > Settings can store any
+# key (GET /api/admin/settings returns everything), so a future private value
+# must never become public just by being saved.
+PUBLIC_SETTING_KEYS = set(SEED_SETTINGS.keys()) | {"hero_headline_override", "maintenance_mode"}
+
+
 @api_router.get("/settings")
 async def get_settings():
-    docs = await db.website_settings.find({}, {"_id": 0}).to_list(200)
+    docs = await db.website_settings.find({"setting_key": {"$in": sorted(PUBLIC_SETTING_KEYS)}}, {"_id": 0}).to_list(200)
     return {d["setting_key"]: d["setting_value"] for d in docs}
 
 
