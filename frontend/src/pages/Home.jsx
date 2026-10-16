@@ -281,6 +281,8 @@ export default function Home() {
                 <div className="relative aspect-[3/4] border border-aayna-beige overflow-hidden">
                   <ProductImage
                     src={primaryImage(previewProduct).src}
+                    srcSet={primaryImage(previewProduct).srcSet}
+                    sizes="(min-width: 768px) 40vw, 90vw"
                     alt={primaryImage(previewProduct).alt}
                     className="absolute inset-0"
                     iconClassName="h-8 w-8"

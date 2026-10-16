@@ -195,6 +195,8 @@ export default function ProductDetail() {
               <ProductImage
                 testId="product-main-image"
                 src={shown.src}
+                srcSet={shown.srcSet}
+                sizes="(min-width: 768px) 58vw, 100vw"
                 alt={shown.alt}
                 className="absolute inset-0"
                 iconClassName="h-10 w-10"
@@ -224,7 +226,7 @@ export default function ProductDetail() {
                     aria-pressed={i === active}
                     className={`relative aspect-[4/5] min-h-[44px] overflow-hidden bg-aayna-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-aayna-burgundy ${i === active ? "ring-2 ring-aayna-burgundy" : "opacity-80 hover:opacity-100"}`}
                   >
-                    <ProductImage src={g.src} alt="" className="absolute inset-0" iconClassName="h-4 w-4" />
+                    <ProductImage src={g.src} srcSet={g.srcSet} sizes="120px" alt="" className="absolute inset-0" iconClassName="h-4 w-4" />
                   </button>
                 ))}
               </div>

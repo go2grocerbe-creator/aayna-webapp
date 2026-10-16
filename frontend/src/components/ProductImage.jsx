@@ -8,7 +8,8 @@ import { Gem } from "lucide-react";
 // real alt text stays on the <img> for screen readers either way.
 // `fit="contain"` shows the whole photo inside the frame (no cropping) on the mist
 // background; the default `cover` fills the frame (used by grid cards).
-export default function ProductImage({ src, alt, className = "", imgClassName = "", iconClassName = "h-6 w-6", eager = false, testId, fit = "cover" }) {
+// `srcSet`/`sizes` let the browser pick the 480w or 1200w rendition of a static photo.
+export default function ProductImage({ src, srcSet, sizes, alt, className = "", imgClassName = "", iconClassName = "h-6 w-6", eager = false, testId, fit = "cover" }) {
   // Callers often pass `absolute inset-0` to fill an aspect-ratio box. Adding
   // `relative` as well would win in Tailwind's CSS order, cancel inset-0 and
   // collapse the frame to 0px whenever the photo fails - so only default to
@@ -21,6 +22,8 @@ export default function ProductImage({ src, alt, className = "", imgClassName = 
         <img
           data-testid={testId}
           src={src}
+          srcSet={srcSet || undefined}
+          sizes={srcSet ? sizes || "100vw" : undefined}
           alt={alt || ""}
           loading={eager ? "eager" : "lazy"}
           decoding="async"

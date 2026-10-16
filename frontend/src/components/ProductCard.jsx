@@ -23,7 +23,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
   const { addItem } = useCart();
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);
-  const { src: image, alt: imageAlt } = primaryImage(product);
+  const { src: image, srcSet: imageSrcSet, alt: imageAlt } = primaryImage(product);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -43,6 +43,8 @@ export default function ProductCard({ product, variant = "commerce" }) {
         <div className="relative aspect-[4/5] w-full overflow-hidden">
           <ProductImage
             src={image}
+            srcSet={imageSrcSet}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             alt={imageAlt}
             className="absolute inset-0"
             imgClassName="group-hover:scale-105 transition-transform duration-500"
@@ -72,6 +74,8 @@ export default function ProductCard({ product, variant = "commerce" }) {
         <Link to={`/product/${product.slug}`} className="group relative aspect-[4/5] w-full overflow-hidden block">
           <ProductImage
             src={image}
+            srcSet={imageSrcSet}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             alt={imageAlt}
             className="absolute inset-0"
             imgClassName="group-hover:scale-105 transition-transform duration-700"
@@ -121,9 +125,13 @@ export default function ProductCard({ product, variant = "commerce" }) {
       data-testid={`product-card-${product.slug}`}
       className="group bg-white border border-aayna-beige flex flex-col overflow-hidden hover:shadow-md transition-shadow duration-300"
     >
-      <div className="relative aspect-square w-full overflow-hidden">
+      {/* 4:5 matches the product photography (3:4 and 4:5 originals); a square frame
+          cut ~25% of each portrait photo. */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden">
         <ProductImage
           src={image}
+          srcSet={imageSrcSet}
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
           alt={imageAlt}
           className="absolute inset-0"
           imgClassName="group-hover:scale-105 transition-transform duration-500"
