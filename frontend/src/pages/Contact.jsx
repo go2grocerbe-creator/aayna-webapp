@@ -79,10 +79,10 @@ export default function Contact() {
         <h2 className="font-display text-xl font-bold text-aayna-charcoal mb-3">Follow AAYNA</h2>
         <p className="text-sm text-aayna-taupe mb-4">For new arrivals, styling tips, and offers.</p>
         <div className="flex items-center justify-center gap-4">
-          <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
+          <a href={settings?.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-h-[44px] text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
             <Instagram className="h-5 w-5" /> <span className="text-sm">{settings?.instagram_handle}</span>
           </a>
-          <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
+          <a href={settings?.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-h-[44px] text-aayna-charcoal hover:text-aayna-burgundy transition-colors">
             <Facebook className="h-5 w-5" /> <span className="text-sm">AAYNA Bangladesh</span>
           </a>
         </div>
