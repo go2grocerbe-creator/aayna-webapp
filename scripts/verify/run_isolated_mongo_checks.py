@@ -1,36 +1,40 @@
-"""Run the AAYNA release checks against a THROWAWAY, ISOLATED official MongoDB.
+"""Run the AAYNA release checks against an ISOLATED, official MongoDB test target.
 
-Why: the five checks in mongo_release_checks.py (dashboard aggregation, low-stock
-filter, customer list/detail, 10 concurrent orders for 3 units, concurrent
-multi-item atomicity) only count as verified on real MongoDB. A different
-database name on the instance that holds real data is NOT isolation, so this
-runner starts its OWN mongod process:
+Two modes, nothing else:
 
-  * a brand-new, empty data directory it creates itself (deleted afterwards)
-  * a port other than 27017, bound to 127.0.0.1 only
-  * --auth with a freshly generated user that can only touch `aayna_pytest`
-  * freshly generated admin e-mail / password / JWT secret for the test backend
-  * every environment variable the backend reads is set explicitly, so nothing
-    falls through to backend/.env (order webhook OFF, Emergent storage key empty)
+  --mongod PATH       start a THROWAWAY mongod (fresh empty data dir, non-default port,
+                      loopback only, --auth with a generated user), DB `aayna_pytest`.
+                      The data dir is deleted afterwards.
 
-It refuses to run if the port is 27017, if the data directory is not empty, or if
-the instance contains any real AAYNA database name. Generated secrets are never
-printed and are scrubbed from the saved logs.
+  --atlas-env FILE    use the dedicated Atlas test database `aayna_release_test` on the
+                      approved cluster `aayna-dev`, as the dedicated user `aayna_test_app`.
+                      FILE is a local, gitignored file containing one line
+                          MONGO_URL=mongodb+srv://aayna_test_app:<password>@aayna-dev.<id>.mongodb.net/
+                      The URI is never printed and is scrubbed from every saved log.
+
+Before ANY write, scripts/verify/release_target_guard.py verifies the exact target:
+allowlisted DB name (never `test_database`, `aayna_dev`, `aayna_test`, `aayna_prod`,
+`aayna_staging`), and for Atlas: cluster name, replica-set members on the same Atlas
+domain, authenticated as the dedicated user only, and no write-capable privilege on
+any other database or the cluster. If any check fails, nothing is written.
+
+Every environment variable the backend reads is set explicitly, so nothing falls
+through to backend/.env (order webhook OFF, Emergent storage key empty). Between
+suites the test database is reset by dropping its collections (needs readWrite only).
 
 Usage (from the repo root, with the backend's Python environment):
+    python scripts/verify/run_isolated_mongo_checks.py --atlas-env .env.release-test
     python scripts/verify/run_isolated_mongo_checks.py --mongod "C:\\Program Files\\MongoDB\\Server\\8.0\\bin\\mongod.exe"
-    python scripts/verify/run_isolated_mongo_checks.py --mongod /usr/bin/mongod --suites release,pytest
 
 Options:
-    --mongod PATH     official mongod binary (required)
     --suites LIST     comma list of: release, backend, pytest   (default: all three)
                       release also runs scripts/diagnostics/data_integrity.py (read-only)
     --out DIR         where to write the scrubbed logs and summary (default: a new temp dir)
-    --no-auth         start mongod without --auth (only for engines that lack auth;
-                      the loopback binding and fresh data dir still apply)
-    --keep-data       do not delete the throwaway data directory afterwards
+    --check-only      Atlas mode: run the connection + isolation checks, write nothing
+    --no-auth         mongod mode only: start without --auth (engines lacking auth)
+    --keep-data       mongod mode only: keep the throwaway data directory
 
-Exit code 0 only if the engine is official MongoDB AND every suite exited 0.
+Exit code 0 only if the engine is official MongoDB AND every suite passed.
 """
 import argparse
 import json
@@ -44,15 +48,16 @@ import tempfile
 import time
 import urllib.request
 from datetime import datetime, timezone
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, unquote, urlsplit
 
 import pymongo
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BACKEND = os.path.join(REPO, "backend")
-TEST_DB = "aayna_pytest"
-REAL_DB_NAMES = {"aayna_dev", "aayna_test", "aayna_prod", "aayna_staging"}
-SYSTEM_DBS = {"admin", "config", "local"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from release_target_guard import (ATLAS_TEST_DB, LOCAL_TEST_DB, UnsafeTarget,  # noqa: E402
+                                  classify, verify_live)
+
 ORIGIN = "http://localhost:3000"
 
 # Every variable the backend, its tests and the verify scripts read. All are set
@@ -95,11 +100,40 @@ def stop(proc):
             proc.wait(10)
 
 
+def read_atlas_env(path):
+    """Read MONGO_URL from a local file that git must not track."""
+    path = os.path.abspath(path)
+    if not os.path.isfile(path):
+        sys.exit(f"Atlas env file not found: {path}")
+    folder = os.path.dirname(path)
+    inside = subprocess.run(["git", "-C", folder, "rev-parse", "--is-inside-work-tree"],
+                            capture_output=True, text=True).stdout.strip() == "true"
+    if inside:
+        tracked = subprocess.run(["git", "-C", folder, "ls-files", "--error-unmatch", path],
+                                 capture_output=True).returncode == 0
+        ignored = subprocess.run(["git", "-C", folder, "check-ignore", "-q", path]).returncode == 0
+        if tracked or not ignored:
+            sys.exit(f"Refusing: {os.path.basename(path)} is {'tracked' if tracked else 'not gitignored'} "
+                     "in this repository; credentials must stay out of git")
+    url = ""
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line.startswith("MONGO_URL="):
+                url = line.split("=", 1)[1].strip().strip('"').strip("'")
+    if not url:
+        sys.exit(f"{os.path.basename(path)} has no MONGO_URL= line")
+    return url
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mongod", required=True)
+    mode = ap.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--mongod")
+    mode.add_argument("--atlas-env")
     ap.add_argument("--suites", default="release,backend,pytest")
     ap.add_argument("--out")
+    ap.add_argument("--check-only", action="store_true")
     ap.add_argument("--no-auth", action="store_true")
     ap.add_argument("--keep-data", action="store_true")
     a = ap.parse_args()
@@ -107,18 +141,14 @@ def main():
     bad = [x for x in suites if x not in ("release", "backend", "pytest")]
     if bad:
         sys.exit(f"unknown suite(s): {bad}")
-    if not os.path.isfile(a.mongod):
+    atlas = bool(a.atlas_env)
+    test_db = ATLAS_TEST_DB if atlas else LOCAL_TEST_DB
+    if not atlas and not os.path.isfile(a.mongod):
         sys.exit(f"mongod not found: {a.mongod}")
 
-    out = a.out or tempfile.mkdtemp(prefix="aayna-isolated-report-")
+    out = a.out or tempfile.mkdtemp(prefix="aayna-release-report-")
     os.makedirs(out, exist_ok=True)
-    mport, bport = free_port(), free_port()
-    if 27017 in (mport, bport):
-        sys.exit("Refusing: picked the default MongoDB port 27017")
-    dbpath = tempfile.mkdtemp(prefix="aayna-isolated-mongo-")
-    if os.listdir(dbpath):
-        sys.exit("Refusing: throwaway data directory is not empty")
-
+    bport = free_port()
     gen = {  # never printed; scrubbed from logs
         "mongo_user": "aayna_rel_" + secrets.token_hex(4),
         "mongo_pw": secrets.token_urlsafe(24),
@@ -126,11 +156,11 @@ def main():
         "admin_email": f"release-qa-{secrets.token_hex(3)}@example.test",
         "admin_pw": secrets.token_urlsafe(18),
     }
-    summary = {"started_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"), "mongod_binary": a.mongod,
-               "mongod_port": mport, "bind": "127.0.0.1", "auth": not a.no_auth, "test_db": TEST_DB,
-               "isolation": {}, "suites": {}}
+    summary = {"started_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "mode": "atlas" if atlas else "throwaway-mongod", "test_db": test_db, "isolation": {}, "suites": {}}
     mongod = backend = None
-    secret_values = []
+    dbpath = None
+    secret_values = [gen["mongo_pw"], gen["jwt"], gen["admin_pw"], gen["admin_email"], gen["mongo_user"]]
 
     def scrub(text):
         for v in secret_values:
@@ -139,54 +169,78 @@ def main():
         return text
 
     try:
-        cmd = [a.mongod, "--dbpath", dbpath, "--port", str(mport), "--bind_ip", "127.0.0.1",
-               "--logpath", os.path.join(dbpath, "mongod.log")]
-        if not a.no_auth:
-            cmd.append("--auth")
-        mongod = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        if not wait_port(mport, mongod):
-            sys.exit("mongod did not start (see its log in the data directory; rerun with --keep-data)")
+        if atlas:
+            mongo_url = read_atlas_env(a.atlas_env)
+            parts = urlsplit(mongo_url)
+            secret_values[:0] = [mongo_url, parts.password or "", unquote(parts.password or ""),
+                                 parts.netloc.rsplit("@", 1)[-1]]
+        else:
+            mport = free_port()
+            if 27017 in (mport, bport):
+                sys.exit("Refusing: picked the default MongoDB port 27017")
+            dbpath = tempfile.mkdtemp(prefix="aayna-isolated-mongo-")
+            if os.listdir(dbpath):
+                sys.exit("Refusing: throwaway data directory is not empty")
+            cmd = [a.mongod, "--dbpath", dbpath, "--port", str(mport), "--bind_ip", "127.0.0.1",
+                   "--logpath", os.path.join(dbpath, "mongod.log")]
+            if not a.no_auth:
+                cmd.append("--auth")
+            mongod = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            if not wait_port(mport, mongod):
+                sys.exit("mongod did not start (see its log in the data directory; rerun with --keep-data)")
+            local = pymongo.MongoClient(f"mongodb://127.0.0.1:{mport}/", directConnection=True,
+                                        serverSelectionTimeoutMS=10000)
+            if a.no_auth:
+                mongo_url = f"mongodb://127.0.0.1:{mport}/?directConnection=true"
+            else:  # localhost exception: first user on a fresh instance
+                try:
+                    local.admin.command("createUser", gen["mongo_user"], pwd=gen["mongo_pw"],
+                                        roles=[{"role": "readWrite", "db": test_db}, {"role": "dbAdmin", "db": test_db}])
+                except pymongo.errors.OperationFailure as exc:
+                    sys.exit(f"could not create the throwaway test user ({exc.code}: {exc.details.get('codeName')}); "
+                             "this engine may not be official MongoDB")
+                mongo_url = (f"mongodb://{quote_plus(gen['mongo_user'])}:{quote_plus(gen['mongo_pw'])}"
+                             f"@127.0.0.1:{mport}/?authSource=admin&directConnection=true")
+            secret_values[:0] = [mongo_url, quote_plus(gen["mongo_pw"])]
+            summary["isolation"].update({"fresh_empty_data_dir_created_by_runner": True, "port_is_not_27017": True,
+                                         "bound_to_loopback_only": True, "auth": not a.no_auth})
 
-        local = pymongo.MongoClient(f"mongodb://127.0.0.1:{mport}/", directConnection=True, serverSelectionTimeoutMS=10000)
-        if a.no_auth:
-            mongo_url = f"mongodb://127.0.0.1:{mport}/?directConnection=true"
-        else:  # localhost exception: first user on a fresh instance
-            try:
-                local.admin.command("createUser", gen["mongo_user"], pwd=gen["mongo_pw"],
-                                    roles=[{"role": "readWrite", "db": TEST_DB}, {"role": "dbAdmin", "db": TEST_DB}])
-            except pymongo.errors.OperationFailure as exc:
-                sys.exit(f"could not create the throwaway test user ({exc.code}: {exc.details.get('codeName')}); "
-                         "this engine may not be official MongoDB")
-            mongo_url = (f"mongodb://{quote_plus(gen['mongo_user'])}:{quote_plus(gen['mongo_pw'])}"
-                         f"@127.0.0.1:{mport}/?authSource=admin&directConnection=true")
-        secret_values[:] = [mongo_url, gen["mongo_pw"], gen["jwt"], gen["admin_pw"], quote_plus(gen["mongo_pw"]),
-                            gen["admin_email"], gen["mongo_user"]]
-        client = pymongo.MongoClient(mongo_url, serverSelectionTimeoutMS=10000)
-
-        build = client[TEST_DB].command("buildInfo")
-        official = "ferretdbVersion" not in build and bool(build.get("version"))
-        engine = f"MongoDB {build.get('version')}" if official else f"FerretDB {build.get('ferretdbVersion')}"
-        names = set(client.list_database_names())
-        real = names & REAL_DB_NAMES
-        unexpected = names - SYSTEM_DBS - {TEST_DB}
-        summary["engine"] = engine
-        summary["engine_is_official_mongodb"] = official
-        summary["isolation"] = {
-            "fresh_empty_data_dir_created_by_runner": True,
-            "port_is_not_27017": mport != 27017,
-            "bound_to_loopback_only": True,
-            "databases_present_at_start": sorted(names),
-            "real_aayna_databases_present": sorted(real),
-            "test_user_scoped_to": None if a.no_auth else TEST_DB,
-            "order_webhook": "disabled", "emergent_storage_key": "empty",
-        }
-        if real or unexpected:
-            sys.exit(f"Refusing: instance is not empty/isolated (found {sorted(real | unexpected)})")
-        print(f"engine: {engine}  |  isolated instance on 127.0.0.1:{mport}  |  db {TEST_DB}")
+        try:
+            classify(mongo_url, test_db)  # static allowlist check before any network access
+            client = pymongo.MongoClient(mongo_url, serverSelectionTimeoutMS=20000)
+            info = verify_live(client, mongo_url, test_db)
+        except pymongo.errors.ConfigurationError as exc:
+            sys.exit(f"Cannot resolve the database address ({type(exc).__name__}); check the cluster host in the "
+                     "env file and this computer's DNS/network")
+        except pymongo.errors.ServerSelectionTimeoutError:
+            summary["isolation"]["reachable"] = False
+            sys.exit("Cannot reach the database. For Atlas: add THIS computer's current public IP in Atlas > "
+                     "Network Access (a single /32 entry). Do NOT add 0.0.0.0/0.")
+        except pymongo.errors.OperationFailure as exc:
+            sys.exit(f"Database refused the connection ({exc.code}: {exc.details.get('codeName')}); "
+                     "check the user name/password in the env file")
+        except UnsafeTarget as exc:
+            sys.exit(f"Refusing to run: {exc}")
+        summary["engine"] = info["engine"]
+        summary["engine_is_official_mongodb"] = info["official_mongodb"]
+        existing = client[test_db].list_collection_names()
+        summary["isolation"].update({k: v for k, v in info.items() if k not in ("domain",)})
+        summary["isolation"].update({"collections_in_test_db_at_start": len(existing),
+                                     "order_webhook": "disabled", "emergent_storage_key": "empty"})
+        print(f"engine: {info['engine']}  |  target: {info['kind']}  |  db {test_db}")
+        for k in ("cluster", "replica_set", "members", "roles", "write_privileges_outside_test_db",
+                  "visible_databases"):
+            if k in info:
+                print(f"  {k}: {info[k]}")
+        print(f"  collections already in {test_db}: {len(existing)} (dropped before each suite)")
+        if a.check_only:
+            print("check-only: no writes performed")
+            summary["check_only"] = True
+            return
 
         env = {k: v for k, v in os.environ.items() if k not in CONTROLLED_VARS}
         env.update({
-            "MONGO_URL": mongo_url, "DATABASE_URL": "", "DB_NAME": TEST_DB, "APP_ENV": "test",
+            "MONGO_URL": mongo_url, "DATABASE_URL": "", "DB_NAME": test_db, "APP_ENV": "test",
             "JWT_SECRET": gen["jwt"], "ADMIN_EMAIL": gen["admin_email"], "ADMIN_PASSWORD": gen["admin_pw"],
             "CORS_ORIGINS": f"{ORIGIN},http://localhost:3001", "PUBLIC_SITE_URL": ORIGIN,
             "REACT_APP_BACKEND_URL": f"http://127.0.0.1:{bport}", "TRUSTED_PROXY_HOPS": "1",
@@ -196,26 +250,33 @@ def main():
             "PYTHONDONTWRITEBYTECODE": "1",
         })
 
+        def reset_test_db():
+            verify_live(client, mongo_url, test_db)  # re-check right before the destructive step
+            for name in client[test_db].list_collection_names():
+                if not name.startswith("system."):
+                    client[test_db].drop_collection(name)
+
         def fresh_backend():
             nonlocal backend
             stop(backend)
-            client.drop_database(TEST_DB)
-            log = open(os.path.join(out, "backend.log"), "a")
-            backend = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--host", "127.0.0.1",
-                                        "--port", str(bport)], cwd=BACKEND, env=env, stdout=log, stderr=subprocess.STDOUT)
-            if not wait_port(bport, backend, 90):
+            reset_test_db()
+            with open(os.path.join(out, "backend.log"), "a") as log:
+                backend = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--host", "127.0.0.1",
+                                            "--port", str(bport)], cwd=BACKEND, env=env, stdout=log,
+                                           stderr=subprocess.STDOUT)
+            if not wait_port(bport, backend, 120):
                 raise RuntimeError("test backend did not start (see backend.log)")
-            for _ in range(60):
+            for _ in range(90):
                 try:
                     h = json.load(urllib.request.urlopen(f"http://127.0.0.1:{bport}/api/health", timeout=5))
-                    if h.get("database") == TEST_DB:
+                    if h.get("database") == test_db:
                         return
-                    raise RuntimeError(f"backend reports database {h.get('database')!r}, expected {TEST_DB!r}")
+                    raise RuntimeError(f"backend reports database {h.get('database')!r}, expected {test_db!r}")
                 except OSError:
                     time.sleep(1)
             raise RuntimeError("test backend health check timed out")
 
-        def run(name, argv, cwd=REPO, timeout=900):
+        def run(name, argv, cwd=REPO, timeout=1500):
             t = time.time()
             try:
                 p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
@@ -240,14 +301,17 @@ def main():
                 run("pytest", [py, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"], cwd=BACKEND)
         stop(backend)
         backend = None
+        reset_test_db()  # leave the dedicated test database empty
+        summary["test_db_emptied_after_run"] = True
     finally:
         stop(backend)
         stop(mongod)
-        if a.keep_data:
-            summary["data_dir_kept"] = dbpath
-        else:
-            shutil.rmtree(dbpath, ignore_errors=True)
-            summary["data_dir_deleted"] = not os.path.exists(dbpath)
+        if dbpath:
+            if a.keep_data:
+                summary["data_dir_kept"] = dbpath
+            else:
+                shutil.rmtree(dbpath, ignore_errors=True)
+                summary["data_dir_deleted"] = not os.path.exists(dbpath)
         blog = os.path.join(out, "backend.log")
         if os.path.exists(blog):
             with open(blog, encoding="utf-8", errors="replace") as fh:
