@@ -29,7 +29,7 @@ async function measure(page) {
     }
     const h1 = document.querySelector("h1");
     const hr = h1?.getBoundingClientRect();
-    const footerLinks = [...document.querySelectorAll('footer nav[aria-label="All pages"] a')];
+    const footerLinks = [...document.querySelectorAll("footer a")];
     return {
       sw: document.documentElement.scrollWidth, cw: vw,
       h1: h1?.innerText.replace(/\s+/g, " ").trim(), h1Clipped: hr ? hr.right > vw + 1 || hr.left < -1 : null,
@@ -78,11 +78,15 @@ async function measure(page) {
   rec("Bracelets present in Digital Mirror categories", a375.mirrorCats.includes("bracelets"), a375.mirrorCats.join(","));
   rec("mirror category tap targets >= 44px", a375.smallTargets === 0, `${a375.smallTargets} below 44px`);
   const b375 = table.find((t) => t.w === 375 && t.label === "before");
-  rec("INFO hero 'shop now' CTA height (pre-existing, Phase 3)", true, `after ${a375.heroCtaH}px, before ${b375 ? b375.heroCtaH + "px" : "n/a"}`);
-  rec("footer bottom nav links all 8 pages", JSON.stringify(a375.footerLinks) === JSON.stringify(["/", "/shop", "/track-order", "/contact", "/delivery-policy", "/returns", "/privacy", "/terms"]), a375.footerLinks.join(" "));
+  rec("hero 'Enter the Edit' CTA >= 44px", a375.heroCtaH >= 44, `after ${a375.heroCtaH}px, before ${b375 ? b375.heroCtaH + "px" : "n/a"}`);
+  // Phase 3: every footer destination linked exactly once (round-3 "all pages" row removed as duplication).
+  const internal = a375.footerLinks.filter((h) => h.startsWith("/"));
+  const required = ["/shop", "/track-order", "/contact", "/delivery-policy", "/returns", "/privacy", "/terms"];
+  rec("footer links every site page", required.every((h) => internal.includes(h)), internal.join(" "));
+  rec("footer has no duplicate links", new Set(a375.footerLinks).size === a375.footerLinks.length, `${a375.footerLinks.length} links`);
   rec("footer tagline 'Contemporary, proudly Bangladeshi.'", a375.footerTagline);
   rec("mirror sheen applied and animating", a375.sheen && a375.sheenAnim === "aayna-mirror-sheen", a375.sheenAnim);
-  if (a375.footerLinkMinH < 44) rec("INFO footer nav link tap height", true, `min ${a375.footerLinkMinH.toFixed(0)}px (<44px; Phase 3 item)`);
+  rec("footer link tap targets >= 44px", a375.footerLinkMinH >= 44, `min ${Math.round(a375.footerLinkMinH)}px`);
 
   // reduced motion
   {
@@ -99,7 +103,7 @@ async function measure(page) {
     const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
     const page = await ctx.newPage();
     await page.goto(AFTER + "/", { waitUntil: "networkidle" });
-    await page.locator('footer nav[aria-label="All pages"] a[href="/returns"]').click();
+    await page.locator('footer a[href="/returns"]').click();
     await page.waitForURL("**/returns");
     rec("footer nav link navigates (Returns)", page.url().endsWith("/returns"));
     await ctx.close();
