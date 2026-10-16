@@ -1,0 +1,16 @@
+database engine: FerretDB v1.24.0
+
+NOT VERIFIED dashboard aggregation  — HTTP 500 {"detail":"Something went wrong on the server. Please try again."}
+NOT VERIFIED inventory low-stock filter  — HTTP 500
+NOT VERIFIED customer list/detail aggregation  — HTTP 500
+PASS         rollback: insert failure -> HTTP 500 JSON, stock restored, no customer left behind, key released  — HTTP 500 stock=4 customer=none
+PASS         rollback: the same request succeeds on retry  — HTTP 200 stock=2
+NOT VERIFIED concurrency: 10 orders for 3 units -> exactly 3 orders, stock 0, out_of_stock, 3 sale logs  — 200s=7 orders=7 stock=0 status=out_of_stock logs=7
+PASS         partial: failing multi-item order leaves every product unchanged, no order, no customer  — HTTP 400 A=5 B=1
+NOT VERIFIED partial (concurrent): 10 two-item orders, scarce item has 3 -> 3 orders, A=7, B=0  — 200s=9 orders=9 A=8 B=0
+PASS         idempotency: 8 concurrent submissions with one key -> exactly 1 order, all answers name it  — orders=1 distinct numbers={'ORD-1018'} codes=[200]
+PASS         idempotency: stock decremented once  — stock=19
+PASS         invariant: no product has negative stock  — 0 negative
+PASS         invariant: no duplicate client_request_id  — 0 duplicated keys
+
+7 passed, 0 failed, 5 NOT VERIFIED on FerretDB v1.24.0
