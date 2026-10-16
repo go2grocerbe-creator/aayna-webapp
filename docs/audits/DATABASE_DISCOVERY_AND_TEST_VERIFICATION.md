@@ -136,3 +136,53 @@ Also pending authorization (unchanged from Phase 4B): read-only `data_integrity.
    - stock-return workflow approval
    - transactions and a shared login limiter before running multiple workers
    - verified legal-entity disclosures
+
+## 8. Update 2026-10-16 — dedicated Atlas test cluster
+
+The founder created a dedicated Atlas test environment:
+- Project `AAYNA`, cluster `aayna-dev`, M0, AWS Singapore.
+- User `aayna_test_app` with `readWrite` on `aayna_release_test` only.
+- Network access restricted to one `/32` IP.
+
+Emergent's `test_database` is real project data and is never a test target.
+
+**Guard hazard found and fixed (`2abf543`).** Five write-capable entry points only checked that the database name contained "test":
+- `mongo_release_checks.py`
+- `backend_admin_checks.py`
+- `inventory_rules.py`
+- `index_migration.py --apply`
+- pytest `conftest.py`, including its drop-database teardown
+
+So they all accepted `test_database`. They now share `scripts/verify/release_target_guard.py`, an **exact allowlist** with two allowed targets:
+
+| Target | Required |
+|---|---|
+| local | loopback host and DB `aayna_pytest`; refused if the instance also holds any real database name |
+| Atlas | single `mongodb+srv` host whose first label is `aayna-dev` under `*.mongodb.net`; user `aayna_test_app`; DB `aayna_release_test`; replica-set members on the same Atlas domain; authenticated **solely** as that user; **no write-capable privilege on any other database or the cluster** (live `connectionStatus` with `showPrivileges`) |
+
+Always refused: `test_database`, `aayna_dev`, `aayna_test`, `aayna_prod`, `aayna_staging`, `admin`, `local`, `config`, and any other name.
+
+pytest teardown now drops collections, which needs only `readWrite`, and re-verifies the target first.
+
+Verification:
+- 27 new offline guard tests; 69/69 offline tests pass in total.
+- Every entry point refuses `test_database` before connecting.
+- Local suites unchanged: rules 28/28, backend 61/61, release 7 / 0 / 5 NOT VERIFIED, pytest 120 / 1 / 3.
+
+**Runner `--atlas-env` mode (`3544f27`, `d04d072`):**
+- It reads `MONGO_URL` from a local file and refuses a file that git tracks or doesn't ignore.
+- It runs the guard before any write and resets the test database by dropping its collections.
+- It leaves `aayna_release_test` empty afterwards.
+- It scrubs the URI, password and host from every log.
+- `--check-only` performs the identity and privilege checks without writing anything.
+
+These refusal paths were tested offline:
+- wrong cluster
+- admin user
+- non-`srv` remote
+- unresolvable host
+- credentials file not gitignored
+
+**Where it runs.** Only the founder's Windows PC is on the Atlas allowlist. The code at `d04d072` was placed in a **separate** folder, `E:\deMarkt\aayna-webapp\aayna-release-verify`, which is not a git repository. The founder's checkout (`launch/aayna-readiness-v1`, clean apart from one untracked `.claude/settings.local.json`) was not touched. That PC's backend venv (Python 3.13.7) has every required package, including `dnspython` for `mongodb+srv`.
+
+**Status:** the five checks are still **NOT VERIFIED** until the founder runs the runner against Atlas (§8 results to follow).
