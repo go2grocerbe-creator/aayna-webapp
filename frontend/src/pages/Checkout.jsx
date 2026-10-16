@@ -177,7 +177,8 @@ export default function Checkout() {
       <h1 className="font-display font-semibold text-3xl md:text-5xl text-aayna-burgundy-dark mb-8 md:mb-10">Checkout</h1>
 
       {/* Progress strip - reflects real form state, not a hidden-step gate */}
-      <nav aria-label="Checkout progress" className="flex flex-wrap gap-x-6 gap-y-2 border-y border-aayna-beige py-3 mb-10 md:mb-14">
+      {/* Phones: an even 2x2 grid (a wrapping row left "04 Summary" orphaned on its own line). */}
+      <nav aria-label="Checkout progress" className="grid grid-cols-2 gap-x-4 sm:flex sm:flex-wrap sm:gap-x-6 gap-y-0 border-y border-aayna-beige py-2 mb-10 md:mb-14">
         {STEPS.map((s) => {
           const status = stepStatus(s.key);
           return (
