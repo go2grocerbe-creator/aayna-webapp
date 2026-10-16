@@ -1,0 +1,112 @@
+PASS  desktop qa-aura-locket-necklace-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=aura-locket-necklace-golden var=2 fit=contain alt="QA Aura Locket Necklace Golden — image 1 of 3"
+PASS  desktop qa-aura-locket-necklace-golden: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=aura-locket-necklace-golden minSize=131
+PASS  desktop qa-aura-locket-necklace-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-aura-locket-necklace-golden: no horizontal scroll  — overflow=0px
+PASS  desktop qa-bold-chunky-earring-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=bold-chunky-earring-golden var=2 fit=contain alt="QA Bold Chunky Earring Golden — image 1 of 2"
+PASS  desktop qa-bold-chunky-earring-golden: 2 thumbnails, all this product's photos, >=44px, labelled  — n=2 groups=bold-chunky-earring-golden minSize=131
+PASS  desktop qa-bold-chunky-earring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-bold-chunky-earring-golden: no horizontal scroll  — overflow=0px
+PASS  desktop qa-classic-statement-ring-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=classic-statement-ring-golden var=2 fit=contain alt="QA Classic Statement Ring Golden — image 1 of 4"
+PASS  desktop qa-classic-statement-ring-golden: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=classic-statement-ring-golden minSize=131
+PASS  desktop qa-classic-statement-ring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-classic-statement-ring-golden: no horizontal scroll  — overflow=0px
+PASS  desktop qa-crystal-stone-cuff-golden: main photo loads, own group, primary #1, whole photo, good alt  — group=crystal-stone-cuff-golden var=1 fit=contain alt="QA Crystal Stone Cuff Golden — image 1 of 4"
+PASS  desktop qa-crystal-stone-cuff-golden: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=crystal-stone-cuff-golden minSize=131
+PASS  desktop qa-crystal-stone-cuff-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-crystal-stone-cuff-golden: no horizontal scroll  — overflow=0px
+PASS  desktop qa-floral-bloom-earring-golden: main photo loads, own group, primary #1, whole photo, good alt  — group=floral-bloom-earring-golden var=1 fit=contain alt="QA Floral Bloom Earring Golden — image 1 of 2"
+PASS  desktop qa-floral-bloom-earring-golden: 2 thumbnails, all this product's photos, >=44px, labelled  — n=2 groups=floral-bloom-earring-golden minSize=131
+PASS  desktop qa-floral-bloom-earring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-floral-bloom-earring-golden: no horizontal scroll  — overflow=0px
+PASS  desktop qa-floral-bloom-earring-silver: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-bloom-earring-silver var=2 fit=contain alt="QA Floral Bloom Earring Silver — image 1 of 3"
+PASS  desktop qa-floral-bloom-earring-silver: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=floral-bloom-earring-silver minSize=131
+PASS  desktop qa-floral-bloom-earring-silver: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-floral-bloom-earring-silver: no horizontal scroll  — overflow=0px
+PASS  desktop qa-floral-charm-golden-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-charm-golden-bracelet var=2 fit=contain alt="QA Floral Charm Golden Bracelet — image 1 of 3"
+PASS  desktop qa-floral-charm-golden-bracelet: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=floral-charm-golden-bracelet minSize=131
+PASS  desktop qa-floral-charm-golden-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-floral-charm-golden-bracelet: no horizontal scroll  — overflow=0px
+PASS  desktop qa-floral-charm-silver-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-charm-silver-bracelet var=2 fit=contain alt="QA Floral Charm Silver Bracelet — image 1 of 4"
+PASS  desktop qa-floral-charm-silver-bracelet: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=floral-charm-silver-bracelet minSize=131
+PASS  desktop qa-floral-charm-silver-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-floral-charm-silver-bracelet: no horizontal scroll  — overflow=0px
+PASS  desktop qa-golden-crossline-cuff-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=golden-crossline-cuff-bracelet var=2 fit=contain alt="QA Golden Crossline Cuff Bracelet — image 1 of 4"
+PASS  desktop qa-golden-crossline-cuff-bracelet: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=golden-crossline-cuff-bracelet minSize=131
+PASS  desktop qa-golden-crossline-cuff-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-golden-crossline-cuff-bracelet: no horizontal scroll  — overflow=0px
+PASS  desktop qa-luna-locket-necklace-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=luna-locket-necklace-golden var=2 fit=contain alt="QA Luna Locket Necklace Golden — image 1 of 3"
+PASS  desktop qa-luna-locket-necklace-golden: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=luna-locket-necklace-golden minSize=131
+PASS  desktop qa-luna-locket-necklace-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  desktop qa-luna-locket-necklace-golden: no horizontal scroll  — overflow=0px
+PASS  desktop: opening another product starts at its primary photo  — /product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-02.webp
+PASS  desktop card qa-aura-locket-necklace-golden: primary photo of this product, loads, good alt  — group=aura-locket-necklace-golden var=2 alt="QA Aura Locket Necklace Golden — image 1 of 3"
+PASS  desktop card qa-luna-locket-necklace-golden: primary photo of this product, loads, good alt  — group=luna-locket-necklace-golden var=2 alt="QA Luna Locket Necklace Golden — image 1 of 3"
+PASS  desktop /category/necklaces: no horizontal scroll  — overflow=0px
+PASS  desktop card qa-bold-chunky-earring-golden: primary photo of this product, loads, good alt  — group=bold-chunky-earring-golden var=2 alt="QA Bold Chunky Earring Golden — image 1 of 2"
+PASS  desktop card qa-floral-bloom-earring-golden: primary photo of this product, loads, good alt  — group=floral-bloom-earring-golden var=1 alt="QA Floral Bloom Earring Golden — image 1 of 2"
+PASS  desktop card qa-floral-bloom-earring-silver: primary photo of this product, loads, good alt  — group=floral-bloom-earring-silver var=2 alt="QA Floral Bloom Earring Silver — image 1 of 3"
+PASS  desktop /category/earrings: no horizontal scroll  — overflow=0px
+PASS  desktop card qa-classic-statement-ring-golden: primary photo of this product, loads, good alt  — group=classic-statement-ring-golden var=2 alt="QA Classic Statement Ring Golden — image 1 of 4"
+PASS  desktop /category/rings: no horizontal scroll  — overflow=0px
+PASS  desktop card qa-crystal-stone-cuff-golden: primary photo of this product, loads, good alt  — group=crystal-stone-cuff-golden var=1 alt="QA Crystal Stone Cuff Golden — image 1 of 4"
+PASS  desktop card qa-floral-charm-golden-bracelet: primary photo of this product, loads, good alt  — group=floral-charm-golden-bracelet var=2 alt="QA Floral Charm Golden Bracelet — image 1 of 3"
+PASS  desktop card qa-floral-charm-silver-bracelet: primary photo of this product, loads, good alt  — group=floral-charm-silver-bracelet var=2 alt="QA Floral Charm Silver Bracelet — image 1 of 4"
+PASS  desktop card qa-golden-crossline-cuff-bracelet: primary photo of this product, loads, good alt  — group=golden-crossline-cuff-bracelet var=2 alt="QA Golden Crossline Cuff Bracelet — image 1 of 4"
+PASS  desktop /category/bracelets: no horizontal scroll  — overflow=0px
+PASS  mobile qa-aura-locket-necklace-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=aura-locket-necklace-golden var=2 fit=contain alt="QA Aura Locket Necklace Golden — image 1 of 3"
+PASS  mobile qa-aura-locket-necklace-golden: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=aura-locket-necklace-golden minSize=82
+PASS  mobile qa-aura-locket-necklace-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-aura-locket-necklace-golden: no horizontal scroll  — overflow=0px
+PASS  mobile qa-bold-chunky-earring-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=bold-chunky-earring-golden var=2 fit=contain alt="QA Bold Chunky Earring Golden — image 1 of 2"
+PASS  mobile qa-bold-chunky-earring-golden: 2 thumbnails, all this product's photos, >=44px, labelled  — n=2 groups=bold-chunky-earring-golden minSize=82
+PASS  mobile qa-bold-chunky-earring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-bold-chunky-earring-golden: no horizontal scroll  — overflow=0px
+PASS  mobile qa-classic-statement-ring-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=classic-statement-ring-golden var=2 fit=contain alt="QA Classic Statement Ring Golden — image 1 of 4"
+PASS  mobile qa-classic-statement-ring-golden: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=classic-statement-ring-golden minSize=82
+PASS  mobile qa-classic-statement-ring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-classic-statement-ring-golden: no horizontal scroll  — overflow=0px
+PASS  mobile qa-crystal-stone-cuff-golden: main photo loads, own group, primary #1, whole photo, good alt  — group=crystal-stone-cuff-golden var=1 fit=contain alt="QA Crystal Stone Cuff Golden — image 1 of 4"
+PASS  mobile qa-crystal-stone-cuff-golden: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=crystal-stone-cuff-golden minSize=82
+PASS  mobile qa-crystal-stone-cuff-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-crystal-stone-cuff-golden: no horizontal scroll  — overflow=0px
+PASS  mobile qa-floral-bloom-earring-golden: main photo loads, own group, primary #1, whole photo, good alt  — group=floral-bloom-earring-golden var=1 fit=contain alt="QA Floral Bloom Earring Golden — image 1 of 2"
+PASS  mobile qa-floral-bloom-earring-golden: 2 thumbnails, all this product's photos, >=44px, labelled  — n=2 groups=floral-bloom-earring-golden minSize=82
+PASS  mobile qa-floral-bloom-earring-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-floral-bloom-earring-golden: no horizontal scroll  — overflow=0px
+PASS  mobile qa-floral-bloom-earring-silver: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-bloom-earring-silver var=2 fit=contain alt="QA Floral Bloom Earring Silver — image 1 of 3"
+PASS  mobile qa-floral-bloom-earring-silver: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=floral-bloom-earring-silver minSize=82
+PASS  mobile qa-floral-bloom-earring-silver: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-floral-bloom-earring-silver: no horizontal scroll  — overflow=0px
+PASS  mobile qa-floral-charm-golden-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-charm-golden-bracelet var=2 fit=contain alt="QA Floral Charm Golden Bracelet — image 1 of 3"
+PASS  mobile qa-floral-charm-golden-bracelet: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=floral-charm-golden-bracelet minSize=82
+PASS  mobile qa-floral-charm-golden-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-floral-charm-golden-bracelet: no horizontal scroll  — overflow=0px
+PASS  mobile qa-floral-charm-silver-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=floral-charm-silver-bracelet var=2 fit=contain alt="QA Floral Charm Silver Bracelet — image 1 of 4"
+PASS  mobile qa-floral-charm-silver-bracelet: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=floral-charm-silver-bracelet minSize=82
+PASS  mobile qa-floral-charm-silver-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-floral-charm-silver-bracelet: no horizontal scroll  — overflow=0px
+PASS  mobile qa-golden-crossline-cuff-bracelet: main photo loads, own group, primary #2, whole photo, good alt  — group=golden-crossline-cuff-bracelet var=2 fit=contain alt="QA Golden Crossline Cuff Bracelet — image 1 of 4"
+PASS  mobile qa-golden-crossline-cuff-bracelet: 4 thumbnails, all this product's photos, >=44px, labelled  — n=4 groups=golden-crossline-cuff-bracelet minSize=82
+PASS  mobile qa-golden-crossline-cuff-bracelet: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-golden-crossline-cuff-bracelet: no horizontal scroll  — overflow=0px
+PASS  mobile qa-luna-locket-necklace-golden: main photo loads, own group, primary #2, whole photo, good alt  — group=luna-locket-necklace-golden var=2 fit=contain alt="QA Luna Locket Necklace Golden — image 1 of 3"
+PASS  mobile qa-luna-locket-necklace-golden: 3 thumbnails, all this product's photos, >=44px, labelled  — n=3 groups=luna-locket-necklace-golden minSize=82
+PASS  mobile qa-luna-locket-necklace-golden: every thumbnail switches the main photo (aria-pressed)
+PASS  mobile qa-luna-locket-necklace-golden: no horizontal scroll  — overflow=0px
+PASS  mobile: opening another product starts at its primary photo  — /product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-02.webp
+PASS  mobile card qa-aura-locket-necklace-golden: primary photo of this product, loads, good alt  — group=aura-locket-necklace-golden var=2 alt="QA Aura Locket Necklace Golden — image 1 of 3"
+PASS  mobile card qa-luna-locket-necklace-golden: primary photo of this product, loads, good alt  — group=luna-locket-necklace-golden var=2 alt="QA Luna Locket Necklace Golden — image 1 of 3"
+PASS  mobile /category/necklaces: no horizontal scroll  — overflow=0px
+PASS  mobile card qa-bold-chunky-earring-golden: primary photo of this product, loads, good alt  — group=bold-chunky-earring-golden var=2 alt="QA Bold Chunky Earring Golden — image 1 of 2"
+PASS  mobile card qa-floral-bloom-earring-golden: primary photo of this product, loads, good alt  — group=floral-bloom-earring-golden var=1 alt="QA Floral Bloom Earring Golden — image 1 of 2"
+PASS  mobile card qa-floral-bloom-earring-silver: primary photo of this product, loads, good alt  — group=floral-bloom-earring-silver var=2 alt="QA Floral Bloom Earring Silver — image 1 of 3"
+PASS  mobile /category/earrings: no horizontal scroll  — overflow=0px
+PASS  mobile card qa-classic-statement-ring-golden: primary photo of this product, loads, good alt  — group=classic-statement-ring-golden var=2 alt="QA Classic Statement Ring Golden — image 1 of 4"
+PASS  mobile /category/rings: no horizontal scroll  — overflow=0px
+PASS  mobile card qa-crystal-stone-cuff-golden: primary photo of this product, loads, good alt  — group=crystal-stone-cuff-golden var=1 alt="QA Crystal Stone Cuff Golden — image 1 of 4"
+PASS  mobile card qa-floral-charm-golden-bracelet: primary photo of this product, loads, good alt  — group=floral-charm-golden-bracelet var=2 alt="QA Floral Charm Golden Bracelet — image 1 of 3"
+PASS  mobile card qa-floral-charm-silver-bracelet: primary photo of this product, loads, good alt  — group=floral-charm-silver-bracelet var=2 alt="QA Floral Charm Silver Bracelet — image 1 of 4"
+PASS  mobile card qa-golden-crossline-cuff-bracelet: primary photo of this product, loads, good alt  — group=golden-crossline-cuff-bracelet var=2 alt="QA Golden Crossline Cuff Bracelet — image 1 of 4"
+PASS  mobile /category/bracelets: no horizontal scroll  — overflow=0px
+
+110/110 checks passed

@@ -120,6 +120,15 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Emergent storage not contacted when the key is empty (startup, upload 503, files 404); offline tests
 - [ ] On real data (after backup + founder approval, maintenance window): diagnostics -> merge plan -> review -> apply -> verify -> unique indexes
 
+## Phase 5B — Product photography (details: PRODUCT_PHOTOGRAPHY_INTEGRATION.md)
+- [x] 33 photos inventoried (32 + Naira excluded), all readable, no duplicates; checksums recorded
+- [x] 32 copied byte-for-byte to `aayna-website-assets/product-photos` (outside git) with MANIFEST; source unchanged (verified twice)
+- [x] 10 groups map 1:1 to the 10 spreadsheet SKUs via importer dry run (0 partial/ambiguous/orphan)
+- [x] Storefront: shared image-order rule, PDP gallery (all photos, no crop), alt text, lazy/async; 110/110 desktop+mobile; audits clean
+- [ ] DECISION: Crystal Stone Cuff SKU suffix SLV vs golden photos (photo 4 shows a silver cuff too)
+- [ ] DECISION: Cuff -> bracelets category; primary-photo proposal; selling prices for the 10 SKUs
+- [ ] DECISION: image delivery route (importer + object storage / static frontend assets / new CDN), then import as draft into the located real DB
+
 ## Phase 5 — Production readiness (not started)
 - [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17
 - [ ] Repeat against the provisioned production-shaped staging DB before launch (with unique indexes)
