@@ -87,7 +87,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
           )}
         </Link>
         <div className="pt-4 flex flex-col gap-2">
-          <Link to={`/product/${product.slug}`} className="block py-1">
+          <Link to={`/product/${product.slug}`} className="block py-1.5">
             <h3 className="font-display text-2xl md:text-3xl text-aayna-charcoal leading-snug hover:text-aayna-burgundy transition-colors">
               {product.product_name}
             </h3>
