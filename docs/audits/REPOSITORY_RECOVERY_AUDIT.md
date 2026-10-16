@@ -197,3 +197,9 @@ Layout (after build): no horizontal overflow and no clipped hero headline at 320
 | Mirror preview Add to Cart is tablet/desktop only by design; phones rely on the category edit below | Design note — Phase 3 review |
 | Importer uploads through the backend's current `storage.py` (still Emergent object storage) | **OPEN** — blocked on storage-provider decision; importer itself is provider-neutral |
 | 3 admin aggregation tests unverified on real MongoDB; image loading unverified in sandbox | **NOT VERIFIED** |
+
+
+---
+
+## 9. Phase 3 (2026-10-16)
+Responsive UI/UX audit and repair recorded separately in `RESPONSIVE_UI_AUDIT.md`.

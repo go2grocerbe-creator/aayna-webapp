@@ -1,0 +1,181 @@
+320 360 375 390 430 768 820 1024 1280 1440 1920 844x390-phone-landscape 1024x768-tablet-landscape 1180x820-tablet-landscape 
+
+OVERFLOW: admin-products@320
+CLIPPED HEADINGS: none
+JS ERRORS: admin-dashboard@320 admin-dashboard@360 admin-dashboard@375 admin-dashboard@390 admin-dashboard@430 admin-dashboard@768 admin-dashboard@820 admin-dashboard@1024 admin-dashboard@1280 admin-dashboard@1440 admin-dashboard@1920 admin-dashboard@844x390-phone-landscape admin-dashboard@1024x768-tablet-landscape admin-dashboard@1180x820-tablet-landscape
+
+SMALL24 (203 distinct)
+  28x  home: Track Order
+  28x  home: Delivery Policy
+  28x  home: Privacy Policy
+  28x  home: Contact Us
+  28x  shop: Track Order
+  28x  shop: Delivery Policy
+  28x  shop: Privacy Policy
+  28x  shop: Contact Us
+  28x  category: Track Order
+  28x  category: Delivery Policy
+  28x  category: Privacy Policy
+  28x  category: Contact Us
+  28x  product: Rings
+  28x  product: Track Order
+  28x  product: Delivery Policy
+  28x  product: Privacy Policy
+  28x  product: Contact Us
+  28x  cart: Track Order
+  28x  cart: Delivery Policy
+  28x  cart: Privacy Policy
+  28x  cart: Contact Us
+  28x  cart-empty: Track Order
+  28x  cart-empty: Delivery Policy
+  28x  cart-empty: Privacy Policy
+  28x  cart-empty: Contact Us
+  28x  checkout: Track Order
+  28x  checkout: Delivery Policy
+  28x  checkout: Privacy Policy
+  28x  checkout: Contact Us
+  28x  track-order: Track Order
+  28x  track-order: Delivery Policy
+  28x  track-order: Privacy Policy
+  28x  track-order: Contact Us
+  28x  contact: Track Order
+  28x  contact: Delivery Policy
+  28x  contact: Privacy Policy
+  28x  contact: Contact Us
+  28x  policy: Track Order
+  28x  policy: Delivery Policy
+  28x  policy: Privacy Policy
+  28x  policy: Contact Us
+  28x  not-found: Track Order
+  28x  not-found: Delivery Policy
+  28x  not-found: Privacy Policy
+  28x  not-found: Contact Us
+  27x  home: Returns & Exchange
+  27x  home: Terms & Conditions
+  27x  shop: Returns & Exchange
+  27x  shop: Terms & Conditions
+  27x  category: Returns & Exchange
+  27x  category: Terms & Conditions
+  27x  product: Returns & Exchange
+  27x  product: Terms & Conditions
+  27x  cart: Returns & Exchange
+  27x  cart: Terms & Conditions
+  27x  cart-empty: Returns & Exchange
+  27x  cart-empty: Terms & Conditions
+  27x  checkout: Returns & Exchange
+  27x  checkout: Terms & Conditions
+  27x  track-order: Returns & Exchange
+
+SMALL44 (124 distinct)
+  14x  home: logo-link
+  14x  home: hero-shop-now
+  14x  home: Pearl Charm Bracelet
+  14x  shop: logo-link
+  14x  shop: Gold Stack Ring Set
+  14x  shop: Gold Pearl Hoop Earrings
+  14x  category: logo-link
+  14x  category: Minimal Silver Stud Earrings
+  14x  product: logo-link
+  14x  cart: logo-link
+  14x  cart-empty: logo-link
+  14x  checkout: logo-link
+  14x  track-order: logo-link
+  14x  contact: logo-link
+  14x  policy: logo-link
+  14x  not-found: logo-link
+  14x  admin-products: Export
+  14x  admin-products: import-products-btn
+  14x  admin-products: add-product-btn
+  14x  admin-products: product-search
+  14x  admin-products: All categories Earrings Necklaces Rings 
+  14x  admin-products: All status Active Inactive Draft Out of 
+  14x  admin-products: edit-product-HAR-GD-0002
+  14x  admin-products: BUTTON
+  14x  admin-products: edit-product-HAR-PN-0001
+  14x  admin-products: edit-product-BRC-PL-0001
+  14x  admin-products: edit-product-RNG-GD-0002
+  14x  admin-products: edit-product-RNG-RS-0001
+  14x  admin-products: edit-product-NEC-GD-0002
+  14x  admin-products: edit-product-NEC-GD-0001
+  14x  admin-products: edit-product-EAR-SV-0003
+  14x  admin-products: edit-product-EAR-RS-0002
+  14x  admin-products: edit-product-EAR-GD-0001
+  14x  admin-product-edit: img-remove-0
+  14x  admin-orders: Export
+  14x  admin-orders: order-search
+  14x  admin-orders: order-status-filter
+  14x  admin-inventory: adjust-stock-EAR-RS-0002
+  14x  admin-inventory: BUTTON
+  14x  admin-inventory: adjust-stock-NEC-GD-0001
+  14x  admin-inventory: adjust-stock-EAR-GD-0001
+  14x  admin-inventory: adjust-stock-RNG-GD-0002
+  14x  admin-inventory: adjust-stock-NEC-GD-0002
+  14x  admin-inventory: adjust-stock-BRC-PL-0001
+  14x  admin-inventory: adjust-stock-RNG-RS-0001
+  14x  admin-inventory: adjust-stock-EAR-SV-0003
+  14x  admin-inventory: adjust-stock-HAR-GD-0002
+  14x  admin-inventory: adjust-stock-HAR-PN-0001
+  13x  cart: Gold Stack Ring Set
+  10x  product: Delivered nationwide. Cash on Delivery a
+  9x  cart: Adjustable Rose Stone Ring
+  9x  admin-dashboard: admin-nav-dashboard
+  9x  admin-dashboard: admin-nav-orders
+  9x  admin-dashboard: admin-nav-products
+  9x  admin-dashboard: admin-nav-categories
+  9x  admin-dashboard: admin-nav-inventory
+  9x  admin-dashboard: admin-nav-customers
+  9x  admin-dashboard: admin-nav-settings
+  9x  admin-dashboard: View Store
+  9x  admin-dashboard: admin-logout
+
+UNNAMED (24 distinct)
+  14x  admin-login: admin-login-email
+  14x  admin-login: admin-login-password
+  14x  admin-products: product-search
+  14x  admin-products: All categories Earrings Necklaces Rings 
+  14x  admin-products: All status Active Inactive Draft Out of 
+  14x  admin-product-edit: pf-name
+  14x  admin-product-edit: pf-sku
+  14x  admin-product-edit: pf-category
+  14x  admin-product-edit: INPUT
+  14x  admin-product-edit: TEXTAREA
+  14x  admin-product-edit: pf-selling-price
+  14x  admin-product-edit: pf-discount-price
+  14x  admin-product-edit: pf-stock
+  14x  admin-product-edit: Active Inactive Draft Out of stock
+  14x  admin-product-edit: pf-is_featured
+  14x  admin-product-edit: pf-is_best_seller
+  14x  admin-product-edit: pf-is_new_arrival
+  14x  admin-orders: order-search
+  14x  admin-orders: order-status-filter
+  5x  admin-dashboard: admin-mobile-menu
+  5x  admin-products: admin-mobile-menu
+  5x  admin-product-edit: admin-mobile-menu
+  5x  admin-orders: admin-mobile-menu
+  5x  admin-inventory: admin-mobile-menu
+
+TINY (19 distinct)
+  14x  home: 10px "REFLECT"
+  14x  home: 11px "Cash on Delivery"
+  14x  shop: 11px "Cash on Delivery"
+  14x  category: 11px "Cash on Delivery"
+  14x  product: 10px "DETAIL, ACTUAL FINISH"
+  14x  product: 11px "Cash on Delivery"
+  14x  cart: 11px "Cash on Delivery"
+  14x  cart-empty: 11px "Cash on Delivery"
+  14x  checkout: 11px "Cash on Delivery"
+  14x  track-order: 11px "Cash on Delivery"
+  14x  contact: 11px "Cash on Delivery"
+  14x  policy: 11px "Cash on Delivery"
+  14x  not-found: 11px "Cash on Delivery"
+  14x  admin-product-edit: 10px "Main"
+  9x  admin-dashboard: 10px "SUPER_ADMIN"
+  9x  admin-products: 10px "SUPER_ADMIN"
+  9x  admin-product-edit: 10px "SUPER_ADMIN"
+  9x  admin-orders: 10px "SUPER_ADMIN"
+  9x  admin-inventory: 10px "SUPER_ADMIN"
+
+FOCUSMISSING (0 distinct)
+
+BROKEN IMAGES (blocked hosts): static.prod-images.emergentagent.com  total: 168
+DISTORTED IMAGES: 0
