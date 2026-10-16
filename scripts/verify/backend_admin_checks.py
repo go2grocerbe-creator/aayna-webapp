@@ -204,6 +204,61 @@ rec("public /settings still has storefront keys", all(k in pub_settings for k in
 adm_settings = s.get(f"{API}/admin/settings", headers=H).json()
 rec("admin /settings still returns all keys", f"private_test_{tag}" in adm_settings)
 
+# ---------------------------------------------------------------- public exposure sweep
+PRIVATE = ["cost_price", "internal_notes", "supplier", "landed_cost", "purchase_cost", "margin",
+           "price_is_temporary", "password_hash", "token_hash", "SECRET-INTERNAL", "admin_note", "sourcing"]
+leaky = create(status="active", stock_quantity=4).json()
+db.products.update_one({"id": leaky["id"]}, {"$set": {"internal_notes": "SECRET-INTERNAL", "supplier_url": "https://s.example",
+                                                     "supplier_price": 1, "landed_cost": 2, "margin": 0.5, "price_is_temporary": True,
+                                                     "sourcing_notes": "SECRET-INTERNAL"}})
+order = checkout([{"product_id": leaky["id"], "quantity": 1}]).json()
+s.put(f"{API}/admin/orders/{order['order_number']}", json={"admin_note": "SECRET-INTERNAL admin note"}, headers=H)
+public_calls = {
+    "GET /products": requests.get(f"{API}/products"),
+    "GET /products?search": requests.get(f"{API}/products", params={"search": "QA P4"}),
+    "GET /products/{slug}": requests.get(f"{API}/products/{leaky['slug']}"),
+    "GET /categories": requests.get(f"{API}/categories"),
+    "GET /categories/{slug}": requests.get(f"{API}/categories/earrings"),
+    "GET /settings": requests.get(f"{API}/settings"),
+    "GET /health/ready": requests.get(f"{API}/health/ready"),
+    "GET /sitemap.xml": requests.get(f"{API}/sitemap.xml"),
+    "POST /cart/validate": requests.post(f"{API}/cart/validate", json={"items": [{"product_id": leaky["id"], "quantity": 1}]}),
+    "POST /checkout (response)": requests.post(f"{API}/checkout", json={"customer_name": "QA", "customer_phone": "01700000004", "district": "Dhaka",
+                                     "delivery_address": "x road 1", "payment_method": "cod", "items": [{"product_id": leaky["id"], "quantity": 1}]}),
+    "GET /orders/{n}?token": requests.get(f"{API}/orders/{order['order_number']}", params={"token": order["order_confirmation_token"]}),
+    "POST /track": requests.post(f"{API}/track", json={"order_number": order["order_number"], "phone": "01700000004"}),
+}
+for name, resp in public_calls.items():
+    body = resp.text
+    hits = [k for k in PRIVATE if k in body]
+    rec(f"exposure: {name} has no private fields", resp.status_code < 500 and not hits, f"HTTP {resp.status_code} hits={hits}")
+conf = public_calls["GET /orders/{n}?token"].text
+rec("exposure: order confirmation has no phone/address", "01700000004" not in conf and "x road 1" not in conf and "8801700000004" not in conf)
+code = requests.get(f"{API}/files/aayna/uploads/../../etc/passwd").status_code
+rec("exposure: /api/files rejects traversal and unknown keys", code == 404 and requests.get(f"{API}/files/other-app/secret.png").status_code == 404, f"HTTP {code}")
+
+# ---------------------------------------------------------------- direct purchase attempts
+fresh = create(stock_quantity=2).json()
+dr = create(status="draft").json()
+attempts = {
+    "unknown product id": [{"product_id": str(uuid.uuid4()), "quantity": 1}],
+    "quantity 0": [{"product_id": fresh["id"], "quantity": 0}],
+    "negative quantity": [{"product_id": fresh["id"], "quantity": -3}],
+    "quantity above stock": [{"product_id": fresh["id"], "quantity": 3}],
+    "draft alongside a valid item": [{"product_id": fresh["id"], "quantity": 1}, {"product_id": dr["id"], "quantity": 1}],
+}
+for name, items in attempts.items():
+    r = checkout(items)
+    rec(f"purchase: {name} refused", r.status_code in (400, 422), f"HTTP {r.status_code}")
+st = db.products.find_one({"id": fresh["id"]})["stock_quantity"]
+rec("purchase: refused attempts left stock untouched", st == 2, f"stock={st}")
+r = requests.post(f"{API}/checkout", json={"customer_name": "QA", "customer_phone": "01700000004", "district": "Dhaka", "delivery_address": "x road 1",
+                                          "payment_method": "cod", "items": [{"product_id": fresh["id"], "quantity": 1, "unit_price": 1, "price": 1}],
+                                          "subtotal": 1, "total_amount": 1})
+o = db.orders.find_one({"order_number": r.json().get("order_number")}) or {}
+rec("purchase: client-sent prices ignored (server price used)", r.status_code == 200 and o.get("subtotal") == 500 and o["items"][0]["unit_price"] == 500,
+    f"subtotal={o.get('subtotal')}")
+
 # ---------------------------------------------------------------- error responses
 r = requests.get(f"{API}/admin/dashboard", headers={**H, "Origin": ORIGIN})
 if r.status_code >= 500:
