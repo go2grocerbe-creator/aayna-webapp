@@ -1,0 +1,21 @@
+{
+  "_about": "Reviewed SKU -> photo-group map for the lean static image delivery (Option B). SKUs and names come from AAYNA_Product_Inventory.xlsx via the importer dry run (docs/audits/PRODUCT_PHOTOGRAPHY_INTEGRATION.md). Gallery order is ascending variation number; the first listed variation is the primary photo. Change 'variations' order here to change the primary (founder decision pending: proposal in the audit doc).",
+  "source_manifest": "aayna-website-assets/product-photos/MANIFEST.csv",
+  "excluded_files": [
+    "Naira_Bold Chunky Earring.png",
+    "Crystal Stone Cuff Golden 4.png"
+  ],
+  "products": [
+    {"sku": "AYN-NKL-LUN-GLD", "group": "luna-locket-necklace-golden",   "variations": [1, 2, 3]},
+    {"sku": "AYN-NKL-AUR-GLD", "group": "aura-locket-necklace-golden",   "variations": [1, 2, 4]},
+    {"sku": "AYN-CUF-CRS-GLD", "group": "golden-crossline-cuff-bracelet", "variations": [1, 2, 3, 4]},
+    {"sku": "AYN-CUF-STN-SLV", "group": "crystal-stone-cuff-golden",     "variations": [1, 2, 3],
+     "note": "SKU suffix SLV vs golden photos is an open founder decision; photo 4 (shows a second, silver cuff) excluded"},
+    {"sku": "AYN-EAR-CHK-GLD", "group": "bold-chunky-earring-golden",    "variations": [1, 2]},
+    {"sku": "AYN-EAR-FLR-GLD", "group": "floral-bloom-earring-golden",   "variations": [1, 2]},
+    {"sku": "AYN-EAR-FLR-SLV", "group": "floral-bloom-earring-silver",   "variations": [1, 2, 3]},
+    {"sku": "AYN-BRC-FLR-GLD", "group": "floral-charm-golden-bracelet",  "variations": [1, 2, 3]},
+    {"sku": "AYN-BRC-FLR-SLV", "group": "floral-charm-silver-bracelet",  "variations": [1, 2, 3, 4]},
+    {"sku": "AYN-RNG-CLS-GLD", "group": "classic-statement-ring-golden", "variations": [1, 2, 3, 4]}
+  ]
+}
