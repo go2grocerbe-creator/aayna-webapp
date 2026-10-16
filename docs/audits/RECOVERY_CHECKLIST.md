@@ -99,7 +99,11 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Founder created dedicated Atlas test cluster `aayna-dev` (M0, Singapore), user `aayna_test_app` (readWrite on `aayna_release_test` only), /32 network access
 - [x] Exact-allowlist guard for every write-capable test entry point; `test_database` and all real DB names refused (`2abf543`); 27 offline tests
 - [x] Runner `--atlas-env` mode with live privilege/cluster checks, gitignored credentials file, scrubbed logs (`3544f27`, `d04d072`)
-- [ ] FOUNDER: put the Atlas test URI in `aayna-release-verify\.env.release-test` on the PC and run `--check-only`, then the full run
+- [x] Approved Atlas host pinned exactly: `aayna-dev.gzn5qto.mongodb.net` (from authenticated Atlas UI); lookalike tests (`42ce6a2`)
+- [x] Founder's `.env.release-test` host corrected (was missing); `--check-only` reached official MongoDB 8.0.34, identity + isolation verified
+- [x] Guard requires database-wide readWrite on `aayna_release_test` and nothing else (positive evidence)
+- [ ] FOUNDER: Atlas > Database Users > `aayna_test_app` > Edit: readWrite on `aayna_release_test` with Collection EMPTY (currently limited to a collection named "All collections")
+- [ ] Re-run `check-only.bat`, then the full Atlas run of the five checks
 - [ ] FOUNDER: back up local `aayna_dev`/`aayna_test` before any migration; authorize read-only diagnostics on it
 
 ## Phase 5 — Production readiness (not started)

@@ -7,6 +7,8 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "verify"))
 from release_target_guard import UnsafeTarget, classify, verify_live  # noqa: E402
 
+RW = ["find", "insert", "update", "remove", "listCollections", "listIndexes", "createIndex", "dropIndex",
+      "createCollection", "dropCollection", "collStats", "dbStats", "killCursors"]
 ATLAS = "mongodb+srv://aayna_test_app:pw%40x@aayna-dev.gzn5qto.mongodb.net/?retryWrites=true"
 LOCAL = "mongodb://127.0.0.1:27017"
 
@@ -20,7 +22,7 @@ class FakeAdmin:
 
 
 class FakeClient:
-    def __init__(self, dbs=(), hosts=None, users=None, privileges=None, ferret=False):
+    def __init__(self, dbs=(), hosts=None, users=None, privileges=None, ferret=False, roles=None):
         self.dbs = list(dbs)
         self.admin = FakeAdmin(self)
         self.responses = {
@@ -30,10 +32,10 @@ class FakeClient:
                                                                  "ac-q1-shard-00-01.gzn5qto.mongodb.net:27017"]},
             "connectionStatus": {"authInfo": {
                 "authenticatedUsers": users if users is not None else [{"user": "aayna_test_app", "db": "admin"}],
-                "authenticatedUserRoles": [{"role": "readWrite", "db": "aayna_release_test"}],
+                "authenticatedUserRoles": roles if roles is not None else [{"role": "readWrite", "db": "aayna_release_test"}],
                 "authenticatedUserPrivileges": privileges if privileges is not None else [
                     {"resource": {"db": "aayna_release_test", "collection": ""},
-                     "actions": ["find", "insert", "update", "remove", "dropCollection", "createIndex"]},
+                     "actions": RW},
                 ]}},
         }
 
@@ -73,7 +75,7 @@ def test_live_atlas_ok():
 
 
 def test_live_atlas_refuses_write_elsewhere():
-    privs = [{"resource": {"db": "aayna_release_test", "collection": ""}, "actions": ["insert"]},
+    privs = [{"resource": {"db": "aayna_release_test", "collection": ""}, "actions": RW},
              {"resource": {"db": "test_database", "collection": ""}, "actions": ["find", "insert"]}]
     with pytest.raises(UnsafeTarget, match="can change data outside"):
         verify_live(FakeClient(privileges=privs), ATLAS, "aayna_release_test")
@@ -92,7 +94,7 @@ def test_live_atlas_refuses_cluster_admin_action():
 
 
 def test_live_atlas_allows_read_only_elsewhere():
-    privs = [{"resource": {"db": "aayna_release_test", "collection": ""}, "actions": ["insert"]},
+    privs = [{"resource": {"db": "aayna_release_test", "collection": ""}, "actions": RW},
              {"resource": {"cluster": True}, "actions": ["listDatabases", "serverStatus"]}]
     verify_live(FakeClient(privileges=privs), ATLAS, "aayna_release_test")
 
@@ -156,3 +158,33 @@ def test_exact_host_case_insensitive_and_with_options():
 def test_live_refuses_lookalike_members(member):
     with pytest.raises(UnsafeTarget, match="not part of the approved"):
         verify_live(FakeClient(hosts=[member]), ATLAS, "aayna_release_test")
+
+
+def test_live_refuses_empty_privilege_report():
+    with pytest.raises(UnsafeTarget, match="lacks"):
+        verify_live(FakeClient(privileges=[]), ATLAS, "aayna_release_test")
+
+
+def test_live_refuses_missing_list_collections():
+    privs = [{"resource": {"db": "aayna_release_test", "collection": ""}, "actions": ["find", "insert"]}]
+    with pytest.raises(UnsafeTarget, match="listCollections"):
+        verify_live(FakeClient(privileges=privs), ATLAS, "aayna_release_test")
+
+
+@pytest.mark.parametrize("roles", [
+    [],
+    [{"role": "read", "db": "aayna_release_test"}],
+    [{"role": "readWrite", "db": "aayna_release_test"}, {"role": "readWrite", "db": "test_database"}],
+    [{"role": "readWriteAnyDatabase", "db": "admin"}],
+    [{"role": "atlasAdmin", "db": "admin"}],
+])
+def test_live_refuses_unexpected_roles(roles):
+    with pytest.raises(UnsafeTarget, match="must hold only"):
+        verify_live(FakeClient(roles=roles), ATLAS, "aayna_release_test")
+
+
+def test_live_refuses_collection_scoped_role():
+    # Seen on the real Atlas user (2026-10-17): readWrite limited to a collection named "All collections"
+    privs = [{"resource": {"db": "aayna_release_test", "collection": "All collections"}, "actions": RW}]
+    with pytest.raises(UnsafeTarget, match="leave the role's Collection field EMPTY"):
+        verify_live(FakeClient(privileges=privs), ATLAS, "aayna_release_test")

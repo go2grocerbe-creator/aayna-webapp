@@ -223,11 +223,19 @@ def main():
             sys.exit(f"Database refused the connection ({exc.code}: {exc.details.get('codeName')}); "
                      "check the user name/password in the env file")
         except UnsafeTarget as exc:
+            summary["isolation"]["refused"] = str(exc)
             sys.exit(f"Refusing to run: {exc}")
         summary["engine"] = info["engine"]
         summary["engine_is_official_mongodb"] = info["official_mongodb"]
-        existing = client[test_db].list_collection_names()
-        summary["isolation"].update(info)
+        summary["isolation"].update(info)  # recorded before any further database call
+        try:
+            existing = client[test_db].list_collection_names()
+        except pymongo.errors.OperationFailure as exc:
+            summary["isolation"]["list_collections_error"] = f"{exc.code} {exc.details.get('codeName')}: {exc.details.get('errmsg')}"
+            for k in ("roles", "privileges"):
+                print(f"  {k}: {info.get(k)}")
+            sys.exit(f"Atlas reports the expected role but refused listCollections on {test_db} "
+                     f"({exc.details.get('errmsg')}). No writes were made.")
         summary["isolation"].update({"collections_in_test_db_at_start": len(existing),
                                      "order_webhook": "disabled", "emergent_storage_key": "empty"})
         print(f"engine: {info['engine']}  |  target: {info['kind']}  |  db {test_db}")

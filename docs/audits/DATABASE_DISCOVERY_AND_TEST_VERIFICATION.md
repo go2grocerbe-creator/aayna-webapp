@@ -186,3 +186,50 @@ These refusal paths were tested offline:
 **Where it runs.** Only the founder's Windows PC is on the Atlas allowlist. The code at `d04d072` was placed in a **separate** folder, `E:\deMarkt\aayna-webapp\aayna-release-verify`, which is not a git repository. The founder's checkout (`launch/aayna-readiness-v1`, clean apart from one untracked `.claude/settings.local.json`) was not touched. That PC's backend venv (Python 3.13.7) has every required package, including `dnspython` for `mongodb+srv`.
 
 **Status:** the five checks are still **NOT VERIFIED** until the founder runs the runner against Atlas (§8 results to follow).
+
+## 9. Atlas connection troubleshooting (2026-10-17)
+
+**Symptom:** `Refusing to run: remote test target is not the approved Atlas cluster 'aayna-dev'`.
+
+**Cause 1: the connection string, not the validator.** The structure of `.env.release-test` was inspected without printing it:
+- Scheme `mongodb+srv`, user `aayna_test_app`, a 16-character password.
+- The text after `@` was a single word with no dots and no `mongodb.net`. The string contained **no Atlas hostname at all**.
+- The validator was right to refuse it.
+
+**Approved hostname:** `aayna-dev.gzn5qto.mongodb.net`.
+- Read from the **authenticated Atlas Connect dialog** of cluster `aayna-dev` in project `AAYNA`, where the username and password are only placeholders.
+- Atlas reported tier FREE, MongoDB 8.0.34, AWS, one region.
+- Public DNS couldn't be used to cross-check: DNS is filtered in both the workspace and the bridge VM.
+- Only the hostname in the founder's local file was corrected. The password and username were carried over unchanged and never printed.
+
+**Validator hardening (`42ce6a2`).** It previously accepted any `aayna-dev.<id>.mongodb.net`, so a same-named cluster in another Atlas project would have passed. Now:
+- The host must equal the approved host exactly (ASCII, case-insensitive).
+- Replica-set members must be exactly `<name>.gzn5qto.mongodb.net`.
+- 17 tests cover:
+  - a one-character-off ID
+  - another project's ID
+  - suffix and prefix attacks
+  - a trailing dot
+  - an underscore lookalike
+  - a Cyrillic homoglyph
+  - the wrong TLD
+  - an `@` in the password causing host confusion
+  - lookalike replica-set members
+
+**Cause 2: the Atlas user's role is limited to one collection.** The read-only `--check-only` run went through File Explorer → `check-only.bat` on the founder's PC. It produced:
+- Connected to official **MongoDB 8.0.34**, a 3-member replica set.
+- Cluster identity verified; authenticated solely as `aayna_test_app`.
+- Role `readWrite@aayna_release_test`; no write privilege outside the test database.
+- **However,** the privileges apply to the resource `{db: aayna_release_test, collection: "All collections"}`, a single collection literally named "All collections", not the whole database. Atlas therefore refused `listCollections`, error `8000 AtlasError`.
+- No writes were made.
+
+**Guard hardening (this commit).** Positive evidence is now required:
+- The roles must be exactly `readWrite@aayna_release_test`.
+- `find`, `insert`, `update`, `remove`, `listCollections`, `createIndex` and `dropCollection` must be granted on the **whole** test database (empty collection field).
+- An empty privilege report, extra roles (`readWriteAnyDatabase`, `atlasAdmin`, `readWrite@test_database`) or a collection-scoped role are all refused, with instructions.
+- 94/94 offline tests pass.
+- The founder's PC now refuses before any database call: `lacks database-wide [...] the role is limited to collection(s) ['All collections']`.
+
+**Founder action:** in Atlas, go to Security → Database & Network Access → Database Users → `aayna_test_app` → Edit. Keep the built-in role `readWrite` on database `aayna_release_test`, **leave Collection empty**, then Update User. The password is unchanged.
+
+The five checks remain **NOT VERIFIED**.

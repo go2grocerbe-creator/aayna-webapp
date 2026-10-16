@@ -32,6 +32,9 @@ DENIED = REAL_DB_NAMES | {"admin", "local", "config"}
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 # Actions that cannot change data. Any other action on a resource outside the
 # test database makes the target unsafe.
+ALLOWED_ATLAS_ROLES = {f"readWrite@{ATLAS_TEST_DB}"}
+REQUIRED_TEST_DB_ACTIONS = {"find", "insert", "update", "remove", "listCollections", "createIndex",
+                            "dropCollection"}
 READ_ONLY_ACTIONS = {
     "find", "listCollections", "listIndexes", "listSearchIndexes", "collStats", "dbStats", "dbHash",
     "indexStats", "killCursors", "changeStream", "listDatabases", "planCacheRead", "validate",
@@ -111,8 +114,29 @@ def verify_live(client, mongo_url, db_name):
         if users != [(ATLAS_TEST_USER, "admin")]:
             raise UnsafeTarget(f"connection is not authenticated solely as {ATLAS_TEST_USER!r}")
         info["roles"] = sorted(f"{r['role']}@{r['db']}" for r in auth.get("authenticatedUserRoles", []))
+        privs = auth.get("authenticatedUserPrivileges", [])
+        info["privileges"] = sorted({f"{p.get('resource')}: {','.join(sorted(p.get('actions', [])))}" for p in privs})
+        # Positive evidence required: an empty or partial privilege report must never pass.
+        bad_roles = [r for r in info["roles"] if r not in ALLOWED_ATLAS_ROLES]
+        if not info["roles"] or bad_roles:
+            raise UnsafeTarget(f"{ATLAS_TEST_USER!r} must hold only {sorted(ALLOWED_ATLAS_ROLES)}; Atlas reports "
+                               f"roles {info['roles'] or 'none'}")
+        on_test_db = set()
+        scoped = set()
+        for p in privs:
+            res = p.get("resource", {})
+            if res.get("db") == ATLAS_TEST_DB:
+                if res.get("collection", "") == "":       # database-wide grant
+                    on_test_db |= set(p.get("actions", []))
+                else:                                     # limited to one named collection
+                    scoped.add(str(res.get("collection")))
+        missing = sorted(REQUIRED_TEST_DB_ACTIONS - on_test_db)
+        if missing:
+            hint = (f"; the role is limited to collection(s) {sorted(scoped)} - in Atlas > Database Access, edit "
+                    f"{ATLAS_TEST_USER} and leave the role's Collection field EMPTY") if scoped else ""
+            raise UnsafeTarget(f"{ATLAS_TEST_USER!r} lacks database-wide {missing} on {ATLAS_TEST_DB!r}{hint}")
         problems = []
-        for p in auth.get("authenticatedUserPrivileges", []):
+        for p in privs:
             res = p.get("resource", {})
             if res.get("db") == ATLAS_TEST_DB:
                 continue
