@@ -41,7 +41,7 @@ export default function Inventory() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Inventory</h1>
-        <label className="flex items-center gap-2 text-sm text-gray-600">
+        <label className="flex items-center gap-2 min-h-[44px] text-sm text-gray-600 cursor-pointer">
           <input data-testid="low-stock-toggle" type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="accent-aayna-burgundy h-4 w-4" />
           Low stock only
         </label>

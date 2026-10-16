@@ -78,27 +78,27 @@ export default function ProductForm() {
       <form onSubmit={submit} className="space-y-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6 grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Product Name *</label>
-            <input data-testid="pf-name" className={field} value={form.product_name} onChange={(e) => set("product_name", e.target.value)} />
+            <label htmlFor="pf-field-1" className="block text-sm font-medium text-gray-700 mb-1.5">Product Name *</label>
+            <input id="pf-field-1" data-testid="pf-name" className={field} value={form.product_name} onChange={(e) => set("product_name", e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">SKU *</label>
-            <input data-testid="pf-sku" className={field} value={form.sku} onChange={(e) => set("sku", e.target.value)} />
+            <label htmlFor="pf-field-2" className="block text-sm font-medium text-gray-700 mb-1.5">SKU *</label>
+            <input id="pf-field-2" data-testid="pf-sku" className={field} value={form.sku} onChange={(e) => set("sku", e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
-            <select data-testid="pf-category" className={`${field} bg-white`} value={form.category_slug} onChange={(e) => set("category_slug", e.target.value)}>
+            <label htmlFor="pf-field-3" className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+            <select id="pf-field-3" data-testid="pf-category" className={`${field} bg-white`} value={form.category_slug} onChange={(e) => set("category_slug", e.target.value)}>
               <option value="">Select category</option>
               {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Short Description</label>
-            <input className={field} value={form.short_description} onChange={(e) => set("short_description", e.target.value)} />
+            <label htmlFor="pf-field-4" className="block text-sm font-medium text-gray-700 mb-1.5">Short Description</label>
+            <input id="pf-field-4" className={field} value={form.short_description} onChange={(e) => set("short_description", e.target.value)} />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Description</label>
-            <textarea rows={3} className={`${field} h-auto py-2 resize-none`} value={form.full_description} onChange={(e) => set("full_description", e.target.value)} />
+            <label htmlFor="pf-field-5" className="block text-sm font-medium text-gray-700 mb-1.5">Full Description</label>
+            <textarea id="pf-field-5" rows={3} className={`${field} h-auto py-2 resize-none`} value={form.full_description} onChange={(e) => set("full_description", e.target.value)} />
           </div>
         </div>
 
@@ -106,28 +106,28 @@ export default function ProductForm() {
           <h2 className="font-semibold text-aayna-charcoal mb-4">Pricing & Stock</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Selling Price (৳) *</label>
-              <input data-testid="pf-selling-price" type="number" className={field} value={form.selling_price} onChange={(e) => set("selling_price", e.target.value)} />
+              <label htmlFor="pf-field-6" className="block text-sm font-medium text-gray-700 mb-1.5">Selling Price (৳) *</label>
+              <input id="pf-field-6" data-testid="pf-selling-price" type="number" className={field} value={form.selling_price} onChange={(e) => set("selling_price", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount Price (৳)</label>
-              <input data-testid="pf-discount-price" type="number" className={field} value={form.discount_price} onChange={(e) => set("discount_price", e.target.value)} />
+              <label htmlFor="pf-field-7" className="block text-sm font-medium text-gray-700 mb-1.5">Discount Price (৳)</label>
+              <input id="pf-field-7" data-testid="pf-discount-price" type="number" className={field} value={form.discount_price} onChange={(e) => set("discount_price", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Cost Price (৳)</label>
-              <input type="number" className={field} value={form.cost_price} onChange={(e) => set("cost_price", e.target.value)} />
+              <label htmlFor="pf-field-8" className="block text-sm font-medium text-gray-700 mb-1.5">Cost Price (৳)</label>
+              <input id="pf-field-8" type="number" className={field} value={form.cost_price} onChange={(e) => set("cost_price", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock Quantity *</label>
-              <input data-testid="pf-stock" type="number" className={field} value={form.stock_quantity} onChange={(e) => set("stock_quantity", e.target.value)} />
+              <label htmlFor="pf-field-9" className="block text-sm font-medium text-gray-700 mb-1.5">Stock Quantity *</label>
+              <input id="pf-field-9" data-testid="pf-stock" type="number" className={field} value={form.stock_quantity} onChange={(e) => set("stock_quantity", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Low Stock Alert</label>
-              <input type="number" className={field} value={form.low_stock_alert} onChange={(e) => set("low_stock_alert", e.target.value)} />
+              <label htmlFor="pf-field-10" className="block text-sm font-medium text-gray-700 mb-1.5">Low Stock Alert</label>
+              <input id="pf-field-10" type="number" className={field} value={form.low_stock_alert} onChange={(e) => set("low_stock_alert", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-              <select className={`${field} bg-white`} value={form.status} onChange={(e) => set("status", e.target.value)}>
+              <label htmlFor="pf-field-11" className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+              <select id="pf-field-11" className={`${field} bg-white`} value={form.status} onChange={(e) => set("status", e.target.value)}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="draft">Draft</option>
@@ -136,9 +136,9 @@ export default function ProductForm() {
             </div>
           </div>
           <div className="grid sm:grid-cols-3 gap-4 mt-4">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Material</label><input className={field} value={form.material} onChange={(e) => set("material", e.target.value)} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Color</label><input className={field} value={form.color} onChange={(e) => set("color", e.target.value)} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Size</label><input className={field} value={form.size} onChange={(e) => set("size", e.target.value)} /></div>
+            <div><label htmlFor="pf-field-12" className="block text-sm font-medium text-gray-700 mb-1.5">Material</label><input id="pf-field-12" className={field} value={form.material} onChange={(e) => set("material", e.target.value)} /></div>
+            <div><label htmlFor="pf-field-13" className="block text-sm font-medium text-gray-700 mb-1.5">Color</label><input id="pf-field-13" className={field} value={form.color} onChange={(e) => set("color", e.target.value)} /></div>
+            <div><label htmlFor="pf-field-14" className="block text-sm font-medium text-gray-700 mb-1.5">Size</label><input id="pf-field-14" className={field} value={form.size} onChange={(e) => set("size", e.target.value)} /></div>
           </div>
         </div>
 
@@ -151,8 +151,8 @@ export default function ProductForm() {
           <h2 className="font-semibold text-aayna-charcoal">Visibility</h2>
           {[["is_featured", "Featured"], ["is_best_seller", "Best Seller"], ["is_new_arrival", "New Arrival"]].map(([key, label]) => (
             <div key={key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{label}</span>
-              <Switch data-testid={`pf-${key}`} checked={form[key]} onCheckedChange={(v) => set(key, v)} />
+              <label htmlFor={`pf-switch-${key}`} className="text-sm text-gray-700 cursor-pointer flex-1 min-h-[44px] flex items-center">{label}</label>
+              <Switch id={`pf-switch-${key}`} data-testid={`pf-${key}`} checked={form[key]} onCheckedChange={(v) => set(key, v)} />
             </div>
           ))}
         </div>

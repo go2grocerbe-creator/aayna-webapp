@@ -24,6 +24,7 @@ export default function AdminLogin() {
     setBusy(true);
     try {
       await login(email.trim(), password);
+      toast.dismiss(); // clear any earlier failed-attempt error toast
       toast.success("Welcome back");
       navigate("/admin", { replace: true });
     } catch (err) {
@@ -45,8 +46,10 @@ export default function AdminLogin() {
         </div>
         <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg p-7 shadow-sm">
           <h1 className="text-xl font-bold text-aayna-charcoal mb-5">Sign in</h1>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+          <label htmlFor="admin-login-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input
+            id="admin-login-email"
+            autoComplete="username"
             data-testid="admin-login-email"
             type="email"
             value={email}
@@ -55,8 +58,10 @@ export default function AdminLogin() {
             className="w-full h-11 border border-gray-300 rounded-md px-3 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy mb-4"
             required
           />
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+          <label htmlFor="admin-login-password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
           <input
+            id="admin-login-password"
+            autoComplete="current-password"
             data-testid="admin-login-password"
             type="password"
             value={password}

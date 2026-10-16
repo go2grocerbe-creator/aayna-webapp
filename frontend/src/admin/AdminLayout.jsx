@@ -34,7 +34,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
             onClick={onNavigate}
             data-testid={`admin-nav-${item.label.toLowerCase()}`}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+              `flex items-center gap-3 px-3 min-h-[44px] rounded-md text-sm font-medium transition-colors ${
                 isActive ? "bg-aayna-burgundy text-white" : "text-gray-600 hover:bg-aayna-mist hover:text-aayna-burgundy"
               }`
             }
@@ -45,17 +45,17 @@ function SidebarContent({ onNavigate, user, onLogout }) {
         ))}
       </nav>
       <div className="p-3 border-t border-gray-200 space-y-1">
-        <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-gray-600 hover:bg-gray-100">
+        <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 min-h-[44px] rounded-md text-sm text-gray-600 hover:bg-gray-100">
           <ExternalLink className="h-5 w-5" /> View Store
         </a>
         <div className="px-3 py-2 text-xs text-gray-400">
           {user?.email}
-          <span className="block uppercase tracking-wide text-[10px] text-aayna-burgundy font-semibold">{user?.role}</span>
+          <span className="block uppercase tracking-wide text-[11px] text-aayna-burgundy font-semibold">{user?.role}</span>
         </div>
         <button
           data-testid="admin-logout"
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+          className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
         >
           <LogOut className="h-5 w-5" /> Log out
         </button>
@@ -99,14 +99,14 @@ export default function AdminLayout() {
       <div className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-200 flex items-center justify-between px-4 h-14">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <button data-testid="admin-mobile-menu" className="p-2 -ml-2"><Menu className="h-6 w-6" /></button>
+            <button data-testid="admin-mobile-menu" aria-label="Open admin menu" className="h-11 w-11 -ml-2.5 flex items-center justify-center"><Menu className="h-6 w-6" /></button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 bg-white">
             <SidebarContent user={user} onLogout={handleLogout} onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
         <span className="font-display text-xl font-extrabold text-aayna-charcoal">AAYNA</span>
-        <span className="w-6" />
+        <span className="w-11" />
       </div>
 
       <main className="md:pl-64">
