@@ -1,0 +1,35 @@
+AAYNA data-integrity diagnostics — database 'aayna_release_test' (read-only)
+products=20 orders=10 customers=4
+
+[ok     ] duplicate products.id: 0
+[ok     ] duplicate products.sku: 0
+[ok     ] duplicate products.slug: 0
+[ok     ] duplicate orders.id: 0
+[ok     ] duplicate orders.order_number: 0
+[ok     ] duplicate orders.client_request_id: 0
+[REVIEW ] duplicate customers.phone: 1
+            {"value": "+8801700000021", "count": 2}
+            note: checkout matches customers by phone; duplicates split one person's history
+[ok     ] order-number counter behind highest existing order number: 0
+[ok     ] negative or non-integer stock_quantity: 0
+[ok     ] invalid product status: 0
+[ok     ] public product with invalid price: 0
+[ok     ] drafts possibly published by the pre-Phase-4 stock bug: 0
+[ok     ] orders referencing missing products: 0
+[ok     ] order totals that do not add up: 0
+[REVIEW ] stock differs from the latest inventory-log entry: 1
+            {"sku": "REL-190012c5", "stock_quantity": 7, "last_logged_new_stock": 6, "last_log_at": "2026-10-16T18:23:37.578140+00:00"}
+            note: Expected after CSV imports (they set stock without a log) or direct database edits.
+[ok     ] checkout_requests stuck in 'processing' > 15 min: 0
+
+indexes:
+  products: _id_, slug_1
+  orders: _id_, order_number_1
+  customers: _id_, phone_1
+  users: _id_, email_1 (unique)
+  files: 
+  categories: _id_
+  inventory_logs: _id_
+  checkout_requests: _id_
+
+BLOCKER findings: 0   REVIEW findings: 2

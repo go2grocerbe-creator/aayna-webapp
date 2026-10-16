@@ -1,0 +1,45 @@
+...............................s........................................ [ 58%]
+....................................................                     [100%]
+============================== warnings summary ===============================
+..\..\Aayna-Webapp\backend\venv\Lib\site-packages\starlette\formparsers.py:12
+  E:\deMarkt\aayna-webapp\Aayna-Webapp\backend\venv\Lib\site-packages\starlette\formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+server.py:202
+  E:\deMarkt\aayna-webapp\aayna-release-verify\backend\server.py:202: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+..\..\Aayna-Webapp\backend\venv\Lib\site-packages\fastapi\applications.py:4495
+..\..\Aayna-Webapp\backend\venv\Lib\site-packages\fastapi\applications.py:4495
+  E:\deMarkt\aayna-webapp\Aayna-Webapp\backend\venv\Lib\site-packages\fastapi\applications.py:4495: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+server.py:1022
+  E:\deMarkt\aayna-webapp\aayna-release-verify\backend\server.py:1022: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_aayna_admin.py::TestOrders::test_update_order_full_flow
+  E:\deMarkt\aayna-webapp\Aayna-Webapp\backend\venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+123 passed, 1 skipped, 6 warnings in 27.92s

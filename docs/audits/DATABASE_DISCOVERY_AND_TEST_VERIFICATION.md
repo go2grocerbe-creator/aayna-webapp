@@ -10,6 +10,7 @@ No write connection was opened to any existing database. Nothing was deployed, p
 - **Where the real data is:** the only real AAYNA data that can be located is in a MongoDB server running on the founder's Windows PC (`localhost`, database `aayna_dev`, with the older `aayna_test` kept as a backup copy).
 - **Official MongoDB for testing:** none could be installed or reached from this workspace.
 - **The five release checks therefore remain NOT VERIFIED.** That status doesn't change in this round.
+- **Superseded 2026-10-17: all five checks PASS on official MongoDB 8.0.34** (Atlas test cluster; see §10).
 - **What was added:** a runner that makes them verifiable safely. It starts its own throwaway, credential-protected official `mongod` (fresh empty data folder, non-default port, loopback only), runs every check there and deletes it afterwards. A guard in the release checks now refuses any instance that also holds real AAYNA data. The runner's plumbing and guards were proven here using a stand-in engine. It needs one founder action to produce real MongoDB results (§6).
 
 ## 2. Database identification (Step 1)
@@ -66,11 +67,11 @@ New guard in `scripts/verify/mongo_release_checks.py` (applies to any manual run
 
 | # | Check | Status |
 |---|---|---|
-| 1 | Dashboard aggregation | **NOT VERIFIED** |
-| 2 | Low-stock inventory filtering | **NOT VERIFIED** |
-| 3 | Customer list and detail aggregation | **NOT VERIFIED** |
-| 4 | 10 concurrent one-item checkouts vs 3 units | **NOT VERIFIED** |
-| 5 | Simultaneous multi-item checkout protection | **NOT VERIFIED** |
+| 1 | Dashboard aggregation | **NOT VERIFIED** → PASS on 2026-10-17 (§10) |
+| 2 | Low-stock inventory filtering | **NOT VERIFIED** → PASS on 2026-10-17 (§10) |
+| 3 | Customer list and detail aggregation | **NOT VERIFIED** → PASS on 2026-10-17 (§10) |
+| 4 | 10 concurrent one-item checkouts vs 3 units | **NOT VERIFIED** → PASS on 2026-10-17 (§10) |
+| 5 | Simultaneous multi-item checkout protection | **NOT VERIFIED** → PASS on 2026-10-17 (§10) |
 | — | Duplicate-order (8 concurrent same-key submissions) | passes on FerretDB; **not re-run on MongoDB** |
 | — | Failed-order rollback | passes on FerretDB; **not re-run on MongoDB** |
 
@@ -232,4 +233,66 @@ These refusal paths were tested offline:
 
 **Founder action:** in Atlas, go to Security → Database & Network Access → Database Users → `aayna_test_app` → Edit. Keep the built-in role `readWrite` on database `aayna_release_test`, **leave Collection empty**, then Update User. The password is unchanged.
 
-The five checks remain **NOT VERIFIED**.
+The five checks remain **NOT VERIFIED**. *(The founder then fixed the role; see §10.)*
+
+## 10. Verified results on official MongoDB (2026-10-17)
+
+### Test environment
+
+| Item | Value |
+|---|---|
+| Engine | **official MongoDB 8.0.34** (`buildInfo`; not an emulator) |
+| Cluster | Atlas project `AAYNA`, cluster `aayna-dev`, tier FREE (M0), AWS, one region; 3-member replica set. Host pinned exactly in the guard. |
+| Database / user | `aayna_release_test` as `aayna_test_app`. Roles: exactly `readWrite@aayna_release_test`, database-wide (empty collection field) plus Atlas's standard `system.js` entry. **No write privilege outside the test database.** Only `aayna_release_test` is visible to this user. |
+| Network | Atlas Network Access: one `/32` (founder's PC). Not opened to the internet. |
+| Where it ran | Founder's Windows PC, separate folder `aayna-release-verify` (code `4c5fc7c`), backend venv Python 3.13.7. The founder's checkout was not touched. |
+| Isolation at run time | Test DB had 0 collections at start and was **emptied afterwards**. Order webhook off; Emergent storage key empty. Every backend env variable set explicitly. Emergent `test_database` and all real data were never contacted. |
+| Run | `run_isolated_mongo_checks.py --atlas-env .env.release-test`, 2026-10-16 18:23–18:24 UTC. Overall verdict: **PASS**. |
+
+### Results (evidence: `docs/audits/evidence/atlas/`, scrubbed: no URI, password or host)
+
+| Suite | Result |
+|---|---|
+| `mongo_release_checks.py` | **16 passed / 0 failed / 0 NOT VERIFIED** |
+| `backend_admin_checks.py` | **62/62** |
+| backend pytest | **123 passed, 1 skipped**. The skip is admin image upload, because object storage was deliberately disabled. The 3 tests that failed on FerretDB now pass. |
+| `data_integrity.py` (read-only, after the runs) | 0 BLOCKER, 2 REVIEW (exit 1, analysed below) |
+
+The five outstanding checks, plus the duplicate-order and rollback checks:
+
+| # | Check | Result (exact output) |
+|---|---|---|
+| 1 | Dashboard aggregation | PASS: keys present; today's orders/sales with cancelled orders excluded match raw data (api=2/280.0, raw=2/280.0); `low_stock_count` excludes drafts (api=1, raw=1) |
+| 2 | Low-stock filtering | PASS: `low_only` returns exactly the non-draft products at or below their alert (api=1, raw=1); no `cost_price` in the response |
+| 3 | Customer list/detail | PASS: `last_order_date` is the newest order; detail lists all orders, newest first |
+| 4 | 10 concurrent one-item orders vs 3 units | PASS: three HTTP 200s, 3 orders, stock 0, `out_of_stock`, 3 sale logs |
+| 5 | Multi-item atomicity | PASS: a failing multi-item order leaves every product unchanged with no order or customer; **concurrent** 10 two-item orders with the scarce item at 3 → 3 orders, A=7, B=0 |
+| — | Duplicate-order idempotency | PASS: 8 concurrent submissions with one key → exactly 1 order (ORD-1011), every response names it, stock decremented once |
+| — | Failed-order rollback | PASS: an insert failure gives HTTP 500 JSON, stock restored, no stray customer, key released; the retry succeeds |
+| — | Invariants | PASS: no negative stock; no duplicate `client_request_id`; **no duplicate order numbers** (FerretDB had produced them) |
+
+### The two integrity REVIEW findings
+
+**REVIEW 1: duplicate `customers.phone` (+8801700000021 ×2). This is a genuine defect (medium severity), and the fix is already planned.**
+- `+8801700000021` is the default phone the release checks use for their concurrency tests: about 28 near-simultaneous checkouts from one number that had never ordered before.
+- Checkout looks the customer up by phone and inserts a new record if none exists (`server.py` §8, "Upsert customer"). The only index on `customers.phone` is the non-unique `phone_1`. So two first-time orders from the same phone that arrive together can both create a customer.
+- This was predicted in Phase 4B and is now **confirmed on real MongoDB**.
+- Impact: one person's history and `total_orders` are split across two customer records in admin. Stock, orders, totals and money are not affected.
+- Fix: the planned **unique index on `customers.phone`** (`index_migration.py` plan). Checkout already tolerates the resulting `DuplicateKeyError` by re-reading the record (`6493a1f`).
+- Before that index can be built on real data, existing duplicate phones must be merged; `data_integrity.py` lists them.
+- That fix path, a unique index plus a concurrent re-run, is **not yet verified on Atlas**.
+
+**REVIEW 2: stock 7 vs last inventory-log `new_stock` 6 (product `REL-190012c5`). The stock is correct; the log snapshot is imprecise under concurrency. Not a stock defect; low severity.**
+- This is product A in the concurrent multi-item test: starting stock 10, three successful orders, final stock **7**, which is correct and asserted by the test.
+- Each successful order logs `quantity_change = -1` together with `new_stock`, which is the value returned by *its own* atomic decrement.
+- While it ran, other requests held temporary reservations on A that were later released when their scarce item B ran out. So one success saw A at 6, momentarily.
+- The sum of logged changes (-3) matches the real movement (10 → 7). Only the `previous_stock`/`new_stock` snapshot fields can include other requests' in-flight reservations. Failed orders write no log entries.
+- The integrity check compares stock with the *last* log's `new_stock`, a heuristic that flags this case.
+- Possible later improvement (not required for launch): describe those fields as snapshots, or have the integrity check compare against the sum of `quantity_change` values instead.
+
+### Limitations
+- **M0/free tier:** shared, rate-limited, no backups. Its throughput isn't representative of production; it was used only for correctness and atomicity.
+- **Only these tests were proven** (correctness, single backend process, the scenarios above). This doesn't prove behaviour under multiple workers, network partitions or crashes mid-checkout: there are no multi-document transactions (see `PRODUCTION_DATA_INTEGRITY.md` §3).
+- **Unique indexes were not applied** to the test DB during this run (`phone_1` and `order_number_1` were non-unique). Behaviour with the planned unique indexes is tested only on FerretDB.
+- **Storage:** with an empty storage key the backend still calls Emergent's storage `init` at startup and on upload. Emergent answered **403** from the founder's PC, so nothing can be written there, but it is still an outbound call.
+- **Not production evidence:** this is a dedicated test cluster. No production database exists yet.

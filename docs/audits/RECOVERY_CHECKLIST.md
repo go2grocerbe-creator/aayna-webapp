@@ -29,8 +29,8 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [ ] Deferred until provider decisions: object storage (R2 or other), hosting (Railway/Pages), `.python-version`
 
 ## Not verified in sandbox
-- [~] 3 admin aggregation tests on real MongoDB (dashboard keys, low-stock filter, customers) — still NOT VERIFIED after Phase 4 (MongoDB downloads blocked; see BACKEND_ADMIN_VERIFICATION.md §2)
-- [~] Concurrent checkout oversell protection on real MongoDB (FerretDB is not atomic)
+- [x] 3 admin aggregation tests on real MongoDB: PASS on MongoDB 8.0.34, Atlas test cluster, 2026-10-17 (DATABASE_DISCOVERY_AND_TEST_VERIFICATION.md §10)
+- [x] Concurrent checkout oversell protection on real MongoDB: PASS (10 orders for 3 units → 3), 2026-10-17
 - [~] Product images / Google Fonts loading
 - [~] Real iOS Safari / Android Chrome devices
 
@@ -58,7 +58,7 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Draft/inactive never published by stock changes (`c99e949`)
 - [x] Product validation, slug uniqueness, CSV import status/price rules (`c99e949`)
 - [x] Order counters on real transitions; dashboard day in Dhaka time (`c99e949`)
-- [x] Atomic stock reservation; duplicate cart lines (`9a96ca4`) — concurrent case NOT VERIFIED (needs MongoDB)
+- [x] Atomic stock reservation; duplicate cart lines (`9a96ca4`); concurrent case verified on MongoDB 8.0.34 (2026-10-17)
 - [x] Public /settings allowlist (`af8839c`); JSON 500 with CORS (`ca355a9`); no API docs in production (`af4ca80`)
 - [x] Production refuses weak JWT_SECRET / ADMIN_PASSWORD (`8347452`); 12/12 unsafe configs refused at startup
 - [x] Non-blocking object storage calls (`0b36fcd`)
@@ -84,7 +84,7 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Stock-return UI parked as patch; active app makes no call to a missing endpoint (`54b2ee6`)
 - [x] Image export/migration manifest tooling; run on TEST data (`6d6a0cd`)
 - [x] Crash / multi-worker review documented (no transactions; in-memory login limiter)
-- [~] NOT VERIFIED (real MongoDB blocked): dashboard aggregation, low-stock filter, customer list/detail, 10×3 concurrent orders, concurrent multi-item atomicity
+- [x] VERIFIED on MongoDB 8.0.34 (Atlas `aayna-dev`/`aayna_release_test`): dashboard aggregation, low-stock filter, customer list/detail, 10×3 concurrent orders, concurrent multi-item atomicity, duplicate-order idempotency, rollback
 - [ ] Run data_integrity.py, index_migration.py (dry run) and the image manifest on the REAL database (needs authorization + access)
 - [ ] Export originals from Emergent (storage paths + CDN URLs) while reachable; founder list for missing/deleted
 - [ ] Apply unique indexes (incl. customers.phone, orders.client_request_id partial) after backup
@@ -95,19 +95,23 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Isolated official-MongoDB runner `scripts/verify/run_isolated_mongo_checks.py` (own mongod, fresh dir, non-default port, loopback, generated creds, webhook off, scrubbed logs)
 - [x] Release checks refuse non-loopback hosts and any instance holding real AAYNA data
 - [x] Runner plumbing + guards self-tested on a stand-in (verdict correctly NOT VERIFIED); suites unchanged
-- [~] NOT VERIFIED: the five MongoDB checks + duplicate-order/rollback re-run on official MongoDB; runner `--auth` path
+- [x] Five MongoDB checks + duplicate-order/rollback on official MongoDB: release 16/0/0, backend 62/62, pytest 123 passed + 1 skipped (storage), integrity 0 BLOCKER / 2 REVIEW
+- [~] Runner throwaway-`mongod --auth` path (unused; the Atlas path was used instead)
 - [x] Founder created dedicated Atlas test cluster `aayna-dev` (M0, Singapore), user `aayna_test_app` (readWrite on `aayna_release_test` only), /32 network access
 - [x] Exact-allowlist guard for every write-capable test entry point; `test_database` and all real DB names refused (`2abf543`); 27 offline tests
 - [x] Runner `--atlas-env` mode with live privilege/cluster checks, gitignored credentials file, scrubbed logs (`3544f27`, `d04d072`)
 - [x] Approved Atlas host pinned exactly: `aayna-dev.gzn5qto.mongodb.net` (from authenticated Atlas UI); lookalike tests (`42ce6a2`)
 - [x] Founder's `.env.release-test` host corrected (was missing); `--check-only` reached official MongoDB 8.0.34, identity + isolation verified
 - [x] Guard requires database-wide readWrite on `aayna_release_test` and nothing else (positive evidence)
-- [ ] FOUNDER: Atlas > Database Users > `aayna_test_app` > Edit: readWrite on `aayna_release_test` with Collection EMPTY (currently limited to a collection named "All collections")
-- [ ] Re-run `check-only.bat`, then the full Atlas run of the five checks
+- [x] FOUNDER: `aayna_test_app` role corrected to database-wide readWrite on `aayna_release_test`
+- [x] `--check-only` then the full Atlas run: verdict PASS (evidence `docs/audits/evidence/atlas/`)
+- [ ] DEFECT (medium, confirmed on MongoDB): concurrent first orders from one phone create duplicate customers. Fix = unique `customers.phone` index after merging existing duplicates; then re-run the Atlas suite with the unique indexes applied to the test DB
+- [x] REVIEW explained: inventory-log `new_stock` is a snapshot that can include other requests' in-flight reservations; stock itself correct (sum of logged changes = movement). Optional later: refine the log fields or the integrity heuristic
 - [ ] FOUNDER: back up local `aayna_dev`/`aayna_test` before any migration; authorize read-only diagnostics on it
 
 ## Phase 5 — Production readiness (not started)
-- [ ] Re-run backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (exit 0 required)
+- [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17
+- [ ] Repeat against the provisioned production-shaped staging DB before launch (with unique indexes)
 - [ ] Migrate product images off Emergent; host-independent image URLs
 - [ ] Payment approach (founder decision — do not implement before confirmation)
 - [ ] Legal entity (Vellora Mercantile International) disclosures — verified details only

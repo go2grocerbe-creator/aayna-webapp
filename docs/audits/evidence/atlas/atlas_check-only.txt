@@ -1,0 +1,11 @@
+engine: MongoDB 8.0.34  |  target: atlas  |  db aayna_release_test
+  cluster: aayna-dev
+  replica_set: True
+  members: 3
+  roles: ['readWrite@aayna_release_test']
+  write_privileges_outside_test_db: none
+  visible_databases: []
+  collections already in aayna_release_test: 0 (dropped before each suite)
+check-only: no writes performed
+report: ..\aayna-release-report
+exit code 0 
