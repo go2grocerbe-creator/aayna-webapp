@@ -7,7 +7,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "verify"))
 from release_target_guard import UnsafeTarget, classify, verify_live  # noqa: E402
 
-ATLAS = "mongodb+srv://aayna_test_app:pw%40x@aayna-dev.ab1cd.mongodb.net/?retryWrites=true"
+ATLAS = "mongodb+srv://aayna_test_app:pw%40x@aayna-dev.gzn5qto.mongodb.net/?retryWrites=true"
 LOCAL = "mongodb://127.0.0.1:27017"
 
 
@@ -26,8 +26,8 @@ class FakeClient:
         self.responses = {
             "buildInfo": {"version": "8.0.4", **({"ferretdbVersion": "v1.24.0"} if ferret else {})},
             "hello": {"setName": "atlas-xyz-shard-0",
-                      "hosts": hosts if hosts is not None else ["ac-q1-shard-00-00.ab1cd.mongodb.net:27017",
-                                                                 "ac-q1-shard-00-01.ab1cd.mongodb.net:27017"]},
+                      "hosts": hosts if hosts is not None else ["ac-q1-shard-00-00.gzn5qto.mongodb.net:27017",
+                                                                 "ac-q1-shard-00-01.gzn5qto.mongodb.net:27017"]},
             "connectionStatus": {"authInfo": {
                 "authenticatedUsers": users if users is not None else [{"user": "aayna_test_app", "db": "admin"}],
                 "authenticatedUserRoles": [{"role": "readWrite", "db": "aayna_release_test"}],
@@ -47,8 +47,8 @@ class FakeClient:
     (LOCAL, "aayna_release_test"),            # Atlas DB name on a local instance
     (LOCAL, "my_test_db"),                    # contains "test" but not allowlisted
     (ATLAS, "aayna_pytest"),                  # local DB name on Atlas
-    ("mongodb+srv://aayna_test_app:p@cluster0.ab1cd.mongodb.net/", "aayna_release_test"),   # wrong cluster
-    ("mongodb+srv://admin:p@aayna-dev.ab1cd.mongodb.net/", "aayna_release_test"),           # wrong user
+    ("mongodb+srv://aayna_test_app:p@cluster0.gzn5qto.mongodb.net/", "aayna_release_test"),   # wrong cluster
+    ("mongodb+srv://admin:p@aayna-dev.gzn5qto.mongodb.net/", "aayna_release_test"),           # wrong user
     ("mongodb+srv://aayna_test_app:p@aayna-dev.evil.example.com/", "aayna_release_test"),   # not Atlas
     ("mongodb://aayna_test_app:p@10.0.0.5:27017/", "aayna_release_test"),                   # non-srv remote
     ("mongodb://h1:27017,localhost:27017/", "aayna_pytest"),                                 # mixed hosts
@@ -115,3 +115,44 @@ def test_live_local_refuses_shared_instance():
 def test_live_reports_emulator():
     info = verify_live(FakeClient(dbs=[], ferret=True), LOCAL, "aayna_pytest")
     assert info["official_mongodb"] is False
+
+
+@pytest.mark.parametrize("host", [
+    "aayna-dev.gzn5qt0.mongodb.net",                  # one character off (0 vs o)
+    "aayna-dev.abcd123.mongodb.net",                  # same cluster name, another Atlas project
+    "aayna-dev.gzn5qto.mongodb.net.evil.com",         # suffix attack
+    "aayna-dev.gzn5qto.mongodb.net.",                 # trailing dot
+    "evil.aayna-dev.gzn5qto.mongodb.net",             # extra label in front
+    "xaayna-dev.gzn5qto.mongodb.net",                 # prefix lookalike
+    "aayna-dev-gzn5qto.mongodb.net",                  # dash instead of dot
+    "aayna_dev.gzn5qto.mongodb.net",                  # underscore lookalike
+    "аayna-dev.gzn5qto.mongodb.net",             # Cyrillic 'а' homoglyph
+    "aayna-dev.gzn5qto.mongodb.com",                  # wrong TLD
+    "Aayna_test_app",                                 # the broken value found in the founder's file
+    "localhost.gzn5qto.mongodb.net",
+])
+def test_lookalike_hosts_refused(host):
+    with pytest.raises(UnsafeTarget, match="approved Atlas cluster|single mongodb"):
+        classify(f"mongodb+srv://aayna_test_app:pw@{host}/", "aayna_release_test")
+
+
+def test_userinfo_host_confusion_refused():
+    # '@' inside the password must not let a different host through
+    url = "mongodb+srv://aayna_test_app:p%40aayna-dev.gzn5qto.mongodb.net@evil.example.com/"
+    with pytest.raises(UnsafeTarget):
+        classify(url, "aayna_release_test")
+
+
+def test_exact_host_case_insensitive_and_with_options():
+    url = "mongodb+srv://aayna_test_app:pw@AAYNA-DEV.gzn5qto.mongodb.net/?retryWrites=true&w=majority&appName=aayna-dev"
+    assert classify(url, "aayna_release_test")["host"] == "aayna-dev.gzn5qto.mongodb.net"
+
+
+@pytest.mark.parametrize("member", [
+    "ac-q1-shard-00-00.abcd123.mongodb.net:27017",          # other project
+    "evil.ac-q1-shard-00-00.gzn5qto.mongodb.net:27017",     # extra label
+    "ac-q1-shard-00-00.gzn5qto.mongodb.net.evil.com:27017", # suffix attack
+])
+def test_live_refuses_lookalike_members(member):
+    with pytest.raises(UnsafeTarget, match="not part of the approved"):
+        verify_live(FakeClient(hosts=[member]), ATLAS, "aayna_release_test")

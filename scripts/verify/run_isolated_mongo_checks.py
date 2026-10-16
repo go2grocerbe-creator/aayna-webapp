@@ -227,7 +227,7 @@ def main():
         summary["engine"] = info["engine"]
         summary["engine_is_official_mongodb"] = info["official_mongodb"]
         existing = client[test_db].list_collection_names()
-        summary["isolation"].update({k: v for k, v in info.items() if k not in ("domain",)})
+        summary["isolation"].update(info)
         summary["isolation"].update({"collections_in_test_db_at_start": len(existing),
                                      "order_webhook": "disabled", "emergent_storage_key": "empty"})
         print(f"engine: {info['engine']}  |  target: {info['kind']}  |  db {test_db}")
