@@ -29,7 +29,8 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [ ] Deferred until provider decisions: object storage (R2 or other), hosting (Railway/Pages), `.python-version`
 
 ## Not verified in sandbox
-- [~] 3 admin aggregation tests on real MongoDB (dashboard keys, low-stock filter, customers)
+- [~] 3 admin aggregation tests on real MongoDB (dashboard keys, low-stock filter, customers) — still NOT VERIFIED after Phase 4 (MongoDB downloads blocked; see BACKEND_ADMIN_VERIFICATION.md §2)
+- [~] Concurrent checkout oversell protection on real MongoDB (FerretDB is not atomic)
 - [~] Product images / Google Fonts loading
 - [~] Real iOS Safari / Android Chrome devices
 
@@ -48,12 +49,32 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [~] Product photography evaluation (images unreachable in sandbox)
 - [~] Native iOS Safari / Android Chrome
 - [ ] Expose `hero_headline_override` in Admin > Settings (optional, founder decision)
-- [ ] Admin thumbnails: graceful missing-image placeholder (minor)
+- [x] Admin thumbnails: graceful missing-image placeholder (`d1c00cd`, Phase 4)
 - [ ] `CartContext` localStorage write hardening
 
-## Phase 4/5 — Backend safety & production readiness (not started)
-- [ ] Unhandled 500s should keep CORS headers (browser currently reports them as network errors)
-- [ ] Re-run backend suite on real MongoDB
-- [ ] Migrate product images off Emergent CDN; choose storage provider
+## Phase 4 — Backend, admin & database (details: `BACKEND_ADMIN_VERIFICATION.md`)
+- [x] Auth audit: 401/403 cases, all admin endpoints guarded, no password_hash leak
+- [x] Login lockout not bypassable via X-Forwarded-For (`0b20351`, `TRUSTED_PROXY_HOPS`)
+- [x] Draft/inactive never published by stock changes (`c99e949`)
+- [x] Product validation, slug uniqueness, CSV import status/price rules (`c99e949`)
+- [x] Order counters on real transitions; dashboard day in Dhaka time (`c99e949`)
+- [x] Atomic stock reservation; duplicate cart lines (`9a96ca4`) — concurrent case NOT VERIFIED (needs MongoDB)
+- [x] Public /settings allowlist (`af8839c`); JSON 500 with CORS (`ca355a9`); no API docs in production (`af4ca80`)
+- [x] Production refuses weak JWT_SECRET / ADMIN_PASSWORD (`8347452`); 12/12 unsafe configs refused at startup
+- [x] Non-blocking object storage calls (`0b36fcd`)
+- [x] Admin retries, error messages, thumbnails (`a4efdc9`, `0e31374`, `d1c00cd`)
+- [x] Public exposure sweep (12 endpoints) and direct purchase attempts — 61/61
+- [x] No secrets in git (all branches)
+- [x] Emergent storage dependency audit + migration plan; read-only `scripts/storage/audit_image_refs.py` (`9ca179a`)
+- [ ] Run image-reference audit and data-quality queries on real data (B-21)
+- [ ] Export images from Emergent object storage while reachable (migration step 2)
+- [ ] DECISION: restock on cancel/return (B-19)
+- [ ] DECISION: storage provider
+- [ ] Before adding staff accounts: enforce admin roles (B-16), review JWT lifetime/storage (B-17)
+- [ ] Unique indexes after duplicate check (B-18)
+
+## Phase 5 — Production readiness (not started)
+- [ ] Re-run backend suite + backend_admin_checks on real MongoDB
+- [ ] Migrate product images off Emergent; host-independent image URLs
 - [ ] Payment approach (founder decision — do not implement before confirmation)
 - [ ] Legal entity (Vellora Mercantile International) disclosures — verified details only

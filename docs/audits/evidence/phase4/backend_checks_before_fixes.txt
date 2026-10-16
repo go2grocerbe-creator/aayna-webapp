@@ -1,0 +1,42 @@
+PASS  auth: no token -> 401  — HTTP 401
+PASS  auth: garbage token -> 401  — HTTP 401
+PASS  auth: expired token -> 401  — HTTP 401
+PASS  auth: token signed with another secret -> 401  — HTTP 401
+PASS  auth: token for unknown user -> 401  — HTTP 401
+PASS  auth: valid token, non-admin role -> 403  — HTTP 403
+PASS  auth: disabled admin account -> 401  — HTTP 401
+PASS  auth: /admin/me never returns password_hash
+PASS  auth: all admin GET endpoints refuse anonymous (401)  — {"/admin/dashboard": 401, "/admin/products": 401, "/admin/orders": 401, "/admin/customers": 401, "/admin/inventory": 401, "/admin/settings": 401, "/admin/categories": 401, "/admin/export/products": 401, "/admin/export/orders": 401, "/admin/export/customers": 401}
+PASS  auth: anonymous image upload refused  — HTTP 401
+FAIL  auth: login lockout not bypassed by spoofed X-Forwarded-For  — codes=[401, 401, 401, 401, 401, 401, 401, 401]
+FAIL  validation: create with selling_price 0 -> 400/422  — HTTP 200
+FAIL  validation: create with negative selling_price -> 400/422  — HTTP 200
+FAIL  validation: create with discount >= price -> 400/422  — HTTP 200
+FAIL  validation: create with negative stock -> 400/422  — HTTP 200
+FAIL  validation: create with unknown status -> 400/422  — HTTP 200
+FAIL  validation: create with negative low_stock_alert -> 400/422  — HTTP 200
+FAIL  validation: update to negative price refused  — HTTP 200
+FAIL  validation: update slug to another product's slug refused  — HTTP 200
+PASS  validation: clearing discount (0) allowed  — HTTP 200
+FAIL  draft: stock adjusted to 0 stays draft and not public  — status=out_of_stock public HTTP 200
+FAIL  draft: stock edited to 0 stays draft and not public  — status=out_of_stock public HTTP 200
+FAIL  inactive: stock adjusted to 0 stays inactive and not public  — status=out_of_stock public HTTP 200
+FAIL  inactive: stock edited to 0 stays inactive and not public  — status=out_of_stock public HTTP 200
+PASS  active: stock adjusted to 0 becomes out_of_stock
+PASS  out_of_stock: restock returns to active
+FAIL  csv: re-import without status column keeps a draft as draft  — status=active resp={'created': 0, 'updated': 1, 'errors': []}
+FAIL  csv: unknown status value rejected as a row error  — {"created": 1, "updated": 0, "errors": []}
+FAIL  csv: non-positive price rejected as a row error  — {"created": 1, "updated": 0, "errors": []}
+FAIL  checkout: duplicate lines exceeding stock refused, stock unchanged  — HTTP 200 stock=1
+FAIL  checkout: 10 concurrent orders for 3 units -> exactly 3 orders, stock 0  — 200s=10 orders=10 stock=2 status=active
+PASS  checkout: one sale inventory log per successful order  — logs=10
+PASS  checkout: failed order creates no customer record  — HTTP 400
+FAIL  orders: saving 'Delivered' twice counts one successful order  — delta=2
+PASS  orders: unknown order status refused  — HTTP 400
+FAIL  public /settings does not expose arbitrary stored keys  — 21 keys
+PASS  public /settings still has storefront keys
+PASS  admin /settings still returns all keys
+FAIL  500 response carries CORS header and JSON detail  — HTTP 500 ACAO=None body=Internal Server Error
+PASS  500 response does not leak exception text  — Internal Server Error
+
+19/40 checks passed

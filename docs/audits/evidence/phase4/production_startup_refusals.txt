@@ -1,0 +1,12 @@
+REFUSED  missing JWT_SECRET :: RuntimeError: Missing required production environment variables: JWT_SECRET
+REFUSED  dev-fallback JWT_SECRET :: RuntimeError: Refusing to start in production with the development JWT_SECRET. Set a strong JWT_SECRET.
+REFUSED  missing ADMIN_PASSWORD :: RuntimeError: Missing required production environment variables: ADMIN_PASSWORD
+REFUSED  default ADMIN_PASSWORD :: RuntimeError: Refusing to start in production with the default ADMIN_PASSWORD. Set a strong ADMIN_PASSWORD.
+REFUSED  CORS_ORIGINS=* :: RuntimeError: CORS_ORIGINS must be restricted to your real frontend origin(s) in production, not '*'.
+REFUSED  PUBLIC_SITE_URL localhost :: RuntimeError: PUBLIC_SITE_URL must be set to your real domain in production (not empty or localhost).
+REFUSED  DB_NAME aayna_dev :: RuntimeError: DB_NAME must be the production database (e.g. aayna_prod) in production, not a dev/test database.
+REFUSED  DB_NAME aayna_pytest :: RuntimeError: DB_NAME must be the production database (e.g. aayna_prod) in production, not a dev/test database.
+REFUSED  MONGO_URL localhost :: RuntimeError: MONGO_URL must point to the managed production database in production, not localhost.
+REFUSED  webhook enabled without URL :: RuntimeError: ORDER_WEBHOOK_ENABLED is true but ORDER_WEBHOOK_URL is not set.
+REFUSED  JWT_SECRET too short (abc) :: RuntimeError: JWT_SECRET must be at least 32 characters in production (e.g. python -c "import secrets;print(secrets.token_hex(32))").
+REFUSED  ADMIN_PASSWORD too short (password) :: RuntimeError: ADMIN_PASSWORD must be at least 12 characters in production.

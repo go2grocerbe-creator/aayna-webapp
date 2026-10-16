@@ -1,0 +1,13 @@
+FAIL  5xx: dashboard error shown within 4 s (was ~7.8 s)  — 8972 ms
+FAIL  5xx: message says server error with status, not 'could not be reached'  — Couldn't load the dashboard. The server responded with an error (500): Something went wrong on the server. Please try ag
+PASS  5xx: Try again offered
+FAIL  401: 'session expired' shown without retry delay  — 7897 ms — Couldn't load orders. The server responded with an error (401): Session expired.
+FAIL  401: offers 'Sign in again' (no pointless Try again)
+PASS  invalid token on load -> redirected to /admin/login  — http://localhost:3002/admin/login
+FAIL  unreachable: says the server could not be reached, within 4 s  — 7819 ms
+FAIL  thumbnails: no visible broken <img> in product list  — {"rows":10,"broken":10,"fallbacks":0}
+FAIL  thumbnails: every row shows an image or the fallback icon  — {"rows":10,"broken":10,"fallbacks":0}
+FAIL  thumbnails: product editor image tiles show no broken <img>  — broken=1
+PASS  storefront: unknown product shows not-found within 2 s  — 1857 ms
+
+3/11 checks passed

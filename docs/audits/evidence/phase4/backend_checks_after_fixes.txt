@@ -1,0 +1,65 @@
+PASS  auth: no token -> 401  — HTTP 401
+PASS  auth: garbage token -> 401  — HTTP 401
+PASS  auth: expired token -> 401  — HTTP 401
+PASS  auth: token signed with another secret -> 401  — HTTP 401
+PASS  auth: token for unknown user -> 401  — HTTP 401
+PASS  auth: valid token, non-admin role -> 403  — HTTP 403
+PASS  auth: disabled admin account -> 401  — HTTP 401
+PASS  auth: /admin/me never returns password_hash
+PASS  auth: all admin GET endpoints refuse anonymous (401)  — {"/admin/dashboard": 401, "/admin/products": 401, "/admin/orders": 401, "/admin/customers": 401, "/admin/inventory": 401, "/admin/settings": 401, "/admin/categories": 401, "/admin/export/products": 401, "/admin/export/orders": 401, "/admin/export/customers": 401}
+PASS  auth: anonymous image upload refused  — HTTP 401
+PASS  auth: login lockout not bypassed by spoofed X-Forwarded-For  — codes=[401, 401, 401, 401, 401, 429, 429, 429]
+PASS  validation: create with selling_price 0 -> 400/422  — HTTP 400
+PASS  validation: create with negative selling_price -> 400/422  — HTTP 400
+PASS  validation: create with discount >= price -> 400/422  — HTTP 400
+PASS  validation: create with negative stock -> 400/422  — HTTP 400
+PASS  validation: create with unknown status -> 400/422  — HTTP 400
+PASS  validation: create with negative low_stock_alert -> 400/422  — HTTP 400
+PASS  validation: update to negative price refused  — HTTP 400
+PASS  validation: update slug to another product's slug refused  — HTTP 409
+PASS  validation: clearing discount (0) allowed  — HTTP 200
+PASS  draft: stock adjusted to 0 stays draft and not public  — status=draft public HTTP 404
+PASS  draft: stock edited to 0 stays draft and not public  — status=draft public HTTP 404
+PASS  inactive: stock adjusted to 0 stays inactive and not public  — status=inactive public HTTP 404
+PASS  inactive: stock edited to 0 stays inactive and not public  — status=inactive public HTTP 404
+PASS  active: stock adjusted to 0 becomes out_of_stock
+PASS  out_of_stock: restock returns to active
+PASS  csv: re-import without status column keeps a draft as draft  — status=draft resp={'created': 0, 'updated': 1, 'errors': []}
+PASS  csv: unknown status value rejected as a row error  — {"created": 0, "updated": 0, "errors": ["Row 2: unknown status 'published' (use active, draft, inactive, out_of_stock)"]}
+PASS  csv: non-positive price rejected as a row error  — {"created": 0, "updated": 0, "errors": ["Row 2: invalid selling price"]}
+PASS  checkout: duplicate lines exceeding stock refused, stock unchanged  — HTTP 400 stock=3
+(database engine: FerretDB v1.24.0)
+PASS  checkout: 10 sequential orders for 3 units -> exactly 3 orders, stock 0, out_of_stock  — 200s=3 orders=3 stock=0 status=out_of_stock
+PASS  checkout (sequential): one sale inventory log per successful order  — logs=3
+NOT VERIFIED  checkout: concurrent oversell protection — needs real MongoDB (FerretDB conditional updates are not atomic)
+PASS  checkout: failed order creates no customer record  — HTTP 400
+PASS  orders: saving 'Delivered' twice counts one successful order  — delta=1
+PASS  orders: unknown order status refused  — HTTP 400
+PASS  public /settings does not expose arbitrary stored keys  — 20 keys
+PASS  public /settings still has storefront keys
+PASS  admin /settings still returns all keys
+PASS  exposure: GET /products has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /products?search has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /products/{slug} has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /categories has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /categories/{slug} has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /settings has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /health/ready has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /sitemap.xml has no private fields  — HTTP 200 hits=[]
+PASS  exposure: POST /cart/validate has no private fields  — HTTP 200 hits=[]
+PASS  exposure: POST /checkout (response) has no private fields  — HTTP 200 hits=[]
+PASS  exposure: GET /orders/{n}?token has no private fields  — HTTP 200 hits=[]
+PASS  exposure: POST /track has no private fields  — HTTP 200 hits=[]
+PASS  exposure: order confirmation has no phone/address
+PASS  exposure: /api/files rejects traversal and unknown keys  — HTTP 404
+PASS  purchase: unknown product id refused  — HTTP 400
+PASS  purchase: quantity 0 refused  — HTTP 422
+PASS  purchase: negative quantity refused  — HTTP 422
+PASS  purchase: quantity above stock refused  — HTTP 400
+PASS  purchase: draft alongside a valid item refused  — HTTP 400
+PASS  purchase: refused attempts left stock untouched  — stock=2
+PASS  purchase: client-sent prices ignored (server price used)  — subtotal=500.0
+PASS  500 response carries CORS header and JSON detail  — HTTP 500 ACAO=http://localhost:3000 body={"detail":"Something went wrong on the server. Please try again."}
+PASS  500 response does not leak exception text  — {"detail":"Something went wrong on the server. Please try again."}
+
+61/61 checks passed
