@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 import logging
@@ -87,7 +88,8 @@ async def upload_image(file: UploadFile = File(...), current=Depends(get_current
     content_type = MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
     path = f"{APP_NAME}/uploads/{uuid.uuid4().hex}.{ext}"
     try:
-        result = put_object(path, data, content_type)
+        # requests is blocking; run it off the event loop so uploads don't stall every other request.
+        result = await asyncio.to_thread(put_object, path, data, content_type)
     except Exception as exc:  # noqa: BLE001
         logger.error("Upload failed: %s", exc)
         raise HTTPException(status_code=502, detail="Image upload failed. Please try again.")
@@ -117,7 +119,7 @@ async def serve_file(path: str):
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
     try:
-        data, content_type = get_object(path)
+        data, content_type = await asyncio.to_thread(get_object, path)
     except Exception:
         raise HTTPException(status_code=404, detail="File not found")
     media = record.get("content_type") or content_type
