@@ -77,7 +77,7 @@ export default function Cart() {
                         <div className="min-w-0">
                           <Link
                             to={`/product/${item.slug}`}
-                            className="font-display text-base md:text-lg text-aayna-charcoal hover:text-aayna-burgundy line-clamp-2"
+                            className="py-1.5 font-display text-base md:text-lg text-aayna-charcoal hover:text-aayna-burgundy line-clamp-2"
                           >
                             {item.name}
                           </Link>

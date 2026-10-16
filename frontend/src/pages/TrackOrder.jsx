@@ -89,7 +89,7 @@ export default function TrackOrder() {
               placeholder="e.g. 01712345678"
               aria-invalid={!!errors.phone}
               aria-describedby={errors.phone ? "track-phone-error" : undefined}
-              className={`flex-1 h-12 border bg-white px-4 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy text-aayna-charcoal ${
+              className={`w-full sm:w-auto sm:flex-1 h-12 shrink-0 border bg-white px-4 outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy text-aayna-charcoal ${
                 errors.phone ? "border-red-500" : "border-aayna-beige"
               }`}
             />

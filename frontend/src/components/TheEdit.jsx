@@ -107,7 +107,7 @@ export default function TheEdit({
                 type="button"
                 onClick={() => onCategoryChange(null)}
                 aria-pressed={!activeCategory}
-                className={`font-display font-semibold text-base md:text-xl min-h-[44px] py-1 border-b transition-colors ${
+                className={`font-display font-semibold text-base md:text-xl min-h-[44px] min-w-[44px] py-1 border-b transition-colors ${
                   !activeCategory ? "text-aayna-burgundy border-aayna-burgundy" : "text-aayna-taupe border-transparent hover:text-aayna-charcoal"
                 }`}
               >
@@ -140,7 +140,7 @@ export default function TheEdit({
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 aria-label="Sort"
-                className="bg-transparent border-0 underline underline-offset-2 cursor-pointer text-aayna-charcoal"
+                className="min-h-[44px] bg-transparent border-0 underline underline-offset-2 cursor-pointer text-aayna-charcoal"
               >
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
