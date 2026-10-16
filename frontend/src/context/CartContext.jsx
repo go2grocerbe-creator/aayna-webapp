@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import { primaryImage } from "@/lib/productImages";
 
 const CartContext = createContext(null);
 const STORAGE_KEY = "aayna_cart";
@@ -37,7 +38,7 @@ export function CartProvider({ children }) {
           product_id: product.id,
           slug: product.slug,
           name: product.product_name,
-          image: product.images?.[0]?.image_url,
+          image: primaryImage(product).src,
           sku: product.sku,
           selling_price: product.selling_price,
           discount_price: product.discount_price,

@@ -5,6 +5,7 @@ import { getProducts } from "@/lib/api";
 import { useSettings, useCategories } from "@/hooks/useStore";
 import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
+import { primaryImage } from "@/lib/productImages";
 import { useSeo } from "@/lib/seo";
 import { effectivePrice, formatBDT, isOutOfStock } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
@@ -279,8 +280,8 @@ export default function Home() {
               <div key={activeSlug} className="animate-fade-up">
                 <div className="relative aspect-[3/4] border border-aayna-beige overflow-hidden">
                   <ProductImage
-                    src={previewProduct.images?.[0]?.image_url}
-                    alt={previewProduct.images?.[0]?.alt_text || previewProduct.product_name}
+                    src={primaryImage(previewProduct).src}
+                    alt={primaryImage(previewProduct).alt}
                     className="absolute inset-0"
                     iconClassName="h-8 w-8"
                   />

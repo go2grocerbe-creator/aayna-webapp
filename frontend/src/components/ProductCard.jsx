@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock } from "@/lib/format";
 import ProductImage from "@/components/ProductImage";
+import { primaryImage } from "@/lib/productImages";
 
 // AAYNA Product Presentation System (DESIGN.md "Product Presentation System").
 // One data/cart/stock/price source, three visual variants selected by
@@ -22,8 +23,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
   const { addItem } = useCart();
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);
-  const image = product.images?.[0]?.image_url;
-  const imageAlt = product.images?.[0]?.alt_text || product.product_name;
+  const { src: image, alt: imageAlt } = primaryImage(product);
 
   const handleAdd = (e) => {
     e.preventDefault();

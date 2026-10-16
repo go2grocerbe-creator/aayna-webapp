@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import LoadError, { isNotFoundError } from "@/components/LoadError";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronRight, Minus, Plus } from "lucide-react";
@@ -10,6 +10,7 @@ import { useSettings } from "@/hooks/useStore";
 import { formatBDT, effectivePrice, discountPercent, isOutOfStock, isPlaceholder } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
+import { productImages, primaryImage } from "@/lib/productImages";
 import { useSeo, useJsonLd } from "@/lib/seo";
 
 // Matches the same launch-scope allowlist used by Shop.jsx/Category.jsx (D2
@@ -39,6 +40,8 @@ export default function ProductDetail() {
   const { data: settings } = useSettings();
   const [qty, setQty] = useState(1);
   const [detailFailed, setDetailFailed] = useState(false);
+  const [active, setActive] = useState(0);
+  useEffect(() => { setActive(0); setDetailFailed(false); }, [slug]);  // a new product starts at its primary photo
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["product", slug],
@@ -59,7 +62,7 @@ export default function ProductDetail() {
     description: product
       ? `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
       : undefined,
-    image: product?.images?.[0]?.image_url,
+    image: product ? primaryImage(product).src : undefined,
     noindex: notFound || loadFailed ? true : !isLaunchCategory,
   });
 
@@ -71,7 +74,7 @@ export default function ProductDetail() {
           "@type": "Product",
           name: product.product_name,
           url: pageUrl,
-          image: (product.images || []).map((i) => i.image_url).filter(Boolean),
+          image: productImages(product).map((i) => i.src),
           description: product.short_description || product.full_description || product.product_name,
           sku: product.sku,
           brand: { "@type": "Brand", name: "AAYNA" },
@@ -138,7 +141,8 @@ export default function ProductDetail() {
   const oos = isOutOfStock(product);
   const discount = discountPercent(product);
   const price = effectivePrice(product);
-  const image = product.images?.[0];
+  const gallery = productImages(product);
+  const shown = gallery[Math.min(active, Math.max(gallery.length - 1, 0))] || { src: undefined, alt: product.product_name };
   const related = (data?.related || []).filter((p) => p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
@@ -190,10 +194,11 @@ export default function ProductDetail() {
             <div className="relative aspect-[4/5] bg-aayna-mist overflow-hidden">
               <ProductImage
                 testId="product-main-image"
-                src={image?.image_url}
-                alt={image?.alt_text || product.product_name}
+                src={shown.src}
+                alt={shown.alt}
                 className="absolute inset-0"
                 iconClassName="h-10 w-10"
+                fit="contain"
                 eager
               />
               {oos && (
@@ -202,22 +207,31 @@ export default function ProductDetail() {
                 </span>
               )}
             </div>
-            {/* Detail view — a second, wider real image if one exists; a CSS
-                crop of the same photo otherwise (never presented as a second
-                photograph if only one is real). */}
-            {product.images?.length > 1 ? (
-              <div className="mt-5 relative aspect-video bg-aayna-mist overflow-hidden">
-                <ProductImage
-                  src={product.images[1].image_url}
-                  alt={product.images[1].alt_text || product.product_name}
-                  className="absolute inset-0"
-                  iconClassName="h-8 w-8"
-                />
+            {/* Gallery: every real photo of THIS product as a thumbnail; the main
+                frame shows the whole photo (no crop). With a single photo, a CSS
+                detail crop of that same photo is shown instead (never presented
+                as a second photograph). */}
+            {gallery.length > 1 ? (
+              <div data-testid="product-gallery" role="group" aria-label={`${product.product_name} photos`}
+                   className="mt-4 grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+                {gallery.map((g, i) => (
+                  <button
+                    key={g.src + i}
+                    type="button"
+                    data-testid={`product-thumb-${i}`}
+                    onClick={() => setActive(i)}
+                    aria-label={`Show image ${i + 1} of ${gallery.length}`}
+                    aria-pressed={i === active}
+                    className={`relative aspect-[4/5] min-h-[44px] overflow-hidden bg-aayna-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-aayna-burgundy ${i === active ? "ring-2 ring-aayna-burgundy" : "opacity-80 hover:opacity-100"}`}
+                  >
+                    <ProductImage src={g.src} alt="" className="absolute inset-0" iconClassName="h-4 w-4" />
+                  </button>
+                ))}
               </div>
-            ) : image?.image_url && !detailFailed ? (
+            ) : shown.src && !detailFailed ? (
               <div className="mt-5 relative aspect-video bg-aayna-mist overflow-hidden">
                 <img
-                  src={image.image_url}
+                  src={shown.src}
                   alt=""
                   aria-hidden="true"
                   onError={() => setDetailFailed(true)}
