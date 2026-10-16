@@ -129,18 +129,39 @@ export default function Home() {
       "AAYNA — accessible premium jewelry for women in Bangladesh. Earrings, necklaces, rings and more. Cash on delivery available.",
   });
 
+  // "Reflect Your Aura." is the approved default headline. A future admin
+  // field can override it via the dedicated `hero_headline_override` setting.
+  // The legacy seeded `hero_headline` ("Everyday Luxury, Reflected.") is
+  // deliberately NOT read, so old data can never replace the approved line.
+  const heroOverride = typeof settings?.hero_headline_override === "string"
+    ? settings.hero_headline_override.trim().slice(0, 60)
+    : "";
+
   const selectCategory = (slug) => {
     choosePreference(slug);
     setHovered(null);
+    // Phones have no preview panel (md+ only), so a tap would otherwise give
+    // no visible feedback - bring the personalised "Your Reflection" results
+    // into view instead.
+    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      requestAnimationFrame(() =>
+        document.getElementById("your-edit")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+      );
+    }
   };
 
   return (
     <div className="bg-aayna-cream">
       {/* ================= SCENE I — ARRIVAL ================= */}
-      <section className="relative min-h-screen flex flex-col justify-end overflow-hidden">
+      {/* Phones/tablets: content vertically centred in a section sized to the
+          visible screen (svh), so the headline and CTA sit in the first view
+          instead of under a full screen of empty space. lg+: the approved
+          bottom-anchored editorial composition. */}
+      <section className="relative min-h-[78svh] lg:min-h-[min(calc(100vh-7.5rem),780px)] flex flex-col justify-center lg:justify-end overflow-hidden">
         <div
           aria-hidden="true"
-          className="aayna-mirror-circle absolute rounded-full border border-aayna-burgundy/[0.13] w-[600px] h-[600px] left-[44%] -top-[18%]"
+          className="aayna-mirror-circle absolute rounded-full border border-aayna-burgundy/[0.13] w-[340px] h-[340px] left-[46%] -top-[10%] sm:w-[460px] sm:h-[460px] lg:w-[600px] lg:h-[600px] lg:left-[44%] lg:-top-[18%]"
         />
         <div
           aria-hidden="true"
@@ -152,37 +173,43 @@ export default function Home() {
         >
           আয়না
         </span>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-32 sm:pt-36 md:pt-40 pb-16 md:pb-24">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-14 pb-20 sm:pt-16 lg:pt-40 lg:pb-24 [@media(max-height:500px)]:pt-8 [@media(max-height:500px)]:pb-10">
           <div className="max-w-xl">
             <p className="text-aayna-burgundy font-bold text-xs tracking-[0.24em] uppercase mb-4">
               {(settings?.brand_name || "AAYNA").toUpperCase()} · Bangladesh
             </p>
-            <h1 className="font-display font-semibold leading-[0.98] tracking-tight">
-              <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px]">
-                Reflect Your
-              </span>
-              <span className="block text-aayna-burgundy text-[52px] sm:text-7xl md:text-8xl lg:text-[124px] mt-1">
-                Aura.
-              </span>
+            <h1 data-testid="hero-headline" className="font-display font-semibold leading-[0.98] tracking-tight">
+              {heroOverride ? (
+                <span className="block text-aayna-charcoal text-[42px] sm:text-6xl md:text-7xl lg:text-[96px] [@media(max-height:500px)]:text-5xl">{heroOverride}</span>
+              ) : (
+                <>
+                  <span className="block text-aayna-charcoal text-[46px] sm:text-6xl md:text-7xl lg:text-[108px] [@media(max-height:500px)]:text-5xl">
+                    Reflect Your
+                  </span>
+                  <span className="block text-aayna-burgundy text-[52px] sm:text-7xl md:text-8xl lg:text-[124px] mt-1 [@media(max-height:500px)]:text-6xl">
+                    Aura.
+                  </span>
+                </>
+              )}
             </h1>
             <a
               href="#reflection"
               data-testid="hero-shop-now"
-              className="group inline-flex items-center gap-2 mt-7 text-aayna-coral-dark text-base font-semibold w-fit border-b border-transparent hover:border-current hover:gap-3 transition-all"
+              className="group inline-flex items-center gap-2 mt-6 min-h-[44px] text-aayna-coral-dark text-base font-semibold w-fit border-b border-transparent hover:border-current hover:gap-3 transition-all"
             >
               Enter the Edit
               <span aria-hidden="true">→</span>
             </a>
           </div>
         </div>
-        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-aayna-taupe">
-          <span className="text-[10px] uppercase tracking-[0.2em]">Reflect</span>
-          <span aria-hidden="true" className="w-px h-6 bg-gradient-to-b from-aayna-taupe to-transparent" />
+        <div aria-hidden="true" className="absolute left-1/2 bottom-5 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-aayna-taupe [@media(max-height:500px)]:hidden">
+          <span className="text-[11px] uppercase tracking-[0.2em]">Reflect</span>
+          <span className="w-px h-6 bg-gradient-to-b from-aayna-taupe to-transparent" />
         </div>
       </section>
 
       {/* ================= SCENE II — REFLECTION ================= */}
-      <section id="reflection" className="relative py-24 md:py-28">
+      <section id="reflection" className="relative py-24 md:py-28 scroll-mt-20 md:scroll-mt-24">
         {/* One shared reactive background letter — desktop hover/focus only,
             driven purely by `hovered` (never `committed`), so it can never
             be pinned by a selection and never appears on the Your Edit
@@ -285,7 +312,7 @@ export default function Home() {
       </section>
 
       {/* ================= SCENE III — YOUR EDIT ================= */}
-      <section className="relative py-20 md:py-24 border-t border-aayna-beige">
+      <section id="your-edit" className="relative py-20 md:py-24 border-t border-aayna-beige scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-baseline justify-between gap-4 flex-wrap mb-10">
             <div>
