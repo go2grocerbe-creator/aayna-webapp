@@ -46,7 +46,7 @@ export default function Categories() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Categories</h1>
-        <button data-testid="add-category-btn" onClick={openNew} className="h-10 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark"><Plus className="h-4 w-4" /> Add Category</button>
+        <button data-testid="add-category-btn" onClick={openNew} className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark"><Plus className="h-4 w-4" /> Add Category</button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -68,7 +68,7 @@ export default function Categories() {
               <tr key={c.id} data-testid={`category-row-${c.slug}`} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">{c.image_url && <img src={c.image_url} alt="" className="w-full h-full object-cover" />}</div>
+                    <div className="h-11 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">{c.image_url && <img src={c.image_url} alt="" className="w-full h-full object-cover" />}</div>
                     <span className="font-medium text-aayna-charcoal">{c.name}</span>
                   </div>
                 </td>
@@ -105,8 +105,8 @@ export default function Categories() {
             </div>
           </div>
           <DialogFooter>
-            <button onClick={() => setOpen(false)} className="h-10 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
-            <button data-testid="cat-save" onClick={save} disabled={saving} className="h-10 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save</button>
+            <button onClick={() => setOpen(false)} className="h-11 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
+            <button data-testid="cat-save" onClick={save} disabled={saving} className="h-11 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Save</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

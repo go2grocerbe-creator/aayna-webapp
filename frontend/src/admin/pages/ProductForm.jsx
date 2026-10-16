@@ -72,7 +72,7 @@ export default function ProductForm() {
 
   return (
     <div className="max-w-3xl">
-      <Link to="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-aayna-burgundy mb-4"><ArrowLeft className="h-4 w-4" /> Back to products</Link>
+      <Link to="/admin/products" className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-gray-500 hover:text-aayna-burgundy mb-2"><ArrowLeft className="h-4 w-4" /> Back to products</Link>
       <h1 className="text-2xl font-bold text-aayna-charcoal mb-6">{isEdit ? "Edit Product" : "Add Product"}</h1>
 
       <form onSubmit={submit} className="space-y-6">

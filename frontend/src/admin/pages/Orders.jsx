@@ -21,15 +21,15 @@ export default function Orders() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Orders</h1>
-        <button onClick={() => downloadCsv("orders", "aayna_orders.csv")} className="h-10 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50"><Download className="h-4 w-4" /> Export</button>
+        <button onClick={() => downloadCsv("orders", "aayna_orders.csv")} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50"><Download className="h-4 w-4" /> Export</button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-          <input data-testid="order-search" aria-label="Search orders" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order ID, name or phone" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
+          <input data-testid="order-search" aria-label="Search orders" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order ID, name or phone" className="w-full h-11 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
         </div>
-        <select data-testid="order-status-filter" aria-label="Filter by order status" value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 px-3 border border-gray-300 rounded-md text-sm bg-white">
+        <select data-testid="order-status-filter" aria-label="Filter by order status" value={status} onChange={(e) => setStatus(e.target.value)} className="h-11 px-3 border border-gray-300 rounded-md text-sm bg-white">
           <option value="all">All statuses</option>
           {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>

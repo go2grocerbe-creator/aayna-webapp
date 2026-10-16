@@ -17,12 +17,12 @@ export default function Customers() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Customers</h1>
-        <button onClick={() => downloadCsv("customers", "aayna_customers.csv")} className="h-10 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50"><Download className="h-4 w-4" /> Export</button>
+        <button onClick={() => downloadCsv("customers", "aayna_customers.csv")} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50"><Download className="h-4 w-4" /> Export</button>
       </div>
 
       <div className="relative mb-4 max-w-sm">
         <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-        <input data-testid="customer-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or email" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
+        <input data-testid="customer-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or email" className="w-full h-11 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

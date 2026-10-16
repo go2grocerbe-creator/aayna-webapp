@@ -75,8 +75,8 @@ export default function Inventory() {
                   <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span></td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openAdjust(p)} data-testid={`adjust-stock-${p.sku}`} className="px-2.5 py-1.5 text-xs border border-gray-300 rounded-md flex items-center gap-1 hover:bg-gray-50"><Plus className="h-3.5 w-3.5" /> Adjust</button>
-                      <button onClick={() => setLogsFor(p)} className="p-2 text-gray-500 hover:text-aayna-burgundy" title="View log"><History className="h-4 w-4" /></button>
+                      <button onClick={() => openAdjust(p)} data-testid={`adjust-stock-${p.sku}`} className="px-3 min-h-[44px] text-xs border border-gray-300 rounded-md flex items-center gap-1 hover:bg-gray-50"><Plus className="h-3.5 w-3.5" /> Adjust</button>
+                      <button onClick={() => setLogsFor(p)} aria-label={`View stock log for ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy" title="View log"><History className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -112,8 +112,8 @@ export default function Inventory() {
             </div>
           </div>
           <DialogFooter>
-            <button onClick={() => setAdjustFor(null)} className="h-10 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
-            <button data-testid="adjust-save" onClick={saveAdjust} disabled={saving} className="h-10 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Apply</button>
+            <button onClick={() => setAdjustFor(null)} className="h-11 px-4 border border-gray-300 rounded-md text-sm">Cancel</button>
+            <button data-testid="adjust-save" onClick={saveAdjust} disabled={saving} className="h-11 px-5 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Apply</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

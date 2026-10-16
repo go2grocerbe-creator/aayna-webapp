@@ -10,7 +10,7 @@ function Card({ icon: Icon, label, value, accent, to, testid }) {
   const inner = (
     <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
       <div className="flex items-center justify-between">
-        <span className={`h-10 w-10 rounded-md flex items-center justify-center ${accent}`}>
+        <span className={`h-11 w-10 rounded-md flex items-center justify-center ${accent}`}>
           <Icon className="h-5 w-5" />
         </span>
       </div>

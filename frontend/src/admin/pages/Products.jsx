@@ -53,14 +53,14 @@ export default function Products() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Products</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => downloadCsv("products", "aayna_products.csv")} className="h-10 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
+          <button onClick={() => downloadCsv("products", "aayna_products.csv")} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
             <Download className="h-4 w-4" /> Export
           </button>
-          <button data-testid="import-products-btn" onClick={() => fileRef.current?.click()} disabled={importing} className="h-10 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
+          <button data-testid="import-products-btn" onClick={() => fileRef.current?.click()} disabled={importing} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
             {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
           </button>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Link to="/admin/products/new" data-testid="add-product-btn" className="h-10 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark">
+          <Link to="/admin/products/new" data-testid="add-product-btn" className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark">
             <Plus className="h-4 w-4" /> Add Product
           </Link>
         </div>
@@ -69,13 +69,13 @@ export default function Products() {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-          <input data-testid="product-search" aria-label="Search products" value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="Search name or SKU" className="w-full h-10 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
+          <input data-testid="product-search" aria-label="Search products" value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="Search name or SKU" className="w-full h-11 pl-9 pr-3 border border-gray-300 rounded-md text-sm outline-none focus:border-aayna-burgundy" />
         </div>
-        <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))} className="h-10 px-3 border border-gray-300 rounded-md text-sm bg-white">
+        <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))} className="h-11 px-3 border border-gray-300 rounded-md text-sm bg-white">
           <option value="">All categories</option>
           {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
         </select>
-        <select aria-label="Filter by status" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} className="h-10 px-3 border border-gray-300 rounded-md text-sm bg-white">
+        <select aria-label="Filter by status" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} className="h-11 px-3 border border-gray-300 rounded-md text-sm bg-white">
           <option value="">All status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
@@ -122,8 +122,8 @@ export default function Products() {
                   <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} className="p-2 text-gray-500 hover:text-aayna-burgundy" title="Edit"><Pencil className="h-4 w-4" /></Link>
-                      <button onClick={() => { if (window.confirm(`Delete/deactivate ${p.product_name}?`)) del.mutate(p.id); }} className="p-2 text-gray-500 hover:text-red-600" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                      <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} aria-label={`Edit ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy" title="Edit"><Pencil className="h-4 w-4" /></Link>
+                      <button onClick={() => { if (window.confirm(`Delete/deactivate ${p.product_name}?`)) del.mutate(p.id); }} aria-label={`Delete ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-red-600" title="Delete"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
