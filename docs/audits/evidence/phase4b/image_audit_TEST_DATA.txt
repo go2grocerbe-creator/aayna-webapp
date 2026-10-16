@@ -1,0 +1,20 @@
+Image references in database 'aayna_pytest' (read-only scan)
+
+  products.images[].image_url: app_files=4, emergent_cdn=10
+  categories.image_url: emergent_cdn=6
+  website_settings.hero_image_url: emergent_cdn=1
+
+  hosts:
+    emergent_cdn  static.prod-images.emergentagent.com  x17
+    app_files     womens-aayna.preview.emergentagent.com  x4
+
+  products by status: {'active': 10}
+  products without any image: 0
+  db.files upload records: 3 (deleted: 1)
+
+  manifest: /tmp/claude-0/-home-claude/bb45a94e-d52c-5ec5-bee5-6346bcabed82/scratchpad/image_manifest_test.csv  (21 references, 1 unreferenced uploads)
+  originals to retrieve from Emergent object storage: 4
+  distinct Emergent-CDN images to download: 17
+  references whose upload record is missing/deleted: 2
+  URLs used by more than one reference: 1
+  unreachable URLs: 20 of 20
