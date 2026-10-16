@@ -180,11 +180,21 @@ class LoginRequest(BaseModel):
     password: str
 
 
+# Number of reverse proxies in front of the API that append to X-Forwarded-For
+# (e.g. 1 behind a single load balancer). 0 = trust no forwarding header.
+# The left-most X-Forwarded-For entry is client-controlled, so trusting it let
+# an attacker rotate it to dodge the failed-login lockout.
+TRUSTED_PROXY_HOPS = max(0, int(os.environ.get("TRUSTED_PROXY_HOPS", "0") or 0))
+
+
 def _client_ip(request: Request) -> str:
-    fwd = request.headers.get("X-Forwarded-For")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    peer = request.client.host if request.client else "unknown"
+    if TRUSTED_PROXY_HOPS <= 0:
+        return peer
+    hops = [h.strip() for h in (request.headers.get("X-Forwarded-For") or "").split(",") if h.strip()]
+    # Each trusted proxy appends the address it received the request from, so the
+    # real client is the entry added by the outermost trusted proxy.
+    return hops[-TRUSTED_PROXY_HOPS] if len(hops) >= TRUSTED_PROXY_HOPS else peer
 
 
 def _rl_key(ip: str, email: str) -> str:
