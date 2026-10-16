@@ -1,0 +1,159 @@
+diff --git a/frontend/src/admin/StockReturnPanel.jsx b/frontend/src/admin/StockReturnPanel.jsx
+new file mode 100644
+index 0000000..a6fa16d
+--- /dev/null
++++ b/frontend/src/admin/StockReturnPanel.jsx
+@@ -0,0 +1,113 @@
++import { useState } from "react";
++import { toast } from "sonner";
++import { Loader2, Undo2 } from "lucide-react";
++import { recordStockReturn } from "@/admin/adminApi";
++
++const RETURN_STATUSES = ["Cancelled", "Returned"];
++
++// Cancelled/returned orders never restock automatically. The admin records, per
++// item, whether the goods go back into sellable stock or are written off.
++// The backend refuses anything beyond the quantity ordered, so a double click
++// cannot restock twice.
++export default function StockReturnPanel({ order, onDone }) {
++  const remaining = (it) => Math.max(0, (it.quantity || 0) - (it.returned_qty || 0));
++  const [lines, setLines] = useState({});
++  const [reason, setReason] = useState("");
++  const [busy, setBusy] = useState(false);
++
++  if (!RETURN_STATUSES.includes(order.order_status)) {
++    return null;
++  }
++  const events = order.stock_events || [];
++  const open = order.items.filter((it) => remaining(it) > 0);
++  const set = (id, k, v) => setLines((l) => ({ ...l, [id]: { ...l[id], [k]: v } }));
++  const chosen = open
++    .map((it) => ({ it, q: Number(lines[it.id]?.quantity || 0), d: lines[it.id]?.disposition || "" }))
++    .filter((x) => x.q > 0);
++  const missingChoice = chosen.some((x) => !x.d);
++
++  const submit = async () => {
++    setBusy(true);
++    try {
++      const res = await recordStockReturn(order.order_number, {
++        lines: chosen.map((x) => ({ item_id: x.it.id, quantity: x.q, disposition: x.d })),
++        reason,
++      });
++      const failed = res.results.filter((r) => !r.applied);
++      if (failed.length) toast.error(failed.map((f) => f.detail).join(" · "));
++      if (res.results.some((r) => r.applied)) toast.success("Stock return recorded");
++      setLines({});
++      setReason("");
++      onDone?.();
++    } catch (err) {
++      toast.error(err?.response?.data?.detail || "Could not record the return");
++    } finally {
++      setBusy(false);
++    }
++  };
++
++  const field = "h-11 border border-gray-300 rounded-md px-2 text-sm bg-white outline-none focus:border-aayna-burgundy";
++  return (
++    <div data-testid="stock-return-panel" className="bg-white border border-gray-200 rounded-lg p-5">
++      <h2 className="font-semibold text-aayna-charcoal flex items-center gap-2"><Undo2 className="h-4 w-4" /> Stock from this order</h2>
++      <p className="text-xs text-gray-500 mt-1 mb-4">
++        Nothing is restocked automatically. Record only goods you have physically received back, and choose for each
++        whether it is sellable again or written off.
++      </p>
++      {open.length ? (
++        <div className="space-y-3">
++          {open.map((it) => (
++            <div key={it.id} className="flex flex-wrap items-end gap-3 border-b border-gray-100 pb-3">
++              <div className="flex-1 min-w-[10rem]">
++                <p className="text-sm text-aayna-charcoal">{it.product_name_snapshot}</p>
++                <p className="text-xs text-gray-400">{remaining(it)} of {it.quantity} not yet recorded</p>
++              </div>
++              <label className="text-xs text-gray-600">
++                Quantity
++                <input type="number" min={0} max={remaining(it)} data-testid={`return-qty-${it.id}`}
++                  className={`${field} w-20 block mt-1`} value={lines[it.id]?.quantity ?? ""}
++                  onChange={(e) => set(it.id, "quantity", Math.max(0, Math.min(remaining(it), Number(e.target.value) || 0)))} />
++              </label>
++              <label className="text-xs text-gray-600">
++                What happened to it
++                <select data-testid={`return-disposition-${it.id}`} className={`${field} block mt-1`}
++                  value={lines[it.id]?.disposition || ""} onChange={(e) => set(it.id, "disposition", e.target.value)}>
++                  <option value="">Choose…</option>
++                  <option value="restock">Back to stock (sellable)</option>
++                  <option value="damaged">Damaged / not sellable</option>
++                </select>
++              </label>
++            </div>
++          ))}
++          <label className="block text-xs text-gray-600">
++            Reason / note
++            <input className={`${field} w-full block mt-1`} value={reason} onChange={(e) => setReason(e.target.value)}
++              placeholder="e.g. courier returned parcel, inspected OK" />
++          </label>
++          {missingChoice && <p className="text-xs text-amber-600">Choose what happened to every item with a quantity.</p>}
++          <button type="button" data-testid="stock-return-submit" onClick={submit} disabled={busy || !chosen.length || missingChoice}
++            className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold disabled:opacity-50 flex items-center gap-2">
++            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Record stock return
++          </button>
++        </div>
++      ) : (
++        <p className="text-sm text-gray-500">All items from this order have been recorded.</p>
++      )}
++      {events.length > 0 && (
++        <div className="mt-5">
++          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">History</h3>
++          <ul data-testid="stock-return-history" className="space-y-1.5 text-xs text-gray-600">
++            {events.map((e, i) => (
++              <li key={i}>
++                {new Date(e.at).toLocaleString()} · {e.quantity} × {e.product_name} ·{" "}
++                <span className={e.disposition === "restock" ? "text-green-700" : "text-red-600"}>
++                  {e.disposition === "restock" ? "back to stock" : "written off"}
++                </span>{" "}· {e.by}{e.reason ? ` · ${e.reason}` : ""}
++              </li>
++            ))}
++          </ul>
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/frontend/src/admin/adminApi.js b/frontend/src/admin/adminApi.js
+index 28281e4..f4efd6e 100644
+--- a/frontend/src/admin/adminApi.js
++++ b/frontend/src/admin/adminApi.js
+@@ -43,6 +43,7 @@ export const updateCategory = (id, d) => api.put(`/admin/categories/${id}`, d).t
+ export const getAdminOrders = (params) => api.get("/admin/orders", { params }).then((r) => r.data);
+ export const getAdminOrder = (num) => api.get(`/admin/orders/${num}`).then((r) => r.data);
+ export const updateOrder = (num, d) => api.put(`/admin/orders/${num}`, d).then((r) => r.data);
++export const recordStockReturn = (num, d) => api.post(`/admin/orders/${num}/stock-returns`, d).then((r) => r.data);
+ 
+ // Inventory
+ export const getInventory = (lowOnly) =>
+diff --git a/frontend/src/admin/pages/OrderDetail.jsx b/frontend/src/admin/pages/OrderDetail.jsx
+index 066f04d..ceb6224 100644
+--- a/frontend/src/admin/pages/OrderDetail.jsx
++++ b/frontend/src/admin/pages/OrderDetail.jsx
+@@ -1,5 +1,6 @@
+ import { useState, useEffect } from "react";
+ import AdminLoadError from "@/admin/AdminLoadError";
++import StockReturnPanel from "@/admin/StockReturnPanel";
+ import { useParams, Link } from "react-router-dom";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { toast } from "sonner";
+@@ -100,6 +101,16 @@ export default function OrderDetail() {
+             </div>
+           </div>
+ 
++          {/* Stock from cancelled / returned orders (explicit admin action) */}
++          <StockReturnPanel
++            order={order}
++            onDone={() => {
++              qc.invalidateQueries({ queryKey: ["admin-order", orderNumber] });
++              qc.invalidateQueries({ queryKey: ["admin-products"] });
++              qc.invalidateQueries({ queryKey: ["admin-inventory"] });
++            }}
++          />
++
+           {/* Notifications */}
+           <div className="bg-white border border-gray-200 rounded-lg p-5">
+             <h2 className="font-semibold text-aayna-charcoal mb-3">Notification History</h2>
