@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminThumb from "@/admin/AdminThumb";
 import AdminLoadError from "@/admin/AdminLoadError";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -71,7 +72,7 @@ export default function Categories() {
               <tr key={c.id} data-testid={`category-row-${c.slug}`} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-11 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">{c.image_url && <img src={c.image_url} alt="" className="w-full h-full object-cover" />}</div>
+                    <AdminThumb src={c.image_url} className="h-11 w-10 rounded flex-shrink-0" />
                     <span className="font-medium text-aayna-charcoal">{c.name}</span>
                   </div>
                 </td>

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import AdminThumb from "@/admin/AdminThumb";
 import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,9 +111,7 @@ export default function Products() {
                 <tr key={p.id} data-testid={`product-row-${p.sku}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded bg-gray-100 overflow-hidden flex-shrink-0">
-                        {p.images?.[0]?.image_url && <img src={p.images[0].image_url} alt="" className="w-full h-full object-cover" />}
-                      </div>
+                      <AdminThumb src={p.images?.[0]?.image_url} className="h-11 w-11 rounded flex-shrink-0" />
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium text-aayna-charcoal line-clamp-1">{p.product_name}</span>
                       </div>

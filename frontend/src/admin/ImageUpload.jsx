@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AdminThumb from "@/admin/AdminThumb";
 import { Loader2, Upload, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { uploadImage, fullImageUrl } from "@/admin/adminApi";
@@ -42,7 +43,7 @@ export default function ImageUpload({ images = [], onChange }) {
       <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 gap-3">
         {images.map((im, idx) => (
           <div key={idx} className="relative group aspect-square border border-gray-200 rounded-md overflow-hidden bg-gray-50">
-            <img src={im.image_url} alt={im.alt_text} className="w-full h-full object-cover" />
+            <AdminThumb src={im.image_url} alt={im.alt_text} className="w-full h-full" iconClassName="h-6 w-6" />
             {im.is_main && (
               <span className="absolute top-1 left-1 bg-aayna-gold text-aayna-charcoal text-xs font-bold px-1.5 py-0.5 rounded">Main</span>
             )}
