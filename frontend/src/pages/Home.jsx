@@ -195,7 +195,7 @@ export default function Home() {
             <a
               href="#reflection"
               data-testid="hero-shop-now"
-              className="group inline-flex items-center gap-2 mt-6 min-h-[44px] text-aayna-coral-dark text-base font-semibold w-fit border-b border-transparent hover:border-current hover:gap-3 transition-all"
+              className="group inline-flex items-center gap-2 mt-6 min-h-[44px] text-aayna-coral-dark text-base font-semibold w-fit border-b border-transparent hover:border-current hover:gap-3 transition-[gap,border-color]"
             >
               Enter the Edit
               <span aria-hidden="true">→</span>
@@ -253,7 +253,7 @@ export default function Home() {
                   onBlur={() => setHovered(null)}
                   onClick={() => selectCategory(c.slug)}
                   style={{ marginLeft: i === 1 ? "14%" : i === 2 ? "4%" : 0 }}
-                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-all duration-300 w-fit ${
+                  className={`font-display font-bold text-left min-h-[44px] py-2.5 transition-[color,opacity] duration-300 w-fit ${
                     hovered === c.slug || committed === c.slug ? "text-aayna-burgundy" : "text-aayna-charcoal"
                   } ${
                     committed && committed !== c.slug && hovered !== c.slug ? "opacity-40" : "opacity-100"

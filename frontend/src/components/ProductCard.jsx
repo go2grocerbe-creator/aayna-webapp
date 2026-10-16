@@ -146,7 +146,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
             data-testid={`quick-add-${product.slug}`}
             onClick={handleAdd}
             aria-label="Add to cart"
-            className="absolute bottom-3 right-3 h-11 w-11 bg-aayna-coral text-white rounded-full flex items-center justify-center transition-all duration-300 hover:bg-aayna-coral-dark [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:translate-y-0 focus-visible:opacity-100 focus-visible:translate-y-0"
+            className="absolute bottom-3 right-3 h-11 w-11 bg-aayna-coral text-white rounded-full flex items-center justify-center transition-[opacity,transform,background-color] duration-300 hover:bg-aayna-coral-dark [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:translate-y-0 focus-visible:opacity-100 focus-visible:translate-y-0"
           >
             <ShoppingBag className="h-4 w-4" />
           </button>
