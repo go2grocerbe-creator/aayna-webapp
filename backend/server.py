@@ -620,6 +620,45 @@ async def checkout(req: CheckoutRequest):
         })
         stock_ops.append((product, line.quantity))
 
+    # The same product on several lines is checked against stock as one total.
+    wanted = {}
+    for product, qty in stock_ops:
+        wanted.setdefault(product["id"], [product, 0])[1] += qty
+    for product, qty in wanted.values():
+        if qty > int(product.get("stock_quantity", 0)):
+            raise HTTPException(status_code=400,
+                                detail=f"Only {int(product.get('stock_quantity', 0))} left of {product['product_name']}")
+
+    # Reserve stock atomically BEFORE creating the customer or the order: each
+    # decrement only succeeds if the product is still public and still has
+    # enough stock at that instant, so concurrent checkouts cannot oversell
+    # and a concurrent admin stock edit is never overwritten.
+    reserved = []  # (product, qty, stock_after)
+
+    async def release_reserved():
+        for p, q, _ in reserved:
+            await db.products.update_one({"id": p["id"]}, {"$inc": {"stock_quantity": q}})
+            await db.products.update_one({"id": p["id"], "status": "out_of_stock", "stock_quantity": {"$gt": 0}},
+                                         {"$set": {"status": "active"}})
+
+    for product, qty in wanted.values():
+        after = await db.products.find_one_and_update(
+            {"id": product["id"], "status": {"$in": PUBLIC_PRODUCT_STATUSES}, "stock_quantity": {"$gte": qty}},
+            {"$inc": {"stock_quantity": -qty}, "$set": {"updated_at": now_iso()}},
+            return_document=ReturnDocument.AFTER,
+        )
+        if not after:
+            await release_reserved()
+            current = await db.products.find_one({"id": product["id"]}, {"stock_quantity": 1})
+            left = max(0, int((current or {}).get("stock_quantity", 0)))
+            raise HTTPException(status_code=400,
+                                detail=(f"{product['product_name']} is out of stock" if left <= 0
+                                        else f"Only {left} left of {product['product_name']}"))
+        reserved.append((product, qty, int(after["stock_quantity"])))
+        if after["stock_quantity"] <= 0:
+            await db.products.update_one({"id": product["id"], "status": "active", "stock_quantity": {"$lte": 0}},
+                                         {"$set": {"status": "out_of_stock"}})
+
     # 6-7. Delivery + total
     settings = await get_settings_map()
     delivery_charge = delivery_charge_for(settings, req.district)
@@ -682,20 +721,17 @@ async def checkout(req: CheckoutRequest):
         "created_at": now_iso(),
         "updated_at": now_iso(),
     }
-    await db.orders.insert_one({**order})
+    try:
+        await db.orders.insert_one({**order})
+    except Exception:
+        await release_reserved()
+        raise
 
-    # 11-12. Reduce stock + inventory log
-    for product, qty in stock_ops:
-        prev = int(product.get("stock_quantity", 0))
-        new_stock = prev - qty
-        new_status = "out_of_stock" if new_stock <= 0 else product.get("status", "active")
-        await db.products.update_one(
-            {"id": product["id"]},
-            {"$set": {"stock_quantity": new_stock, "status": new_status, "updated_at": now_iso()}},
-        )
+    # 11-12. Inventory log (stock was already reserved atomically above)
+    for product, qty, new_stock in reserved:
         await db.inventory_logs.insert_one({
             "id": str(uuid.uuid4()), "product_id": product["id"], "change_type": "sale",
-            "quantity_change": -qty, "previous_stock": prev, "new_stock": new_stock,
+            "quantity_change": -qty, "previous_stock": new_stock + qty, "new_stock": new_stock,
             "reason": "Order placed", "reference_order_id": order_number,
             "created_by": "system", "created_at": now_iso(),
         })
