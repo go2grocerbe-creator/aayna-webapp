@@ -68,13 +68,30 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Emergent storage dependency audit + migration plan; read-only `scripts/storage/audit_image_refs.py` (`9ca179a`)
 - [ ] Run image-reference audit and data-quality queries on real data (B-21)
 - [ ] Export images from Emergent object storage while reachable (migration step 2)
-- [ ] DECISION: restock on cancel/return (B-19)
+- [x] Restock on cancel/return: manual for launch (Inventory → Adjust stock); workflow designed, UI parked (`docs/deferred/`), backend not built — Phase 4B
+- [ ] DECISION: approve the dedicated stock-return workflow before it is built
 - [ ] DECISION: storage provider
 - [ ] Before adding staff accounts: enforce admin roles (B-16), review JWT lifetime/storage (B-17)
-- [ ] Unique indexes after duplicate check (B-18)
+- [x] Index plan + dry-run migration tool; rehearsed on test DB 12/13 (`c4ec513`) — Phase 4B
+- [ ] Apply indexes on real data after backup + integrity check (founder-approved maintenance window)
+
+## Phase 4B — Data integrity & checkout safety (details: `PRODUCTION_DATA_INTEGRITY.md`)
+- [x] Duplicate orders from concurrent double-submits fixed (8 → 1) via `_id` key claim (`8ac43dc`)
+- [x] Full rollback on failed order incl. customer write (`8ac43dc`); tolerate unique customers.phone (`6493a1f`)
+- [x] Real-MongoDB release-check script (`afa6991`) — 7 pass / 0 fail / 5 NOT VERIFIED on FerretDB
+- [x] Read-only `data_integrity.py` + offline tests proving it never writes (`4078f2e`)
+- [x] Dry-run `index_migration.py`, `--apply` test-DB only (`c4ec513`)
+- [x] Stock-return UI parked as patch; active app makes no call to a missing endpoint (`54b2ee6`)
+- [x] Image export/migration manifest tooling; run on TEST data (`6d6a0cd`)
+- [x] Crash / multi-worker review documented (no transactions; in-memory login limiter)
+- [~] NOT VERIFIED (real MongoDB blocked): dashboard aggregation, low-stock filter, customer list/detail, 10×3 concurrent orders, concurrent multi-item atomicity
+- [ ] Run data_integrity.py, index_migration.py (dry run) and the image manifest on the REAL database (needs authorization + access)
+- [ ] Export originals from Emergent (storage paths + CDN URLs) while reachable; founder list for missing/deleted
+- [ ] Apply unique indexes (incl. customers.phone, orders.client_request_id partial) after backup
+- [ ] Consider MongoDB transactions (replica set) to close crash windows; persistent login limiter before multiple workers
 
 ## Phase 5 — Production readiness (not started)
-- [ ] Re-run backend suite + backend_admin_checks on real MongoDB
+- [ ] Re-run backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (exit 0 required)
 - [ ] Migrate product images off Emergent; host-independent image URLs
 - [ ] Payment approach (founder decision — do not implement before confirmation)
 - [ ] Legal entity (Vellora Mercantile International) disclosures — verified details only

@@ -1,0 +1,18 @@
+320 360 375 390 430 768 820 1024 1280 1440 1920 844x390-phone-landscape 1024x768-tablet-landscape 1180x820-tablet-landscape 
+
+OVERFLOW: none
+CLIPPED HEADINGS: none
+JS ERRORS: none
+
+SMALL24 (0 distinct)
+
+SMALL44 (0 distinct)
+
+UNNAMED (0 distinct)
+
+TINY (0 distinct)
+
+FOCUSMISSING (0 distinct)
+
+BROKEN IMAGES (blocked hosts): none  total: 0
+DISTORTED IMAGES: 0
