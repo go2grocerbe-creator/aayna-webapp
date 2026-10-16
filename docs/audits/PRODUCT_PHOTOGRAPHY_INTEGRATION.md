@@ -166,3 +166,87 @@ Every option also needs §3 decisions 1–3.
 | `product_gallery.js` desktop + mobile | **110/110** |
 | storefront routes / home+footer / admin UI / inventory rules / offline pytest | 60/60 / 47/47 / 11/11 / 28/28 / 111/111 |
 | Responsive audit (17 pages × 14 viewports) | **0 in every category**: overflow, clipped headings, targets <24/<44 px, unnamed, tiny text, missing focus, broken or distorted images |
+
+## 8. Option B implemented: optimized WebP served by the React frontend (2026-10-17)
+
+### What ships
+| Item | Detail |
+|---|---|
+| Assets | `frontend/public/product-images/<group>/<group>-<NN>-480.webp` and `…-1200.webp` (never upscaled; WebP quality 80). **62 files, 31 photos, 10 SKUs, 2.42 MB.** 480w files are 7–35 KB, 1200w files 17–145 KB. |
+| Source | Generated only from the checksum-verified copies (`aayna-website-assets/product-photos`, re-verified against `MANIFEST.csv` on every run). The PNG originals are never touched. |
+| Excluded | `Naira_Bold Chunky Earring.png` and **Crystal Stone Cuff Golden 4** (shows a second, silver cuff). The generator refuses excluded files. |
+| Generator | `scripts/assets/build_product_images.py`. Deterministic: a rerun produced byte-identical files and JSON. |
+| Reviewed map | `scripts/assets/product_image_map.json` (SKU → photo group → ordered variations). URLs are keyed by **photo group**, not SKU, so they stay stable if a SKU is corrected. |
+| Storefront map | `frontend/src/data/productGallery.json` (generated): 15.4 KB raw, **2.3 KB gzipped** in the JS bundle. |
+
+### How the storefront uses it (no database or storage change)
+- `productImages(product)`: **the product's own database `images` always win** (admin uploads, future storage-backed uploads).
+- Only a product with **no database images** gets the static gallery, matched by **exact SKU**.
+- Order is the reviewed `variations` order; the first entry is the primary.
+- `ProductImage` passes `srcSet` (480w/1200w) and `sizes`, so the browser picks the small rendition for cards and thumbnails and the large one for the product page.
+- The admin product architecture is unchanged. Admin still shows database truth (these SKUs show no uploaded image there), so storage-backed uploads can replace the static photos per product, with no code change, simply by uploading.
+- The commerce card frame (shop and category grids) changed from **square to 4:5**, matching the photography and the editorial cards. A square frame cut about 25% of each portrait photo. This is a one-line, reversible design change.
+
+### SKU → gallery (as shipped; first = primary)
+| SKU | Photo group | Gallery (variation order) |
+|---|---|---|
+| AYN-NKL-LUN-GLD | luna-locket-necklace-golden | 1, 2, 3 |
+| AYN-NKL-AUR-GLD | aura-locket-necklace-golden | 1, 2, 4 |
+| AYN-CUF-CRS-GLD | golden-crossline-cuff-bracelet | 1, 2, 3, 4 |
+| AYN-CUF-STN-SLV | crystal-stone-cuff-golden | 1, 2, 3 (4 excluded; SKU unchanged) |
+| AYN-EAR-CHK-GLD | bold-chunky-earring-golden | 1, 2 |
+| AYN-EAR-FLR-GLD | floral-bloom-earring-golden | 1, 2 |
+| AYN-EAR-FLR-SLV | floral-bloom-earring-silver | 1, 2, 3 |
+| AYN-BRC-FLR-GLD | floral-charm-golden-bracelet | 1, 2, 3 |
+| AYN-BRC-FLR-SLV | floral-charm-silver-bracelet | 1, 2, 3, 4 |
+| AYN-RNG-CLS-GLD | classic-statement-ring-golden | 1, 2, 3, 4 |
+
+Primary = variation 1 (the importer's convention) until the founder approves the §4 proposal. Approving it means reordering `variations` in the map and rerunning the generator.
+
+### Bundle / build size (production build, `CI=true`)
+| | Before | After |
+|---|---|---|
+| Total `build/` | 3.86 MB | **6.41 MB** (+2.55 MB, of which product images are 2.54 MB) |
+| `main.*.js` gzipped | n/a | 200.7 KB (gallery map ≈2.3 KB gz) |
+
+Images are fetched only when displayed (lazy loading plus `srcset`), so the page weight a visitor downloads is unaffected by the total.
+
+### Verification (production build served statically, local TEST database only)
+`scripts/verify/static_product_images.js`: **87/87**, desktop 1280 and mobile 390 (2× DPR).
+
+The test database held 12 throwaway QA products:
+- the 10 mapped SKUs with **no** database images
+- 1 product with its own database image
+- 1 unmapped SKU
+
+Checks:
+- **Home**: picking Earrings / Necklaces / Rings in "Your Edit" renders the QA products, each with its own photo. The desktop hover preview showed seed products (best-seller sort), so it only proves no wrong static photo appears there.
+- **Shop and each category**: every product photo inside a product link belongs to that product; all photos loaded.
+- **Product page, all 10 SKUs**:
+  - the main photo is the first mapped variation, from its own group, with descriptive alt text
+  - gallery order exactly matches the map
+  - Crystal Stone Cuff shows 1, 2, 3 only
+- **Database image wins** over the static gallery; an **unmapped SKU** shows the fallback frame with no photo.
+- **Cart**: each item shows its own primary photo.
+- Every `/product-images/` request returns 200 `image/webp`. Neither excluded photo was ever requested. Both renditions are used (480w ×79, 1200w ×14 per pass). No horizontal scroll.
+- **No product displayed another item's photo.**
+
+Regression on the same build:
+
+| Suite | Result |
+|---|---|
+| Storefront routes | 60/60 |
+| Home/footer layout | 47/47 |
+| Admin UI | 11/11 |
+| Inventory rules | 28/28 |
+| Offline | 111/111 |
+| Responsive audit (17 pages × 14 viewports) | **0** overflow, clipped headings, JS errors, targets <24/<44 px, unnamed, tiny, missing focus, broken or distorted images |
+
+### Remaining catalogue decisions (no real database changes were made)
+1. **The 10 products don't exist in any reachable database.** The photos appear automatically once products with these exact SKUs exist (for example via `import_inventory.py` as drafts). Creating them is a real-database write: **needs founder approval and the located database**.
+2. **Selling prices** for all 10 SKUs are missing; the importer won't create them without approved prices.
+3. **`AYN-CUF-STN-SLV`**: the silver-coded SKU on golden photos is unchanged here. Is there a silver version, and should photo 4 be its photo?
+4. **Cuff → bracelets** category for both cuffs.
+5. **Primary photo**: variation 1 now; §4 proposes the product-only shot (mostly variation 2).
+6. **Card frame** is now 4:5 (was square); revert if the founder prefers square.
+7. **Later**: once a storage provider is chosen, upload through Admin or the importer; database images then take precedence automatically, and the static files can be removed.

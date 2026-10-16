@@ -127,7 +127,9 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Storefront: shared image-order rule, PDP gallery (all photos, no crop), alt text, lazy/async; 110/110 desktop+mobile; audits clean
 - [ ] DECISION: Crystal Stone Cuff SKU suffix SLV vs golden photos (photo 4 shows a silver cuff too)
 - [ ] DECISION: Cuff -> bracelets category; primary-photo proposal; selling prices for the 10 SKUs
-- [ ] DECISION: image delivery route (importer + object storage / static frontend assets / new CDN), then import as draft into the located real DB
+- [x] Option B (static WebP in frontend) implemented: 62 files / 2.42 MB, SKU->gallery map, DB images win, exact-SKU fallback; 87/87 on production build (desktop+mobile), audits clean
+- [ ] Create the 10 SKUs in the real DB (importer, as draft) after: DB located, prices approved, cuff SKU/category decisions; photos then appear automatically
+- [ ] DECISION: primary photo (variation 1 now vs product-only proposal); commerce card frame now 4:5 (was square)
 
 ## Phase 5 — Production readiness (not started)
 - [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17
