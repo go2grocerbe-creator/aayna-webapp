@@ -38,6 +38,7 @@ export default function ProductDetail() {
   const { addItem } = useCart();
   const { data: settings } = useSettings();
   const [qty, setQty] = useState(1);
+  const [detailFailed, setDetailFailed] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["product", slug],
@@ -168,11 +169,11 @@ export default function ProductDetail() {
 
   return (
     <div className="bg-aayna-cream pb-24 md:pb-0">
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
-        <nav className="flex items-center gap-1.5 text-xs text-aayna-taupe flex-wrap">
-          <Link to="/shop" className="hover:text-aayna-burgundy">The Edit</Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link to={`/category/${product.category_slug}`} className="hover:text-aayna-burgundy">{product.category_name}</Link>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-aayna-taupe flex-wrap">
+          <Link to="/shop" className="inline-flex items-center min-h-[44px] hover:text-aayna-burgundy">The Edit</Link>
+          <ChevronRight className="h-3 w-3" aria-hidden="true" />
+          <Link to={`/category/${product.category_slug}`} className="inline-flex items-center min-h-[44px] hover:text-aayna-burgundy">{product.category_name}</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-aayna-charcoal line-clamp-1">The Object</span>
         </nav>
@@ -213,16 +214,17 @@ export default function ProductDetail() {
                   iconClassName="h-8 w-8"
                 />
               </div>
-            ) : image?.image_url ? (
+            ) : image?.image_url && !detailFailed ? (
               <div className="mt-5 relative aspect-video bg-aayna-mist overflow-hidden">
                 <img
                   src={image.image_url}
                   alt=""
                   aria-hidden="true"
+                  onError={() => setDetailFailed(true)}
                   className="w-full h-full object-cover"
                   style={{ objectPosition: "32% 42%", transform: "scale(1.9)" }}
                 />
-                <span className="absolute left-3 bottom-3 text-[10px] uppercase tracking-wider text-white bg-aayna-burgundy-dark/50 px-2.5 py-1">
+                <span className="absolute left-3 bottom-3 text-[11px] uppercase tracking-wider text-white bg-aayna-burgundy-dark/50 px-2.5 py-1">
                   Detail, actual finish
                 </span>
               </div>
@@ -300,17 +302,17 @@ export default function ProductDetail() {
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 text-sm text-aayna-taupe border-b border-aayna-beige w-fit hover:text-aayna-burgundy hover:border-aayna-burgundy transition-colors"
+                className="inline-flex items-center gap-2 mt-4 min-h-[44px] text-sm text-aayna-taupe border-b border-aayna-beige w-fit hover:text-aayna-burgundy hover:border-aayna-burgundy transition-colors"
               >
                 Have a question? Inquire on WhatsApp
               </a>
             )}
 
-            <div className="mt-6 pt-5 border-t border-aayna-beige flex flex-col gap-2.5 text-[13px] text-aayna-taupe">
-              <Link to="/delivery-policy" className="underline underline-offset-2 hover:text-aayna-burgundy w-fit">
+            <div className="mt-6 pt-3 border-t border-aayna-beige flex flex-col text-[13px] text-aayna-taupe">
+              <Link to="/delivery-policy" className="inline-flex items-center min-h-[44px] py-1 underline underline-offset-2 hover:text-aayna-burgundy w-fit">
                 Delivered nationwide. Cash on Delivery available — see delivery policy
               </Link>
-              <Link to="/returns" className="underline underline-offset-2 hover:text-aayna-burgundy w-fit">
+              <Link to="/returns" className="inline-flex items-center min-h-[44px] underline underline-offset-2 hover:text-aayna-burgundy w-fit">
                 See our Returns &amp; Exchange policy
               </Link>
             </div>
@@ -356,7 +358,7 @@ export default function ProductDetail() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
           <div className="flex items-baseline justify-between mb-6">
             <h2 className="font-display font-semibold text-xl md:text-2xl text-aayna-burgundy-dark">Continue the Edit</h2>
-            <Link to={`/category/${product.category_slug}`} className="text-xs text-aayna-taupe underline underline-offset-2 hover:text-aayna-burgundy">
+            <Link to={`/category/${product.category_slug}`} className="inline-flex items-center min-h-[44px] text-xs text-aayna-taupe underline underline-offset-2 hover:text-aayna-burgundy">
               View all {product.category_name} →
             </Link>
           </div>
@@ -369,7 +371,7 @@ export default function ProductDetail() {
       )}
 
       {/* ================= STICKY MOBILE ADD TO CART ================= */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-aayna-beige p-3 flex items-center gap-3">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-aayna-beige px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center gap-3">
         <div className="flex-shrink-0">
           <p className="text-xs text-aayna-taupe">Price</p>
           <p className="font-display font-semibold text-aayna-burgundy text-lg leading-none">{formatBDT(price)}</p>
