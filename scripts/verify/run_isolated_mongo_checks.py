@@ -27,8 +27,13 @@ Usage (from the repo root, with the backend's Python environment):
     python scripts/verify/run_isolated_mongo_checks.py --mongod "C:\\Program Files\\MongoDB\\Server\\8.0\\bin\\mongod.exe"
 
 Options:
-    --suites LIST     comma list of: release, backend, pytest   (default: all three)
+    --suites LIST     comma list of: merge, release, backend, pytest   (default: release,backend,pytest)
+                      merge   = scripts/verify/merge_rehearsal.py (duplicate-customer merge + rollback
+                                + unique phone index, on synthetic data)
                       release also runs scripts/diagnostics/data_integrity.py (read-only)
+    --apply-indexes   after each reset, apply the production index plan
+                      (scripts/diagnostics/index_migration.py --apply) so suites run with the
+                      unique indexes in place
     --out DIR         where to write the scrubbed logs and summary (default: a new temp dir)
     --check-only      Atlas mode: run the connection + isolation checks, write nothing
     --no-auth         mongod mode only: start without --auth (engines lacking auth)
@@ -137,11 +142,12 @@ def main():
     ap.add_argument("--suites", default="release,backend,pytest")
     ap.add_argument("--out")
     ap.add_argument("--check-only", action="store_true")
+    ap.add_argument("--apply-indexes", action="store_true")
     ap.add_argument("--no-auth", action="store_true")
     ap.add_argument("--keep-data", action="store_true")
     a = ap.parse_args()
     suites = [x.strip() for x in a.suites.split(",") if x.strip()]
-    bad = [x for x in suites if x not in ("release", "backend", "pytest")]
+    bad = [x for x in suites if x not in ("merge", "release", "backend", "pytest")]
     if bad:
         sys.exit(f"unknown suite(s): {bad}")
     atlas = bool(a.atlas_env)
@@ -302,9 +308,14 @@ def main():
             print(f"  {name:10s} exit={code}  {scrub(tail[0])[:120]}")
 
         py = sys.executable
+        summary["apply_indexes"] = a.apply_indexes
         for s in suites:
             fresh_backend()
-            if s == "release":
+            if a.apply_indexes and s != "merge":
+                run(f"indexes_{s}", [py, "scripts/diagnostics/index_migration.py", "--apply"], timeout=300)
+            if s == "merge":
+                run("merge", [py, "scripts/verify/merge_rehearsal.py"])
+            elif s == "release":
                 run("release", [py, "scripts/verify/mongo_release_checks.py"])
                 run("integrity", [py, "scripts/diagnostics/data_integrity.py"], timeout=300)
             elif s == "backend":

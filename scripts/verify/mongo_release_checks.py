@@ -9,6 +9,10 @@ Covers (Phase 4B brief):
   D. duplicate orders: 8 concurrent submissions with one client_request_id -> 1 order
   E. rollback when the order insert itself fails after stock was reserved
   F. no negative stock anywhere afterwards
+  G. simultaneous FIRST orders from one new phone -> exactly one customer record
+     holding all orders (needs the unique customers.phone index); plus database-wide:
+     one customer per normalized phone, every order points at an existing customer,
+     customer counters equal their orders, no duplicate order numbers
 
 Items that depend on MongoDB features FerretDB lacks (atomic conditional updates,
 $first / $expr) are reported as NOT VERIFIED when the backend's database is FerretDB.
@@ -195,12 +199,54 @@ rec("idempotency: 8 concurrent submissions with one key -> exactly 1 order, all 
     f"orders={db.orders.count_documents({'client_request_id': rid})} distinct numbers={nums} codes={sorted({x.status_code for x in resps})}")
 rec("idempotency: stock decremented once", stock(pd) == 19, f"stock={stock(pd)}", needs_mongo=True)
 
+# ------------------------------------------------------------------ G. simultaneous first-time orders, one phone
+uniq_phone_idx = any(i.get("key") == [("phone", 1)] and i.get("unique") for i in db.customers.index_information().values())
+print(f"(customers.phone unique index present: {uniq_phone_idx})")
+pg = product(20)
+phone_g = f"0181{uuid.uuid4().int % 10**7:07d}"
+norm_g = "+880" + phone_g[1:]
+with ThreadPoolExecutor(max_workers=10) as ex:
+    codes_g = list(ex.map(lambda _: checkout([{"product_id": pg["id"], "quantity": 1}], phone=phone_g).status_code, range(10)))
+custs_g = list(db.customers.find({"phone": norm_g}, {"_id": 0, "id": 1, "total_orders": 1}))
+orders_g = list(db.orders.find({"customer_phone": norm_g}, {"_id": 0, "customer_id": 1, "total_amount": 1, "subtotal": 1,
+                                                                "delivery_charge": 1, "discount_amount": 1}))
+rec("first-time same phone (concurrent): 10 orders -> exactly 1 customer record, all 10 orders on it",
+    codes_g.count(200) == 10 and len(custs_g) == 1 and len(orders_g) == 10
+    and all(o["customer_id"] == custs_g[0]["id"] for o in orders_g),
+    f"200s={codes_g.count(200)} customers={len(custs_g)} orders={len(orders_g)} unique_index={uniq_phone_idx}",
+    needs_mongo=True)
+rec("first-time same phone: customer total_orders == 10, stock 20 -> 10, totals consistent",
+    len(custs_g) == 1 and custs_g[0].get("total_orders") == 10 and stock(pg) == 10
+    and all(abs(o["total_amount"] - o["subtotal"] - o.get("delivery_charge", 0) + o.get("discount_amount", 0)) < 0.01
+            for o in orders_g)
+    and sum(o["subtotal"] for o in orders_g) == 10 * 200,
+    f"total_orders={[c.get('total_orders') for c in custs_g]} stock={stock(pg)} subtotal_sum={sum(o['subtotal'] for o in orders_g)}",
+    needs_mongo=True)
+
 # ------------------------------------------------------------------ F. global invariants
 neg = db.products.count_documents({"stock_quantity": {"$lt": 0}})
 rec("invariant: no product has negative stock", neg == 0, f"{neg} negative")
 dupes = list(db.orders.aggregate([{"$match": {"client_request_id": {"$type": "string"}}},
                                    {"$group": {"_id": "$client_request_id", "n": {"$sum": 1}}}, {"$match": {"n": {"$gt": 1}}}]))
 rec("invariant: no duplicate client_request_id", not dupes, f"{len(dupes)} duplicated keys")
+on_dupes = list(db.orders.aggregate([{"$group": {"_id": "$order_number", "n": {"$sum": 1}}}, {"$match": {"n": {"$gt": 1}}}]))
+rec("invariant: no duplicate order numbers", not on_dupes, f"{len(on_dupes)} duplicated", needs_mongo=True)
+all_c = list(db.customers.find({}, {"_id": 0, "id": 1, "phone": 1, "total_orders": 1, "successful_orders": 1, "cancelled_orders": 1}))
+by_phone = {}
+for c in all_c:
+    by_phone[c.get("phone")] = by_phone.get(c.get("phone"), 0) + 1
+rec("invariant: exactly one customer record per phone", all(v == 1 for v in by_phone.values()),
+    f"{sum(1 for v in by_phone.values() if v > 1)} phone(s) with >1 record")
+ids_c = {c["id"] for c in all_c}
+real_orders = list(db.orders.find({"placeholder": {"$ne": True}}, {"_id": 0, "customer_id": 1, "order_status": 1}))
+orphans = sum(1 for o in real_orders if o.get("customer_id") not in ids_c)
+rec("invariant: every order references an existing customer", orphans == 0, f"{orphans} orphaned orders")
+per_c = {}
+for o in real_orders:
+    per_c.setdefault(o.get("customer_id"), []).append(o.get("order_status"))
+mism = [c["id"] for c in all_c if (c.get("total_orders", 0), c.get("successful_orders", 0), c.get("cancelled_orders", 0))
+        != (len(per_c.get(c["id"], [])), per_c.get(c["id"], []).count("Delivered"), per_c.get(c["id"], []).count("Cancelled"))]
+rec("invariant: customer counters equal their orders", not mism, f"{len(mism)} customer(s) out of step", needs_mongo=True)
 
 passed = sum(1 for _, st in results if st == "PASS")
 nv = [n for n, st in results if st == "NOT VERIFIED"]
