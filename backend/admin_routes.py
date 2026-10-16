@@ -2,7 +2,7 @@ import csv
 import io
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
@@ -15,6 +15,34 @@ from auth import get_current_admin
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
 
 ORDER_STATUSES = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered", "Cancelled", "Returned"]
+PRODUCT_STATUSES = {"active", "draft", "inactive", "out_of_stock"}
+# Business day boundary for "today" on the dashboard (Bangladesh, UTC+6, no DST).
+BUSINESS_UTC_OFFSET = timedelta(hours=6)
+
+
+def status_for_stock(current_status: str, new_stock: int) -> str:
+    """Stock changes only toggle between the two public statuses. A draft or
+    inactive product must never be published as a side effect of its stock
+    reaching 0 (out_of_stock is a public, browsable status)."""
+    if current_status in ("active", "out_of_stock"):
+        return "out_of_stock" if new_stock <= 0 else "active"
+    return current_status
+
+
+def validate_product_fields(p: dict):
+    """Raise 400 for values that would make a product unsellable or mis-priced."""
+    price = p.get("selling_price")
+    if price is None or price <= 0:
+        raise HTTPException(status_code=400, detail="Selling price must be greater than 0")
+    dp = p.get("discount_price")
+    if dp is not None and dp != 0 and not (0 < dp < price):
+        raise HTTPException(status_code=400, detail="Discount price must be above 0 and below the selling price (use 0 or leave blank for no discount)")
+    if p.get("stock_quantity") is not None and p["stock_quantity"] < 0:
+        raise HTTPException(status_code=400, detail="Stock quantity cannot be negative")
+    if p.get("low_stock_alert") is not None and p["low_stock_alert"] < 0:
+        raise HTTPException(status_code=400, detail="Low stock alert cannot be negative")
+    if p.get("status") not in PRODUCT_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Status must be one of: {', '.join(sorted(PRODUCT_STATUSES))}")
 
 
 def slugify(text: str) -> str:
@@ -32,7 +60,9 @@ def clean(doc: dict) -> dict:
 # ---------------------------------------------------------------------------
 @admin_router.get("/dashboard")
 async def dashboard():
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    # Midnight in Bangladesh, expressed in UTC (orders store UTC ISO timestamps).
+    local_now = datetime.now(timezone.utc) + BUSINESS_UTC_OFFSET
+    today_start = (local_now.replace(hour=0, minute=0, second=0, microsecond=0) - BUSINESS_UTC_OFFSET).isoformat()
     todays_orders = await db.orders.find({"created_at": {"$gte": today_start}}, {"_id": 0}).to_list(2000)
     sales_today = sum(o["total_amount"] for o in todays_orders if o.get("order_status") != "Cancelled")
 
@@ -123,7 +153,11 @@ async def create_product(payload: ProductPayload):
         raise HTTPException(status_code=400, detail="Product name, SKU and category are required")
     if payload.selling_price is None or payload.stock_quantity is None:
         raise HTTPException(status_code=400, detail="Selling price and stock quantity are required")
-    slug = payload.slug or slugify(payload.product_name)
+    status = payload.status or ("out_of_stock" if payload.stock_quantity <= 0 else "active")
+    validate_product_fields({**payload.model_dump(), "status": status})
+    if status in ("active", "out_of_stock"):
+        status = status_for_stock(status, payload.stock_quantity)
+    slug = slugify(payload.slug) if payload.slug else slugify(payload.product_name)
     if await db.products.find_one({"slug": slug}):
         slug = f"{slug}-{uuid.uuid4().hex[:4]}"
     doc = {
@@ -143,7 +177,7 @@ async def create_product(payload: ProductPayload):
         "low_stock_alert": payload.low_stock_alert if payload.low_stock_alert is not None else 3,
         "material": payload.material or "", "color": payload.color or "", "size": payload.size or "",
         "weight": None,
-        "status": payload.status or ("out_of_stock" if payload.stock_quantity <= 0 else "active"),
+        "status": status,
         "is_featured": bool(payload.is_featured),
         "is_best_seller": bool(payload.is_best_seller),
         "is_new_arrival": bool(payload.is_new_arrival),
@@ -164,6 +198,14 @@ async def update_product(product_id: str, payload: ProductPayload):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     updates = payload.model_dump(exclude_unset=True)
+    for required in ("product_name", "sku", "category_slug", "selling_price", "stock_quantity"):
+        if required in updates and updates[required] in (None, ""):
+            raise HTTPException(status_code=400, detail=f"{required.replace('_', ' ').capitalize()} cannot be empty")
+    validate_product_fields({**product, **updates})
+    if "slug" in updates:
+        updates["slug"] = slugify(updates["slug"])
+        if updates["slug"] != product.get("slug") and await db.products.find_one({"slug": updates["slug"], "id": {"$ne": product_id}}):
+            raise HTTPException(status_code=409, detail="Another product already uses this URL slug")
     if "category_slug" in updates and updates["category_slug"]:
         updates["category_name"] = await _category_name(updates["category_slug"])
 
@@ -172,8 +214,7 @@ async def update_product(product_id: str, payload: ProductPayload):
         prev = int(product.get("stock_quantity", 0))
         await _log_inventory(product_id, "adjustment", new_stock - prev, prev, new_stock, "Edited via product form", None)
         if "status" not in updates:
-            updates["status"] = "out_of_stock" if new_stock <= 0 else (
-                "active" if product.get("status") == "out_of_stock" else product.get("status"))
+            updates["status"] = status_for_stock(product.get("status"), new_stock)
 
     if updates.get("selling_price") is not None and updates["selling_price"] != product.get("selling_price"):
         updates["price_is_temporary"] = False  # founder set a real price (inventory import marker)
@@ -306,12 +347,20 @@ async def update_order(order_number: str, payload: OrderUpdate):
     updates["updated_at"] = now_iso()
     await db.orders.update_one({"order_number": order_number}, {"$set": updates})
 
+    # Customer counters follow actual status transitions only, so saving the
+    # same status twice (or moving an order out of Delivered/Cancelled) keeps
+    # successful_orders / cancelled_orders accurate.
+    old_status = order.get("order_status")
     new_status = updates.get("order_status")
-    if new_status and order.get("customer_id"):
-        if new_status == "Delivered":
-            await db.customers.update_one({"id": order["customer_id"]}, {"$inc": {"successful_orders": 1}})
-        elif new_status == "Cancelled":
-            await db.customers.update_one({"id": order["customer_id"]}, {"$inc": {"cancelled_orders": 1}})
+    if new_status and new_status != old_status and order.get("customer_id"):
+        counter = {"Delivered": "successful_orders", "Cancelled": "cancelled_orders"}
+        inc = {}
+        if old_status in counter:
+            inc[counter[old_status]] = -1
+        if new_status in counter:
+            inc[counter[new_status]] = inc.get(counter[new_status], 0) + 1
+        if inc:
+            await db.customers.update_one({"id": order["customer_id"]}, {"$inc": inc})
     return await db.orders.find_one({"order_number": order_number}, {"_id": 0})
 
 
@@ -337,7 +386,8 @@ async def _log_inventory(product_id, change_type, qty_change, prev, new, reason,
 async def inventory(low_only: bool = False):
     q = {}
     if low_only:
-        q = {"$expr": {"$lte": ["$stock_quantity", "$low_stock_alert"]}}
+        # Same definition as the dashboard's low_stock_count (drafts excluded).
+        q = {"status": {"$ne": "draft"}, "$expr": {"$lte": ["$stock_quantity", "$low_stock_alert"]}}
     products = await db.products.find(q, {"_id": 0, "cost_price": 0}).sort("stock_quantity", 1).to_list(1000)
     return products
 
@@ -349,11 +399,7 @@ async def adjust_stock(product_id: str, payload: StockAdjust):
         raise HTTPException(status_code=404, detail="Product not found")
     prev = int(product.get("stock_quantity", 0))
     new_stock = max(0, prev + payload.quantity_change)
-    status = product.get("status")
-    if new_stock <= 0:
-        status = "out_of_stock"
-    elif status == "out_of_stock":
-        status = "active"
+    status = status_for_stock(product.get("status"), new_stock)
     await db.products.update_one({"id": product_id}, {"$set": {"stock_quantity": new_stock, "status": status, "updated_at": now_iso()}})
     await _log_inventory(product_id, payload.change_type, payload.quantity_change, prev, new_stock, payload.reason, None)
     return {"stock_quantity": new_stock, "status": status}
@@ -501,29 +547,44 @@ async def import_products(file: UploadFile = File(...)):
         cat_slug = cat["slug"] if cat else slugify(cat_field)
         cat_name = cat["name"] if cat else cat_field
         selling = _to_float(norm.get("selling price (bdt)") or norm.get("selling price") or norm.get("selling_price"))
-        if selling is None:
+        if selling is None or selling <= 0:
             errors.append(f"Row {idx}: invalid selling price")
             continue
         stock = _to_float(norm.get("stock quantity") or norm.get("stock_quantity")) or 0
+        if stock < 0:
+            errors.append(f"Row {idx}: stock quantity cannot be negative")
+            continue
+        status_in = (norm.get("status") or "").lower()
+        if status_in and status_in not in PRODUCT_STATUSES:
+            errors.append(f"Row {idx}: unknown status '{status_in}' (use {', '.join(sorted(PRODUCT_STATUSES))})")
+            continue
+        discount = _to_float(norm.get("discount price (bdt)") or norm.get("discount price") or norm.get("discount_price"))
+        if discount is not None and discount != 0 and not (0 < discount < selling):
+            errors.append(f"Row {idx}: discount price must be below the selling price")
+            continue
         fields = {
             "product_name": name, "sku": sku, "category_slug": cat_slug, "category_name": cat_name,
             "selling_price": selling,
-            "discount_price": _to_float(norm.get("discount price (bdt)") or norm.get("discount price") or norm.get("discount_price")),
+            "discount_price": discount,
             "cost_price": _to_float(norm.get("cost price estimate (bdt)") or norm.get("cost price") or norm.get("cost_price")) or 0,
             "stock_quantity": int(stock),
             "material": norm.get("material", ""), "color": norm.get("color", ""), "size": norm.get("size", ""),
             "short_description": norm.get("short description") or norm.get("short_description", ""),
             "full_description": norm.get("full description") or norm.get("full_description", ""),
-            "status": (norm.get("status") or "active").lower(),
             "is_featured": _to_bool(norm.get("featured")), "is_best_seller": _to_bool(norm.get("best seller")),
             "is_new_arrival": _to_bool(norm.get("new arrival")),
             "updated_at": now_iso(),
         }
         existing = await db.products.find_one({"sku": sku})
         if existing:
+            # Status changes only when the CSV says so; otherwise a re-import must
+            # never publish a draft/inactive product (stock may still toggle
+            # active <-> out_of_stock).
+            fields["status"] = status_in or status_for_stock(existing.get("status"), int(stock))
             await db.products.update_one({"sku": sku}, {"$set": fields})
             updated += 1
         else:
+            fields["status"] = status_for_stock(status_in or "active", int(stock))
             slug = norm.get("slug") or slugify(name)
             if await db.products.find_one({"slug": slug}):
                 slug = f"{slug}-{uuid.uuid4().hex[:4]}"
