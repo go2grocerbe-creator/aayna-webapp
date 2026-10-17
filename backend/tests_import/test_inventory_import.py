@@ -175,3 +175,75 @@ def test_import_is_draft_idempotent_and_private(seeded):
     after = asyncio.run(dbmod.db.products.find_one({"id": p["id"]}))
     assert after["status"] == "active" and after["stock_quantity"] == 3
     assert after["selling_price"] == 1299 and len(after["images"]) == 1
+
+
+# --- Phase 5C: import target guard and static-gallery mode -------------------------
+@pytest.mark.parametrize("env_db,target", [
+    ("aayna_release_test", "aayna_release_test"),   # synthetic release-test DB only
+    ("aayna_pytest", "aayna_pytest"),
+    ("test_database", "test_database"),             # Emergent original, never touched
+    ("aayna_test", "aayna_test"),
+    ("Aayna_Staging_TEST", "Aayna_Staging_TEST"),   # any name containing "test"
+    ("aayna_catalogue", "aayna_prod"),              # mismatch with DB_NAME
+    ("aayna_catalogue", ""),                        # no explicit confirmation
+    ("", "aayna_catalogue"),                        # DB_NAME unset
+])
+def test_import_target_guard_refuses(env_db, target):
+    with pytest.raises(ValueError):
+        imp.check_import_target(env_db, target)
+
+
+def test_import_target_guard_accepts_explicit_match():
+    assert imp.check_import_target("aayna_catalogue", " aayna_catalogue ") == "aayna_catalogue"
+
+
+def test_import_cli_refuses_test_db_before_touching_data(tmp_path, monkeypatch):
+    man = tmp_path / "m.json"
+    man.write_text('{"summary": {"photo_dir": "x"}, "products": []}')
+    monkeypatch.setenv("DB_NAME", "aayna_release_test")
+    monkeypatch.setattr(sys, "argv", ["import_inventory.py", "import", "--manifest", str(man),
+                                      "--target-db", "aayna_release_test", "--static-images", "--yes"])
+    called = []
+    monkeypatch.setattr(imp, "import_products", lambda *a, **k: called.append(1))
+    with pytest.raises(SystemExit) as e:
+        imp.main()
+    assert "Refused" in str(e.value) and not called
+
+
+def test_static_gallery_covers_the_ten_inventory_skus():
+    skus = imp.static_gallery_skus()
+    for sku in ("AYN-NKL-LUN-GLD", "AYN-NKL-AUR-GLD", "AYN-CUF-CRS-GLD", "AYN-CUF-STN-SLV", "AYN-EAR-CHK-GLD",
+                "AYN-EAR-FLR-GLD", "AYN-EAR-FLR-SLV", "AYN-BRC-FLR-GLD", "AYN-BRC-FLR-SLV", "AYN-RNG-CLS-GLD"):
+        assert sku in skus
+
+
+def test_static_mode_uploads_nothing_and_leaves_db_images_empty(seeded):
+    man, d = seeded
+
+    class NoStorage(FakeStorage):
+        def put_object(self, *a, **k):
+            raise AssertionError("static mode must not upload")
+
+    # one SKU without a static gallery is skipped, never created photo-less
+    gallery = {"AYN-RNG-CLS-GLD", "AYN-EAR-FLR-GLD"}
+    rep = asyncio.run(imp.import_products(man, d, "", db=dbmod.db, storage=NoStorage(),
+                                          static_images=True, gallery_skus=gallery))
+    assert sorted(rep["created"]) == sorted(gallery) and rep["images_uploaded"] == 0
+    assert rep["image_mode"] == "static"
+    assert [s["sku"] for s in rep["skipped"]] == ["AYN-EAR-FLR-SLV"]
+    assert "No static gallery for this SKU" in rep["skipped"][0]["blockers"]
+
+    async def check():
+        assert await dbmod.db.files.count_documents({}) == 0
+        p = await dbmod.db.products.find_one({"sku": "AYN-RNG-CLS-GLD"})
+        assert p["status"] == "draft" and p["images"] == []
+    asyncio.run(check())
+
+
+def test_static_mode_lifts_only_the_photo_blocker(seeded, tmp_path):
+    man, d = seeded
+    rec = dict(man["products"][0], images=[], image_count=0,
+               blockers=["No matched images", "Missing selling price"], ready_to_import=False)
+    rep = asyncio.run(imp.import_products({"products": [rec]}, d, "", db=dbmod.db, storage=FakeStorage(),
+                                          static_images=True, gallery_skus={rec["sku"]}))
+    assert rep["created"] == [] and rep["skipped"][0]["blockers"] == ["Missing selling price"]

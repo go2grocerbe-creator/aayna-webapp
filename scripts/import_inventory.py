@@ -17,7 +17,16 @@ Two steps, deliberately separate:
 
   2) import (writes to the DB configured in backend/.env):
      python scripts/import_inventory.py import --manifest import_manifest.json \
-         [--only AYN-RNG-CLS-GLD] [--yes]
+         --target-db <exact DB_NAME> [--static-images] [--only AYN-RNG-CLS-GLD] [--yes]
+
+     --target-db must repeat the DB_NAME from the environment exactly, and the
+     script refuses synthetic/test databases (aayna_release_test, aayna_pytest,
+     test_database, any name containing "test"). The real catalogue DB must be
+     chosen and provisioned by the founder first (docs/audits/LAUNCH_CATALOGUE_READINESS.md).
+     --static-images creates products with NO database images: the storefront
+     then shows the reviewed static gallery for the exact SKU
+     (frontend/src/data/productGallery.json). Use it while object storage is
+     disabled; nothing is uploaded.
 
 Rules this script enforces (see task brief):
   * The spreadsheet is the source of truth. Nothing is invented: no selling
@@ -357,7 +366,36 @@ async def upload_image(db, storage, src_path, public_base):
     return stored, True
 
 
-async def import_products(manifest, photo_dir, public_base, only=None, db=None, storage=None):
+# Databases that hold synthetic/test data only. The real catalogue must never be
+# imported into them (Phase 5C). Any name containing "test" is refused as well.
+REFUSED_IMPORT_DBS = {"aayna_release_test", "aayna_pytest", "aayna_import_test", "test_database"}
+STATIC_GALLERY = Path(__file__).resolve().parent.parent / "frontend" / "src" / "data" / "productGallery.json"
+
+
+def check_import_target(env_db, target_db):
+    """Return the DB name to import into, or raise ValueError. Pure, no I/O."""
+    env_db = (env_db or "").strip()
+    target_db = (target_db or "").strip()
+    if not env_db:
+        raise ValueError("DB_NAME is not set; refusing to import.")
+    if not target_db:
+        raise ValueError("--target-db is required and must repeat DB_NAME exactly.")
+    if target_db != env_db:
+        raise ValueError(f"--target-db '{target_db}' does not match DB_NAME '{env_db}'.")
+    if env_db.lower() in REFUSED_IMPORT_DBS or "test" in env_db.lower():
+        raise ValueError(f"'{env_db}' is a synthetic/test database; the real catalogue must not be imported there.")
+    return env_db
+
+
+def static_gallery_skus(path=STATIC_GALLERY):
+    try:
+        return set(json.loads(Path(path).read_text(encoding="utf-8")).get("products", {}))
+    except (OSError, ValueError):
+        return set()
+
+
+async def import_products(manifest, photo_dir, public_base, only=None, db=None, storage=None,
+                          static_images=False, gallery_skus=None):
     if db is None:
         backend = Path(__file__).resolve().parent.parent / "backend"
         sys.path.insert(0, str(backend))
@@ -365,13 +403,23 @@ async def import_products(manifest, photo_dir, public_base, only=None, db=None, 
         import storage  # noqa: E402
     from admin_routes import slugify, _log_inventory  # reuse existing helpers
 
-    report = {"created": [], "updated": [], "skipped": [], "failed": [], "images_uploaded": 0}
+    report = {"created": [], "updated": [], "skipped": [], "failed": [], "images_uploaded": 0,
+              "image_mode": "static" if static_images else "upload"}
+    if static_images and gallery_skus is None:
+        gallery_skus = static_gallery_skus()
     for rec in manifest["products"]:
         sku = rec.get("sku")
         if only and sku not in only:
             continue
-        if not rec["ready_to_import"]:
-            report["skipped"].append({"sku": sku, "blockers": rec["blockers"]})
+        blockers = list(rec["blockers"])
+        if static_images:
+            # photos come from the static gallery, so a local photo match is not needed -
+            # but the SKU must have a reviewed gallery, or the product would have no photo
+            blockers = [b for b in blockers if b != "No matched images"]
+            if sku not in gallery_skus:
+                blockers.append("No static gallery for this SKU")
+        if blockers:
+            report["skipped"].append({"sku": sku, "blockers": blockers})
             continue
         try:
             cat = await db.categories.find_one({"slug": rec["category_slug"]}, {"_id": 0})
@@ -397,7 +445,7 @@ async def import_products(manifest, photo_dir, public_base, only=None, db=None, 
                 report["updated"].append(sku)
                 continue
             images = []
-            for i, rel in enumerate(rec["images"]):
+            for i, rel in enumerate([] if static_images else rec["images"]):
                 stored, new = await upload_image(db, storage, Path(photo_dir) / rel, public_base)
                 report["images_uploaded"] += int(new)
                 images.append({
@@ -445,6 +493,9 @@ def main():
     i.add_argument("--photos", help="override photo dir from manifest")
     i.add_argument("--public-base", help="public backend URL (default REACT_APP_BACKEND_URL / PUBLIC_BACKEND_URL)")
     i.add_argument("--only", action="append", help="SKU to import (repeatable) - use for the single-product test")
+    i.add_argument("--target-db", help="must equal DB_NAME exactly; test databases are refused")
+    i.add_argument("--static-images", action="store_true",
+                   help="no uploads: storefront uses the static gallery for the exact SKU")
     i.add_argument("--yes", action="store_true")
     a = ap.parse_args()
 
@@ -458,16 +509,21 @@ def main():
     man = json.loads(Path(a.manifest).read_text(encoding="utf-8"))
     photo_dir = a.photos or man["summary"]["photo_dir"]
     base = a.public_base or os.environ.get("PUBLIC_BACKEND_URL") or os.environ.get("REACT_APP_BACKEND_URL")
-    if not base:
+    if not base and not a.static_images:
         sys.exit("Set --public-base to the backend's public URL (image URLs are built from it).")
     backend = Path(__file__).resolve().parent.parent / "backend"
     sys.path.insert(0, str(backend))
-    import db as dbmod  # noqa: E402
-    print(f"Target DB: {os.environ.get('DB_NAME')}  |  images -> {base}/api/files/...")
+    import db as dbmod  # noqa: E402  (loads backend/.env)
+    try:
+        target = check_import_target(os.environ.get("DB_NAME"), a.target_db)
+    except ValueError as exc:
+        sys.exit(f"Refused: {exc}")
+    where = "static gallery (no uploads)" if a.static_images else f"{base}/api/files/..."
+    print(f"Target DB: {target}  |  images -> {where}  |  new products are created as DRAFT")
     if not a.yes and input("Type IMPORT to continue: ").strip() != "IMPORT":
         sys.exit("Aborted.")
-    rep = asyncio.run(import_products(man, photo_dir, base, set(a.only) if a.only else None, db=dbmod.db,
-                                      storage=__import__("storage")))
+    rep = asyncio.run(import_products(man, photo_dir, base or "", set(a.only) if a.only else None, db=dbmod.db,
+                                      storage=__import__("storage"), static_images=a.static_images))
     print(json.dumps(rep, indent=2, ensure_ascii=False))
 
 
