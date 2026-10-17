@@ -125,11 +125,22 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] 32 copied byte-for-byte to `aayna-website-assets/product-photos` (outside git) with MANIFEST; source unchanged (verified twice)
 - [x] 10 groups map 1:1 to the 10 spreadsheet SKUs via importer dry run (0 partial/ambiguous/orphan)
 - [x] Storefront: shared image-order rule, PDP gallery (all photos, no crop), alt text, lazy/async; 110/110 desktop+mobile; audits clean
-- [ ] DECISION: Crystal Stone Cuff SKU suffix SLV vs golden photos (photo 4 shows a silver cuff too)
-- [ ] DECISION: Cuff -> bracelets category; primary-photo proposal; selling prices for the 10 SKUs
+- [x] DECISION: Crystal Stone Cuff is golden; SKU unchanged pending rename audit; photo 4 stays excluded (2026-10-17)
+- [x] DECISION: both cuffs under Bracelets; product-only primary; 4:5 cards kept (2026-10-17)
 - [x] Option B (static WebP in frontend) implemented: 62 files / 2.42 MB, SKU->gallery map, DB images win, exact-SKU fallback; 87/87 on production build (desktop+mobile), audits clean
 - [ ] Create the 10 SKUs in the real DB (importer, as draft) after: DB located, prices approved, cuff SKU/category decisions; photos then appear automatically
-- [ ] DECISION: primary photo (variation 1 now vs product-only proposal); commerce card frame now 4:5 (was square)
+- [x] Primary photo: product-only first, then editorial, then model-worn (founder-approved)
+
+## Phase 5C — Catalogue readiness (details: LAUNCH_CATALOGUE_READINESS.md)
+- [x] Gallery reordered per founder order; photos unchanged (62 WebP byte-identical); 87/87 on production build; responsive audit 17x14 clean
+- [x] Catalogue audit of 10 SKUs via importer parser (safe fields only; no costs/notes in reports)
+- [x] Cuff SKU rename impact audited: cheapest before first import; after import it is a DB migration
+- [x] Importer: `--target-db` guard (refuses test DBs incl. `aayna_release_test`) + `--static-images` mode; 124 offline tests pass
+- [ ] FOUNDER: selling prices for all 10 SKUs (blocks every row today)
+- [ ] FOUNDER: keep or rename `AYN-CUF-STN-SLV` before first import
+- [ ] FOUNDER: descriptions / material / care notes (optional, recommended)
+- [ ] FOUNDER: choose and provision the real catalogue DB; create 4 categories in Admin
+- [ ] Import 1 SKU as draft -> review -> publish -> remaining 9
 
 ## Phase 5 — Production readiness (not started)
 - [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17

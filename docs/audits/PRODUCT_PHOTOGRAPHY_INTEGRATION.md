@@ -187,21 +187,23 @@ Every option also needs §3 decisions 1–3.
 - The admin product architecture is unchanged. Admin still shows database truth (these SKUs show no uploaded image there), so storage-backed uploads can replace the static photos per product, with no code change, simply by uploading.
 - The commerce card frame (shop and category grids) changed from **square to 4:5**, matching the photography and the editorial cards. A square frame cut about 25% of each portrait photo. This is a one-line, reversible design change.
 
-### SKU → gallery (as shipped; first = primary)
-| SKU | Photo group | Gallery (variation order) |
-|---|---|---|
-| AYN-NKL-LUN-GLD | luna-locket-necklace-golden | 1, 2, 3 |
-| AYN-NKL-AUR-GLD | aura-locket-necklace-golden | 1, 2, 4 |
-| AYN-CUF-CRS-GLD | golden-crossline-cuff-bracelet | 1, 2, 3, 4 |
-| AYN-CUF-STN-SLV | crystal-stone-cuff-golden | 1, 2, 3 (4 excluded; SKU unchanged) |
-| AYN-EAR-CHK-GLD | bold-chunky-earring-golden | 1, 2 |
-| AYN-EAR-FLR-GLD | floral-bloom-earring-golden | 1, 2 |
-| AYN-EAR-FLR-SLV | floral-bloom-earring-silver | 1, 2, 3 |
-| AYN-BRC-FLR-GLD | floral-charm-golden-bracelet | 1, 2, 3 |
-| AYN-BRC-FLR-SLV | floral-charm-silver-bracelet | 1, 2, 3, 4 |
-| AYN-RNG-CLS-GLD | classic-statement-ring-golden | 1, 2, 3, 4 |
+### SKU → gallery (founder-approved order, Phase 5C 2026-10-17; first = primary)
+Clean product-only shot first, then editorial, then model-worn. Only the order changed: no photo was created, regenerated or altered (the 62 WebP files are byte-identical; the gallery JSON matches a fresh generator run byte for byte).
 
-Primary = variation 1 (the importer's convention) until the founder approves the §4 proposal. Approving it means reordering `variations` in the map and rerunning the generator.
+| SKU | Photo group | Gallery (variation order) | Basis |
+|---|---|---|---|
+| AYN-NKL-LUN-GLD | luna-locket-necklace-golden | 2, 1, 3 | 2 pendant on fabric; 1, 3 worn |
+| AYN-NKL-AUR-GLD | aura-locket-necklace-golden | 2, 4, 1 | 2 pendant on fabric; 4 hand-held (editorial); 1 worn |
+| AYN-CUF-CRS-GLD | golden-crossline-cuff-bracelet | 2, 3, 1, 4 | 2, 3 product shots; 1, 4 worn |
+| AYN-CUF-STN-SLV | crystal-stone-cuff-golden | 1, 3, 2 | 1, 3 product shots; 2 worn; 4 excluded; SKU unchanged |
+| AYN-EAR-CHK-GLD | bold-chunky-earring-golden | 2, 1 | 2 pair on white; 1 worn |
+| AYN-EAR-FLR-GLD | floral-bloom-earring-golden | 1, 2 | 1 pair on fabric; 2 worn |
+| AYN-EAR-FLR-SLV | floral-bloom-earring-silver | 2, 1, 3 | 2 pair on burgundy; 1, 3 worn |
+| AYN-BRC-FLR-GLD | floral-charm-golden-bracelet | 2, 1, 3 | 2 flat; 1, 3 worn |
+| AYN-BRC-FLR-SLV | floral-charm-silver-bracelet | 2, 1, 3, 4 | 2 flat; 1, 3, 4 worn |
+| AYN-RNG-CLS-GLD | classic-statement-ring-golden | 2, 3, 4, 1 | 2, 3, 4 product shots; 1 worn |
+
+Re-verified on a production build after the reorder: `static_product_images.js` **87/87** (desktop + mobile), including "main photo = first mapped variation" and "gallery order exactly as mapped" for all 10 SKUs, and cart primary photos.
 
 ### Bundle / build size (production build, `CI=true`)
 | | Before | After |
@@ -243,6 +245,8 @@ Regression on the same build:
 | Responsive audit (17 pages × 14 viewports) | **0** overflow, clipped headings, JS errors, targets <24/<44 px, unnamed, tiny, missing focus, broken or distorted images |
 
 ### Remaining catalogue decisions (no real database changes were made)
+> Superseded by `LAUNCH_CATALOGUE_READINESS.md` (Phase 5C). Resolved since: items 3 (product is golden, SKU unchanged pending audit, photo 4 stays excluded), 4 (both cuffs under Bracelets), 5 (product-only primary, done above) and 6 (4:5 kept).
+
 1. **The 10 products don't exist in any reachable database.** The photos appear automatically once products with these exact SKUs exist (for example via `import_inventory.py` as drafts). Creating them is a real-database write: **needs founder approval and the located database**.
 2. **Selling prices** for all 10 SKUs are missing; the importer won't create them without approved prices.
 3. **`AYN-CUF-STN-SLV`**: the silver-coded SKU on golden photos is unchanged here. Is there a silver version, and should photo 4 be its photo?
