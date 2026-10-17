@@ -6,18 +6,18 @@
    "images": [
     {
      "height": 1607,
-     "source_sha256": "117d09d7f0f95f2bbbdc3532c63e77e850f8923e26feb67f2e5bd4511185fe0f",
-     "src": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-1200.webp",
-     "srcSet": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-480.webp 480w, /product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-1200.webp 1200w",
-     "variation": 1,
-     "width": 1200
-    },
-    {
-     "height": 1607,
      "source_sha256": "c11b7872cf32358cc2b28ce09a45e92406e656f9cf7d1885bd725dd391aa531d",
      "src": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-02-1200.webp",
      "srcSet": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-02-480.webp 480w, /product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-02-1200.webp 1200w",
      "variation": 2,
+     "width": 1200
+    },
+    {
+     "height": 1607,
+     "source_sha256": "117d09d7f0f95f2bbbdc3532c63e77e850f8923e26feb67f2e5bd4511185fe0f",
+     "src": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-1200.webp",
+     "srcSet": "/product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-480.webp 480w, /product-images/floral-charm-golden-bracelet/floral-charm-golden-bracelet-01-1200.webp 1200w",
+     "variation": 1,
      "width": 1200
     },
     {
@@ -35,18 +35,18 @@
    "images": [
     {
      "height": 1152,
-     "source_sha256": "858dd2560ac6d7bff266ead36cb1ee5a0b31cb42e52f814e46292ab0cae4f4f0",
-     "src": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-1200.webp",
-     "srcSet": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-480.webp 480w, /product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-1200.webp 928w",
-     "variation": 1,
-     "width": 928
-    },
-    {
-     "height": 1152,
      "source_sha256": "e819a690fda83bfe81c0133874436cef3f50aa192ea427659ff572c92033ce96",
      "src": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-02-1200.webp",
      "srcSet": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-02-480.webp 480w, /product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-02-1200.webp 928w",
      "variation": 2,
+     "width": 928
+    },
+    {
+     "height": 1152,
+     "source_sha256": "858dd2560ac6d7bff266ead36cb1ee5a0b31cb42e52f814e46292ab0cae4f4f0",
+     "src": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-1200.webp",
+     "srcSet": "/product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-480.webp 480w, /product-images/floral-charm-silver-bracelet/floral-charm-silver-bracelet-01-1200.webp 928w",
+     "variation": 1,
      "width": 928
     },
     {
@@ -72,14 +72,6 @@
    "images": [
     {
      "height": 1607,
-     "source_sha256": "2515bce5e4892eaacbdb41e3eb35ab8c7b76c16b6e6d0ff3766de5e339c8de08",
-     "src": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-1200.webp",
-     "srcSet": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-480.webp 480w, /product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-1200.webp 1200w",
-     "variation": 1,
-     "width": 1200
-    },
-    {
-     "height": 1607,
      "source_sha256": "57f8e7568ff3644dfaae3dc65e839cc8f36897beaa311cccedd75c9322adcff0",
      "src": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-02-1200.webp",
      "srcSet": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-02-480.webp 480w, /product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-02-1200.webp 1200w",
@@ -93,6 +85,14 @@
      "srcSet": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-03-480.webp 480w, /product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-03-1200.webp 896w",
      "variation": 3,
      "width": 896
+    },
+    {
+     "height": 1607,
+     "source_sha256": "2515bce5e4892eaacbdb41e3eb35ab8c7b76c16b6e6d0ff3766de5e339c8de08",
+     "src": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-1200.webp",
+     "srcSet": "/product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-480.webp 480w, /product-images/golden-crossline-cuff-bracelet/golden-crossline-cuff-bracelet-01-1200.webp 1200w",
+     "variation": 1,
+     "width": 1200
     },
     {
      "height": 1200,
@@ -116,20 +116,20 @@
      "width": 928
     },
     {
-     "height": 1152,
-     "source_sha256": "311b95bb23c48c86ca1bb7bb7f9630050f2efa8d808a2c12e0a028dc3c20e937",
-     "src": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-1200.webp",
-     "srcSet": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-480.webp 480w, /product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-1200.webp 928w",
-     "variation": 2,
-     "width": 928
-    },
-    {
      "height": 1200,
      "source_sha256": "684911392d7953e534bed6764baacaeaa3c2f3ff3844d6ac0e224305c2e8888e",
      "src": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-03-1200.webp",
      "srcSet": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-03-480.webp 480w, /product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-03-1200.webp 896w",
      "variation": 3,
      "width": 896
+    },
+    {
+     "height": 1152,
+     "source_sha256": "311b95bb23c48c86ca1bb7bb7f9630050f2efa8d808a2c12e0a028dc3c20e937",
+     "src": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-1200.webp",
+     "srcSet": "/product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-480.webp 480w, /product-images/crystal-stone-cuff-golden/crystal-stone-cuff-golden-02-1200.webp 928w",
+     "variation": 2,
+     "width": 928
     }
    ]
   },
@@ -138,18 +138,18 @@
    "images": [
     {
      "height": 1152,
-     "source_sha256": "5826bc1a8c2f9e1254a667b800575ed732bcb4f2187b02f405d36179f0ee6496",
-     "src": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-1200.webp",
-     "srcSet": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-480.webp 480w, /product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-1200.webp 928w",
-     "variation": 1,
-     "width": 928
-    },
-    {
-     "height": 1152,
      "source_sha256": "bee070f40b42180f19d637ad2ed20bdb815bc681c51a95c6e541806d16996d6d",
      "src": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-02-1200.webp",
      "srcSet": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-02-480.webp 480w, /product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-02-1200.webp 928w",
      "variation": 2,
+     "width": 928
+    },
+    {
+     "height": 1152,
+     "source_sha256": "5826bc1a8c2f9e1254a667b800575ed732bcb4f2187b02f405d36179f0ee6496",
+     "src": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-1200.webp",
+     "srcSet": "/product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-480.webp 480w, /product-images/bold-chunky-earring-golden/bold-chunky-earring-golden-01-1200.webp 928w",
+     "variation": 1,
      "width": 928
     }
    ]
@@ -180,18 +180,18 @@
    "images": [
     {
      "height": 1607,
-     "source_sha256": "b6790342832018fd9f7e578fece3d48593998649a700c58297fdd2c6332446d6",
-     "src": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-1200.webp",
-     "srcSet": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-480.webp 480w, /product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-1200.webp 1200w",
-     "variation": 1,
-     "width": 1200
-    },
-    {
-     "height": 1607,
      "source_sha256": "ea2e0d525e17caa96b28fcc5291ce2882020f15551c5912ab40d7c9cddef550a",
      "src": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-02-1200.webp",
      "srcSet": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-02-480.webp 480w, /product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-02-1200.webp 1200w",
      "variation": 2,
+     "width": 1200
+    },
+    {
+     "height": 1607,
+     "source_sha256": "b6790342832018fd9f7e578fece3d48593998649a700c58297fdd2c6332446d6",
+     "src": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-1200.webp",
+     "srcSet": "/product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-480.webp 480w, /product-images/floral-bloom-earring-silver/floral-bloom-earring-silver-01-1200.webp 1200w",
+     "variation": 1,
      "width": 1200
     },
     {
@@ -209,14 +209,6 @@
    "images": [
     {
      "height": 1152,
-     "source_sha256": "2a772eed74d6bf7d11cbd8032951f42907f0f4ba1115e3500084345442e3e3d0",
-     "src": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-1200.webp",
-     "srcSet": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-480.webp 480w, /product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-1200.webp 928w",
-     "variation": 1,
-     "width": 928
-    },
-    {
-     "height": 1152,
      "source_sha256": "25a9fce052d7bffad283bb460bc8c7eb79653bfc30930d2d3eef715d758b2b34",
      "src": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-02-1200.webp",
      "srcSet": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-02-480.webp 480w, /product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-02-1200.webp 928w",
@@ -230,6 +222,14 @@
      "srcSet": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-04-480.webp 480w, /product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-04-1200.webp 896w",
      "variation": 4,
      "width": 896
+    },
+    {
+     "height": 1152,
+     "source_sha256": "2a772eed74d6bf7d11cbd8032951f42907f0f4ba1115e3500084345442e3e3d0",
+     "src": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-1200.webp",
+     "srcSet": "/product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-480.webp 480w, /product-images/aura-locket-necklace-golden/aura-locket-necklace-golden-01-1200.webp 928w",
+     "variation": 1,
+     "width": 928
     }
    ]
   },
@@ -238,18 +238,18 @@
    "images": [
     {
      "height": 1152,
-     "source_sha256": "9a6598078cc33ad99a840d0db896f6e1e4a78d397a17ddf3317a7a47a40a4453",
-     "src": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-1200.webp",
-     "srcSet": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-480.webp 480w, /product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-1200.webp 928w",
-     "variation": 1,
-     "width": 928
-    },
-    {
-     "height": 1152,
      "source_sha256": "790c6a870e8c2ab670ed434ccb9c9f4b0a73a0db865a47a835acdbf5d39aef0e",
      "src": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-02-1200.webp",
      "srcSet": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-02-480.webp 480w, /product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-02-1200.webp 928w",
      "variation": 2,
+     "width": 928
+    },
+    {
+     "height": 1152,
+     "source_sha256": "9a6598078cc33ad99a840d0db896f6e1e4a78d397a17ddf3317a7a47a40a4453",
+     "src": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-1200.webp",
+     "srcSet": "/product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-480.webp 480w, /product-images/luna-locket-necklace-golden/luna-locket-necklace-golden-01-1200.webp 928w",
+     "variation": 1,
      "width": 928
     },
     {
@@ -265,14 +265,6 @@
   "AYN-RNG-CLS-GLD": {
    "group": "classic-statement-ring-golden",
    "images": [
-    {
-     "height": 1152,
-     "source_sha256": "463783f02857957e80cb19303de48f460d458549878ed56c412e34319516f0c0",
-     "src": "/product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-1200.webp",
-     "srcSet": "/product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-480.webp 480w, /product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-1200.webp 928w",
-     "variation": 1,
-     "width": 928
-    },
     {
      "height": 1152,
      "source_sha256": "b8e59aa4ff4fd761ae8bc029231e62aeab3d183bbd5106dcc053ea91f499b1d1",
@@ -296,6 +288,14 @@
      "srcSet": "/product-images/classic-statement-ring-golden/classic-statement-ring-golden-04-480.webp 480w, /product-images/classic-statement-ring-golden/classic-statement-ring-golden-04-1200.webp 896w",
      "variation": 4,
      "width": 896
+    },
+    {
+     "height": 1152,
+     "source_sha256": "463783f02857957e80cb19303de48f460d458549878ed56c412e34319516f0c0",
+     "src": "/product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-1200.webp",
+     "srcSet": "/product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-480.webp 480w, /product-images/classic-statement-ring-golden/classic-statement-ring-golden-01-1200.webp 928w",
+     "variation": 1,
+     "width": 928
     }
    ]
   }

@@ -1,21 +1,112 @@
 {
-  "_about": "Reviewed SKU -> photo-group map for the lean static image delivery (Option B). SKUs and names come from AAYNA_Product_Inventory.xlsx via the importer dry run (docs/audits/PRODUCT_PHOTOGRAPHY_INTEGRATION.md). Gallery order is ascending variation number; the first listed variation is the primary photo. Change 'variations' order here to change the primary (founder decision pending: proposal in the audit doc).",
+  "_about": "Reviewed SKU -> photo-group map for the lean static image delivery (Option B). SKUs and names come from AAYNA_Product_Inventory.xlsx via the importer dry run (docs/audits/PRODUCT_PHOTOGRAPHY_INTEGRATION.md). Gallery order is the 'variations' list: founder-approved 2026-10-17 - clean product-only photo first, then editorial, then model-worn. The first listed variation is the primary photo.",
   "source_manifest": "aayna-website-assets/product-photos/MANIFEST.csv",
   "excluded_files": [
     "Naira_Bold Chunky Earring.png",
     "Crystal Stone Cuff Golden 4.png"
   ],
   "products": [
-    {"sku": "AYN-NKL-LUN-GLD", "group": "luna-locket-necklace-golden",   "variations": [1, 2, 3]},
-    {"sku": "AYN-NKL-AUR-GLD", "group": "aura-locket-necklace-golden",   "variations": [1, 2, 4]},
-    {"sku": "AYN-CUF-CRS-GLD", "group": "golden-crossline-cuff-bracelet", "variations": [1, 2, 3, 4]},
-    {"sku": "AYN-CUF-STN-SLV", "group": "crystal-stone-cuff-golden",     "variations": [1, 2, 3],
-     "note": "SKU suffix SLV vs golden photos is an open founder decision; photo 4 (shows a second, silver cuff) excluded"},
-    {"sku": "AYN-EAR-CHK-GLD", "group": "bold-chunky-earring-golden",    "variations": [1, 2]},
-    {"sku": "AYN-EAR-FLR-GLD", "group": "floral-bloom-earring-golden",   "variations": [1, 2]},
-    {"sku": "AYN-EAR-FLR-SLV", "group": "floral-bloom-earring-silver",   "variations": [1, 2, 3]},
-    {"sku": "AYN-BRC-FLR-GLD", "group": "floral-charm-golden-bracelet",  "variations": [1, 2, 3]},
-    {"sku": "AYN-BRC-FLR-SLV", "group": "floral-charm-silver-bracelet",  "variations": [1, 2, 3, 4]},
-    {"sku": "AYN-RNG-CLS-GLD", "group": "classic-statement-ring-golden", "variations": [1, 2, 3, 4]}
+    {
+      "sku": "AYN-NKL-LUN-GLD",
+      "group": "luna-locket-necklace-golden",
+      "variations": [
+        2,
+        1,
+        3
+      ],
+      "order_basis": "2 pendant on fabric; 1,3 worn"
+    },
+    {
+      "sku": "AYN-NKL-AUR-GLD",
+      "group": "aura-locket-necklace-golden",
+      "variations": [
+        2,
+        4,
+        1
+      ],
+      "order_basis": "2 pendant on fabric; 4 hand-held (editorial); 1 worn"
+    },
+    {
+      "sku": "AYN-CUF-CRS-GLD",
+      "group": "golden-crossline-cuff-bracelet",
+      "variations": [
+        2,
+        3,
+        1,
+        4
+      ],
+      "order_basis": "2 on white block, 3 on terracotta surface; 1,4 worn"
+    },
+    {
+      "sku": "AYN-CUF-STN-SLV",
+      "group": "crystal-stone-cuff-golden",
+      "variations": [
+        1,
+        3,
+        2
+      ],
+      "note": "Founder-confirmed 2026-10-17: product is GOLDEN despite the silver-coded SKU. SKU kept unchanged until its references/migration impact are audited. Photo 4 (shows a second, silver cuff) stays excluded.",
+      "order_basis": "1 on stone, 3 on gold tray; 2 worn; 4 excluded"
+    },
+    {
+      "sku": "AYN-EAR-CHK-GLD",
+      "group": "bold-chunky-earring-golden",
+      "variations": [
+        2,
+        1
+      ],
+      "order_basis": "2 pair on white; 1 worn"
+    },
+    {
+      "sku": "AYN-EAR-FLR-GLD",
+      "group": "floral-bloom-earring-golden",
+      "variations": [
+        1,
+        2
+      ],
+      "order_basis": "1 pair on fabric; 2 worn"
+    },
+    {
+      "sku": "AYN-EAR-FLR-SLV",
+      "group": "floral-bloom-earring-silver",
+      "variations": [
+        2,
+        1,
+        3
+      ],
+      "order_basis": "2 pair on burgundy; 1,3 worn"
+    },
+    {
+      "sku": "AYN-BRC-FLR-GLD",
+      "group": "floral-charm-golden-bracelet",
+      "variations": [
+        2,
+        1,
+        3
+      ],
+      "order_basis": "2 bracelet flat; 1,3 worn"
+    },
+    {
+      "sku": "AYN-BRC-FLR-SLV",
+      "group": "floral-charm-silver-bracelet",
+      "variations": [
+        2,
+        1,
+        3,
+        4
+      ],
+      "order_basis": "2 bracelet flat; 1,3,4 worn"
+    },
+    {
+      "sku": "AYN-RNG-CLS-GLD",
+      "group": "classic-statement-ring-golden",
+      "variations": [
+        2,
+        3,
+        4,
+        1
+      ],
+      "order_basis": "2,3,4 ring product shots; 1 worn"
+    }
   ]
 }
