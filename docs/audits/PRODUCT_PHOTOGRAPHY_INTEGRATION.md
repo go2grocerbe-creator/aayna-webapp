@@ -195,7 +195,7 @@ Clean product-only shot first, then editorial, then model-worn. Only the order c
 | AYN-NKL-LUN-GLD | luna-locket-necklace-golden | 2, 1, 3 | 2 pendant on fabric; 1, 3 worn |
 | AYN-NKL-AUR-GLD | aura-locket-necklace-golden | 2, 4, 1 | 2 pendant on fabric; 4 hand-held (editorial); 1 worn |
 | AYN-CUF-CRS-GLD | golden-crossline-cuff-bracelet | 2, 3, 1, 4 | 2, 3 product shots; 1, 4 worn |
-| AYN-CUF-STN-SLV | crystal-stone-cuff-golden | 1, 3, 2 | 1, 3 product shots; 2 worn; 4 excluded; SKU unchanged |
+| AYN-CUF-STN-GLD (was -SLV, renamed 2026-10-18) | crystal-stone-cuff-golden | 1, 3, 2 | 1, 3 product shots; 2 worn; 4 excluded; SKU unchanged |
 | AYN-EAR-CHK-GLD | bold-chunky-earring-golden | 2, 1 | 2 pair on white; 1 worn |
 | AYN-EAR-FLR-GLD | floral-bloom-earring-golden | 1, 2 | 1 pair on fabric; 2 worn |
 | AYN-EAR-FLR-SLV | floral-bloom-earring-silver | 2, 1, 3 | 2 pair on burgundy; 1, 3 worn |

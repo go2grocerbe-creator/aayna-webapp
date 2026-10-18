@@ -212,7 +212,7 @@ def test_import_cli_refuses_test_db_before_touching_data(tmp_path, monkeypatch):
 
 def test_static_gallery_covers_the_ten_inventory_skus():
     skus = imp.static_gallery_skus()
-    for sku in ("AYN-NKL-LUN-GLD", "AYN-NKL-AUR-GLD", "AYN-CUF-CRS-GLD", "AYN-CUF-STN-SLV", "AYN-EAR-CHK-GLD",
+    for sku in ("AYN-NKL-LUN-GLD", "AYN-NKL-AUR-GLD", "AYN-CUF-CRS-GLD", "AYN-CUF-STN-GLD", "AYN-EAR-CHK-GLD",
                 "AYN-EAR-FLR-GLD", "AYN-EAR-FLR-SLV", "AYN-BRC-FLR-GLD", "AYN-BRC-FLR-SLV", "AYN-RNG-CLS-GLD"):
         assert sku in skus
 

@@ -139,7 +139,7 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Selling prices: founder cost-plus rule (values only in backend/.env); importer `--cost-price-rule`, `reprice_from_cost.py`, stale-cart price fix; test env 40/40 + 150 offline (now 48/48 + 160) (PRODUCT_PRICING_UPDATE.md)
 - [x] Extra amount once per sellable unit (per pair for earrings); prices rounded up to next ৳10; /shop "All" shows every active product (48/48)
 - [ ] FOUNDER: confirm sheet costs exclude shipping/fees (landed-cost assumption)
-- [ ] FOUNDER: keep or rename `AYN-CUF-STN-SLV` before first import
+- [x] Crystal Stone Cuff SKU renamed `AYN-CUF-STN-SLV` -> `AYN-CUF-STN-GLD` (workbook cell A13 with backup, photo map, gallery JSON) before first import
 - [ ] FOUNDER: descriptions / material / care notes (optional, recommended)
 - [ ] FOUNDER: choose and provision the real catalogue DB; create 4 categories in Admin
 - [ ] Import 1 SKU as draft -> review -> publish -> remaining 9

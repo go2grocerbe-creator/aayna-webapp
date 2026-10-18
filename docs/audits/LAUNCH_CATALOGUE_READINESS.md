@@ -17,7 +17,7 @@ Date: 2026-10-17 · Branch `chore/production-consolidation-20261015` · Base com
 | AYN-NKL-LUN-GLD | Aayna Luna Statement Locket | Necklace / Locket → Necklaces | Golden | 1" diameter | Piece | 1 |
 | AYN-NKL-AUR-GLD | Aayna Aura Statement Locket | Necklace / Locket → Necklaces | Golden | 1" diameter | Piece | 1 |
 | AYN-CUF-CRS-GLD | Aayna Golden Crossline Cuff | Cuff → Bracelets | Golden | 2.5" diameter | Piece | 2 |
-| AYN-CUF-STN-SLV | Aayna Crystal Stone Cuff | Cuff → Bracelets | Golden | 2.5" diameter | Piece | 12 |
+| AYN-CUF-STN-GLD (was -SLV) | Aayna Crystal Stone Cuff | Cuff → Bracelets | Golden | 2.5" diameter | Piece | 12 |
 | AYN-EAR-CHK-GLD | Aayna Bold Chunky Earrings | Earrings → Earrings | Golden | 1" per earring | Pair | 6 |
 | AYN-EAR-FLR-GLD | Aayna Floral Bloom Earrings | Earrings → Earrings | Golden | 1" per earring | Pair | 5 |
 | AYN-EAR-FLR-SLV | Aayna Floral Bloom Earrings | Earrings → Earrings | Silver | 1" per earring | Pair | 5 |
@@ -127,7 +127,7 @@ Overall, prices are no longer a blocker: with `--cost-price-rule` all 10 rows ge
 ### Missing founder decisions
 1. ~~Selling price for each SKU~~ **Decided 2026-10-18:** cost-plus rule. Confirmed: once per pair for earrings; prices round up to the next ৳10. Still to confirm: the sheet costs exclude shipping/fees (`PRODUCT_PRICING_UPDATE.md`).
 2. **Compare-at prices**, if any (optional).
-3. **Crystal Stone Cuff SKU.** Keep `AYN-CUF-STN-SLV`, or rename it (e.g. `AYN-CUF-STN-GLD`) **before** the first import.
+3. ~~Crystal Stone Cuff SKU~~ **Done 2026-10-18:** renamed to `AYN-CUF-STN-GLD` in the workbook (one cell, backup kept), the photo map and the gallery JSON, before the first import. Original text: keep `AYN-CUF-STN-SLV`, or rename it **before** the first import.
 4. **Product copy.** For each product: short and full description, material and care note. These are optional for publishing but recommended for launch and SEO. Nothing will be invented.
 5. **Which database becomes the real catalogue,** plus approval to provision it. Provisioning may be paid and is not done here.
 6. **Publish order.** Publish all 10 at once, or publish a first test SKU, check it, then the rest.

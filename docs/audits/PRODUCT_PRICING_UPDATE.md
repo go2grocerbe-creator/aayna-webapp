@@ -43,7 +43,7 @@ Date: 2026-10-18 · Branch `chore/production-consolidation-20261015`
 | AYN-NKL-LUN-GLD | Aayna Luna Statement Locket | ৳1,350 |
 | AYN-NKL-AUR-GLD | Aayna Aura Statement Locket | ৳1,350 |
 | AYN-CUF-CRS-GLD | Aayna Golden Crossline Cuff | ৳1,050 |
-| AYN-CUF-STN-SLV | Aayna Crystal Stone Cuff | ৳990 |
+| AYN-CUF-STN-GLD | Aayna Crystal Stone Cuff | ৳990 |
 | AYN-EAR-CHK-GLD | Aayna Bold Chunky Earrings (pair) | ৳870 |
 | AYN-EAR-FLR-GLD | Aayna Floral Bloom Earrings - Golden (pair) | ৳1,410 |
 | AYN-EAR-FLR-SLV | Aayna Floral Bloom Earrings - Silver (pair) | ৳1,410 |

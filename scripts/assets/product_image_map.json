@@ -38,14 +38,14 @@
       "order_basis": "2 on white block, 3 on terracotta surface; 1,4 worn"
     },
     {
-      "sku": "AYN-CUF-STN-SLV",
+      "sku": "AYN-CUF-STN-GLD",
       "group": "crystal-stone-cuff-golden",
       "variations": [
         1,
         3,
         2
       ],
-      "note": "Founder-confirmed 2026-10-17: product is GOLDEN despite the silver-coded SKU. SKU kept unchanged until its references/migration impact are audited. Photo 4 (shows a second, silver cuff) stays excluded.",
+      "note": "Founder-confirmed 2026-10-17: product is GOLDEN. SKU corrected from AYN-CUF-STN-SLV to AYN-CUF-STN-GLD on 2026-10-18 (workbook + this map) before the first import. Photo 4 (shows a second, silver cuff) stays excluded.",
       "order_basis": "1 on stone, 3 on gold tray; 2 worn; 4 excluded"
     },
     {
