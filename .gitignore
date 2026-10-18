@@ -95,3 +95,6 @@ credentials.json
 # Inventory import manifests contain admin-only cost data - never commit
 import_manifest*.json
 reprice_report*.json
+
+# Vercel build artifact: backend/*.py copied in by frontend/vercel.json buildCommand
+frontend/aayna_backend/
