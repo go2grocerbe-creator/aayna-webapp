@@ -96,7 +96,8 @@ rec("auth: login lockout not bypassed by spoofed X-Forwarded-For", 429 in codes,
 # ---------------------------------------------------------------- product validation
 def create(**kw):
     body = {"product_name": f"QA P4 {tag} {uuid.uuid4().hex[:4]}", "sku": f"QA4-{uuid.uuid4().hex[:6]}",
-            "category_slug": "earrings", "selling_price": 500, "stock_quantity": 5}
+            "category_slug": "earrings", "selling_price": 500, "stock_quantity": 5,
+            "status": "active"}  # new products default to draft; these checks need sellable ones
     body.update(kw)
     return s.post(f"{API}/admin/products", json=body, headers=H)
 
@@ -127,9 +128,9 @@ for status in ["draft", "inactive"]:
     pub = requests.get(f"{API}/products/{p2['slug']}").status_code
     rec(f"{status}: stock edited to 0 stays {status} and not public", st == status and pub == 404, f"status={st} public HTTP {pub}")
 act = create(stock_quantity=2).json()
-s.post(f"{API}/admin/inventory/{act['id']}/adjust", json={"change_type": "damage", "quantity_change": -2}, headers=H)
+s.post(f"{API}/admin/inventory/{act['id']}/adjust", json={"change_type": "damage", "quantity_change": -2, "reason": "qa"}, headers=H)
 rec("active: stock adjusted to 0 becomes out_of_stock", db.products.find_one({"id": act["id"]})["status"] == "out_of_stock")
-s.post(f"{API}/admin/inventory/{act['id']}/adjust", json={"change_type": "stock_in", "quantity_change": 4}, headers=H)
+s.post(f"{API}/admin/inventory/{act['id']}/adjust", json={"change_type": "stock_in", "quantity_change": 4, "reason": "qa"}, headers=H)
 rec("out_of_stock: restock returns to active", db.products.find_one({"id": act["id"]})["status"] == "active")
 
 # ---------------------------------------------------------------- CSV import

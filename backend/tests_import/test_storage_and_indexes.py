@@ -45,7 +45,7 @@ def make_app(monkeypatch):
     app = FastAPI()
     app.include_router(storage.storage_router)
     app.include_router(storage.files_router)
-    app.dependency_overrides[storage.get_current_admin] = lambda: {"email": "qa@example.test"}
+    app.dependency_overrides[storage.get_current_admin] = lambda: {"email": "qa@example.test", "role": "admin"}
     return TestClient(app), fake
 
 

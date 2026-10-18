@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from db import db, now_iso
-from auth import get_current_admin
+from auth import get_current_admin, require, has_permission
 
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
 
@@ -45,6 +45,35 @@ def validate_product_fields(p: dict):
         raise HTTPException(status_code=400, detail=f"Status must be one of: {', '.join(sorted(PRODUCT_STATUSES))}")
 
 
+# Admin-only internal fields: purchase cost and pricing/sourcing metadata. Only
+# roles with "products.cost" (super_admin, admin) ever receive or change them.
+PRIVATE_PRODUCT_FIELDS = ("cost_price", "internal_notes", "pricing", "price_history",
+                          "previous_selling_price", "price_is_temporary", "source")
+STOCK_CHANGE_TYPES = {"stock_in", "adjustment", "damage", "return"}
+
+
+def for_role(product: dict, user: dict) -> dict:
+    if product and not has_permission(user, "products.cost"):
+        for f in PRIVATE_PRODUCT_FIELDS:
+            product.pop(f, None)
+    return product
+
+
+def is_low_stock(p: dict) -> bool:
+    try:
+        return int(p.get("stock_quantity") or 0) <= int(p.get("low_stock_alert") if p.get("low_stock_alert") is not None else 3)
+    except (TypeError, ValueError):
+        return False
+
+
+async def _low_stock_products(projection=None, include_drafts=False):
+    # Compared in Python rather than with $expr: the catalogue is small, and this
+    # works on every MongoDB-compatible server (the local test stand-in lacks $expr).
+    q = {} if include_drafts else {"status": {"$ne": "draft"}}
+    items = await db.products.find(q, projection or {"_id": 0}).to_list(5000)
+    return [p for p in items if is_low_stock(p)]
+
+
 def slugify(text: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
     return s or uuid.uuid4().hex[:8]
@@ -59,7 +88,7 @@ def clean(doc: dict) -> dict:
 # Dashboard
 # ---------------------------------------------------------------------------
 @admin_router.get("/dashboard")
-async def dashboard():
+async def dashboard(current=Depends(require("dashboard.view"))):
     # Midnight in Bangladesh, expressed in UTC (orders store UTC ISO timestamps).
     local_now = datetime.now(timezone.utc) + BUSINESS_UTC_OFFSET
     today_start = (local_now.replace(hour=0, minute=0, second=0, microsecond=0) - BUSINESS_UTC_OFFSET).isoformat()
@@ -69,13 +98,45 @@ async def dashboard():
     async def count(status):
         return await db.orders.count_documents({"order_status": status})
 
-    low_stock = await db.products.count_documents({
-        "status": {"$ne": "draft"},
-        "$expr": {"$lte": ["$stock_quantity", "$low_stock_alert"]},
-    })
+    low_stock = len(await _low_stock_products({"_id": 0, "stock_quantity": 1, "low_stock_alert": 1}))
     failed_notifications = await db.notification_logs.count_documents({"status": "failed"})
 
+    # Catalogue + inventory figures straight from the database (no invented KPIs).
+    product_status = {}
+    units = 0
+    async for p in db.products.find({}, {"_id": 0, "status": 1, "stock_quantity": 1}):
+        product_status[p.get("status") or "unknown"] = product_status.get(p.get("status") or "unknown", 0) + 1
+        units += int(p.get("stock_quantity") or 0)
+    # Includes drafts so the owner sees low stock before publishing (labelled with status).
+    low_stock_items = sorted(await _low_stock_products(
+        {"_id": 0, "id": 1, "sku": 1, "product_name": 1, "stock_quantity": 1, "low_stock_alert": 1, "status": 1},
+        include_drafts=True), key=lambda p: int(p.get("stock_quantity") or 0))[:20]
+    recent_inventory = await db.inventory_logs.find({}, {"_id": 0}).sort("created_at", -1).to_list(8)
+    names = {p["id"]: (p.get("product_name"), p.get("sku")) async for p in db.products.find(
+        {"id": {"$in": [r.get("product_id") for r in recent_inventory]}}, {"_id": 0, "id": 1, "product_name": 1, "sku": 1})}
+    for r in recent_inventory:
+        r["product_name"], r["sku"] = names.get(r.get("product_id"), (None, None))
+    recent_orders = await db.orders.find(
+        {}, {"_id": 0, "order_number": 1, "customer_name": 1, "total_amount": 1, "order_status": 1,
+             "payment_status": 1, "created_at": 1}).sort("created_at", -1).to_list(8)
+    delivered_sales = 0.0
+    async for o in db.orders.find({"order_status": "Delivered"}, {"_id": 0, "total_amount": 1}):
+        delivered_sales += float(o.get("total_amount") or 0)
+
     return {
+        "catalogue": {
+            "total": sum(product_status.values()),
+            "draft": product_status.get("draft", 0),
+            "active": product_status.get("active", 0),
+            "inactive": product_status.get("inactive", 0),
+            "out_of_stock": product_status.get("out_of_stock", 0),
+            "units_in_stock": units,
+        },
+        "low_stock_items": low_stock_items,
+        "recent_inventory": recent_inventory,
+        "recent_orders": recent_orders,
+        "pending_orders": await db.orders.count_documents({"order_status": {"$in": ["New", "Confirmed", "Packed", "Sent to Courier"]}}),
+        "delivered_sales_total": delivered_sales,
         "todays_orders": len(todays_orders),
         "new_orders": await count("New"),
         "confirmed_orders": await count("Confirmed"),
@@ -118,7 +179,8 @@ class ProductPayload(BaseModel):
 
 
 @admin_router.get("/products")
-async def list_products(category: Optional[str] = None, status: Optional[str] = None, search: Optional[str] = None):
+async def list_products(category: Optional[str] = None, status: Optional[str] = None, search: Optional[str] = None,
+                        current=Depends(require("products.view"))):
     q = {}
     if category:
         q["category_slug"] = category
@@ -131,15 +193,15 @@ async def list_products(category: Optional[str] = None, status: Optional[str] = 
             {"sku": {"$regex": pattern, "$options": "i"}},
         ]
     items = await db.products.find(q, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return items
+    return [for_role(i, current) for i in items]
 
 
 @admin_router.get("/products/{product_id}")
-async def get_product(product_id: str):
+async def get_product(product_id: str, current=Depends(require("products.view"))):
     p = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    return p
+    return for_role(p, current)
 
 
 async def _category_name(slug):
@@ -148,12 +210,17 @@ async def _category_name(slug):
 
 
 @admin_router.post("/products")
-async def create_product(payload: ProductPayload):
+async def create_product(payload: ProductPayload, current=Depends(require("products.edit"))):
     if not payload.product_name or not payload.sku or not payload.category_slug:
         raise HTTPException(status_code=400, detail="Product name, SKU and category are required")
     if payload.selling_price is None or payload.stock_quantity is None:
         raise HTTPException(status_code=400, detail="Selling price and stock quantity are required")
-    status = payload.status or ("out_of_stock" if payload.stock_quantity <= 0 else "active")
+    if payload.cost_price is not None and not has_permission(current, "products.cost"):
+        raise HTTPException(status_code=403, detail="You do not have permission to set purchase costs")
+    if await db.products.find_one({"sku": payload.sku.strip()}):
+        raise HTTPException(status_code=409, detail="Another product already uses this SKU")
+    # New products start as drafts unless a status is chosen explicitly.
+    status = payload.status or "draft"
     validate_product_fields({**payload.model_dump(), "status": status})
     if status in ("active", "out_of_stock"):
         status = status_for_stock(status, payload.stock_quantity)
@@ -188,16 +255,25 @@ async def create_product(payload: ProductPayload):
     }
     await db.products.insert_one({**doc})
     if doc["stock_quantity"] > 0:
-        await _log_inventory(doc["id"], "stock_in", doc["stock_quantity"], 0, doc["stock_quantity"], "Initial stock", None)
-    return clean(doc)
+        await _log_inventory(doc["id"], "stock_in", doc["stock_quantity"], 0, doc["stock_quantity"], "Initial stock", None,
+                             actor=current)
+    return for_role(clean(doc), current)
 
 
 @admin_router.put("/products/{product_id}")
-async def update_product(product_id: str, payload: ProductPayload):
+async def update_product(product_id: str, payload: ProductPayload, current=Depends(require("products.edit"))):
     product = await db.products.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     updates = payload.model_dump(exclude_unset=True)
+    # SKU is the product's identity (orders, inventory logs, importer): never changed here.
+    if "sku" in updates and str(updates["sku"] or "").strip() != str(product.get("sku") or ""):
+        raise HTTPException(status_code=400, detail="SKU cannot be changed")
+    updates.pop("sku", None)
+    if "cost_price" in updates and not has_permission(current, "products.cost"):
+        if updates["cost_price"] != product.get("cost_price"):
+            raise HTTPException(status_code=403, detail="You do not have permission to change purchase costs")
+        updates.pop("cost_price")
     for required in ("product_name", "sku", "category_slug", "selling_price", "stock_quantity"):
         if required in updates and updates[required] in (None, ""):
             raise HTTPException(status_code=400, detail=f"{required.replace('_', ' ').capitalize()} cannot be empty")
@@ -212,7 +288,8 @@ async def update_product(product_id: str, payload: ProductPayload):
     new_stock = updates.get("stock_quantity")
     if new_stock is not None and new_stock != product.get("stock_quantity"):
         prev = int(product.get("stock_quantity", 0))
-        await _log_inventory(product_id, "adjustment", new_stock - prev, prev, new_stock, "Edited via product form", None)
+        await _log_inventory(product_id, "adjustment", new_stock - prev, prev, new_stock, "Edited via product form", None,
+                             actor=current)
         if "status" not in updates:
             updates["status"] = status_for_stock(product.get("status"), new_stock)
 
@@ -222,11 +299,11 @@ async def update_product(product_id: str, payload: ProductPayload):
     updates["updated_at"] = now_iso()
     await db.products.update_one({"id": product_id}, {"$set": updates})
     p = await db.products.find_one({"id": product_id}, {"_id": 0})
-    return p
+    return for_role(p, current)
 
 
 @admin_router.delete("/products/{product_id}")
-async def deactivate_product(product_id: str):
+async def deactivate_product(product_id: str, current=Depends(require("products.delete"))):
     product = await db.products.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -252,7 +329,7 @@ class CategoryPayload(BaseModel):
 
 
 @admin_router.get("/categories")
-async def list_categories():
+async def list_categories(current=Depends(require("products.view"))):
     cats = await db.categories.find({}, {"_id": 0}).sort("sort_order", 1).to_list(200)
     counts = await db.products.aggregate(
         [{"$group": {"_id": "$category_slug", "count": {"$sum": 1}}}]
@@ -263,13 +340,20 @@ async def list_categories():
     return cats
 
 
+CATEGORY_STATUSES = {"active", "inactive"}
+
+
 @admin_router.post("/categories")
-async def create_category(payload: CategoryPayload):
-    if not payload.name:
+async def create_category(payload: CategoryPayload, current=Depends(require("categories.edit"))):
+    if not (payload.name or "").strip():
         raise HTTPException(status_code=400, detail="Category name is required")
-    slug = payload.slug or slugify(payload.name)
+    if payload.status and payload.status not in CATEGORY_STATUSES:
+        raise HTTPException(status_code=400, detail="Status must be active or inactive")
+    slug = slugify(payload.slug or payload.name)
     if await db.categories.find_one({"slug": slug}):
-        raise HTTPException(status_code=400, detail="A category with this slug already exists")
+        raise HTTPException(status_code=409, detail="A category with this slug already exists")
+    if await db.categories.find_one({"name": {"$regex": f"^{re.escape(payload.name.strip())}$", "$options": "i"}}):
+        raise HTTPException(status_code=409, detail="A category with this name already exists")
     count = await db.categories.count_documents({})
     doc = {
         "id": str(uuid.uuid4()), "name": payload.name, "slug": slug,
@@ -284,11 +368,23 @@ async def create_category(payload: CategoryPayload):
 
 
 @admin_router.put("/categories/{category_id}")
-async def update_category(category_id: str, payload: CategoryPayload):
+async def update_category(category_id: str, payload: CategoryPayload, current=Depends(require("categories.edit"))):
     cat = await db.categories.find_one({"id": category_id})
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
     updates = payload.model_dump(exclude_unset=True)
+    # The slug links products to their category: it is not editable here.
+    if "slug" in updates and updates["slug"] != cat.get("slug"):
+        raise HTTPException(status_code=400, detail="Category slug cannot be changed (products are linked by it)")
+    updates.pop("slug", None)
+    if "name" in updates:
+        if not (updates["name"] or "").strip():
+            raise HTTPException(status_code=400, detail="Category name is required")
+        if await db.categories.find_one({"id": {"$ne": category_id},
+                                         "name": {"$regex": f"^{re.escape(updates['name'].strip())}$", "$options": "i"}}):
+            raise HTTPException(status_code=409, detail="A category with this name already exists")
+    if "status" in updates and updates["status"] not in CATEGORY_STATUSES:
+        raise HTTPException(status_code=400, detail="Status must be active or inactive")
     if "sku_prefix" in updates and updates["sku_prefix"]:
         updates["sku_prefix"] = updates["sku_prefix"].upper()
     updates["updated_at"] = now_iso()
@@ -311,7 +407,8 @@ class OrderUpdate(BaseModel):
 
 
 @admin_router.get("/orders")
-async def list_orders(status: Optional[str] = None, search: Optional[str] = None, limit: int = 500):
+async def list_orders(status: Optional[str] = None, search: Optional[str] = None, limit: int = 500,
+                      current=Depends(require("orders.view"))):
     q = {}
     if status and status != "all":
         q["order_status"] = status
@@ -327,7 +424,7 @@ async def list_orders(status: Optional[str] = None, search: Optional[str] = None
 
 
 @admin_router.get("/orders/{order_number}")
-async def get_order(order_number: str):
+async def get_order(order_number: str, current=Depends(require("orders.view"))):
     order = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -337,7 +434,7 @@ async def get_order(order_number: str):
 
 
 @admin_router.put("/orders/{order_number}")
-async def update_order(order_number: str, payload: OrderUpdate):
+async def update_order(order_number: str, payload: OrderUpdate, current=Depends(require("orders.edit"))):
     order = await db.orders.find_one({"order_number": order_number})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -373,40 +470,56 @@ class StockAdjust(BaseModel):
     reason: Optional[str] = ""
 
 
-async def _log_inventory(product_id, change_type, qty_change, prev, new, reason, ref):
+async def _log_inventory(product_id, change_type, qty_change, prev, new, reason, ref, actor=None):
     await db.inventory_logs.insert_one({
         "id": str(uuid.uuid4()), "product_id": product_id, "change_type": change_type,
         "quantity_change": qty_change, "previous_stock": prev, "new_stock": new,
-        "reason": reason or "", "reference_order_id": ref, "created_by": "admin",
+        "reason": reason or "", "reference_order_id": ref,
+        "created_by": (actor or {}).get("email") or "admin",
         "created_at": now_iso(),
     })
 
 
 @admin_router.get("/inventory")
-async def inventory(low_only: bool = False):
-    q = {}
+async def inventory(low_only: bool = False, current=Depends(require("inventory.view"))):
     if low_only:
         # Same definition as the dashboard's low_stock_count (drafts excluded).
-        q = {"status": {"$ne": "draft"}, "$expr": {"$lte": ["$stock_quantity", "$low_stock_alert"]}}
-    products = await db.products.find(q, {"_id": 0, "cost_price": 0}).sort("stock_quantity", 1).to_list(1000)
-    return products
+        products = sorted(await _low_stock_products({"_id": 0, "cost_price": 0}),
+                          key=lambda p: int(p.get("stock_quantity") or 0))
+    else:
+        products = await db.products.find({}, {"_id": 0, "cost_price": 0}).sort("stock_quantity", 1).to_list(1000)
+    return [for_role(p, current) for p in products]
 
 
 @admin_router.post("/inventory/{product_id}/adjust")
-async def adjust_stock(product_id: str, payload: StockAdjust):
+async def adjust_stock(product_id: str, payload: StockAdjust, current=Depends(require("inventory.adjust"))):
+    if payload.change_type not in STOCK_CHANGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Change type must be one of: {', '.join(sorted(STOCK_CHANGE_TYPES))}")
+    if payload.quantity_change == 0:
+        raise HTTPException(status_code=400, detail="Quantity change cannot be 0")
+    if not (payload.reason or "").strip():
+        raise HTTPException(status_code=400, detail="A reason is required for every stock adjustment")
     product = await db.products.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     prev = int(product.get("stock_quantity", 0))
-    new_stock = max(0, prev + payload.quantity_change)
+    new_stock = prev + payload.quantity_change
+    if new_stock < 0:
+        raise HTTPException(status_code=400, detail=f"Stock cannot go below 0 (current stock is {prev})")
     status = status_for_stock(product.get("status"), new_stock)
-    await db.products.update_one({"id": product_id}, {"$set": {"stock_quantity": new_stock, "status": status, "updated_at": now_iso()}})
-    await _log_inventory(product_id, payload.change_type, payload.quantity_change, prev, new_stock, payload.reason, None)
+    # Conditional write: only if stock is still what we read (a checkout in between
+    # would otherwise be overwritten).
+    res = await db.products.update_one({"id": product_id, "stock_quantity": product.get("stock_quantity")},
+                                       {"$set": {"stock_quantity": new_stock, "status": status, "updated_at": now_iso()}})
+    if res.modified_count != 1:
+        raise HTTPException(status_code=409, detail="Stock changed while you were editing. Reload and try again.")
+    await _log_inventory(product_id, payload.change_type, payload.quantity_change, prev, new_stock,
+                         payload.reason.strip(), None, actor=current)
     return {"stock_quantity": new_stock, "status": status}
 
 
 @admin_router.get("/inventory/{product_id}/logs")
-async def inventory_logs(product_id: str):
+async def inventory_logs(product_id: str, current=Depends(require("inventory.view"))):
     logs = await db.inventory_logs.find({"product_id": product_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return logs
 
@@ -415,7 +528,7 @@ async def inventory_logs(product_id: str):
 # Customers
 # ---------------------------------------------------------------------------
 @admin_router.get("/customers")
-async def list_customers(search: Optional[str] = None):
+async def list_customers(search: Optional[str] = None, current=Depends(require("customers.view"))):
     q = {}
     if search:
         pattern = re.escape(search)
@@ -442,7 +555,7 @@ async def list_customers(search: Optional[str] = None):
 
 
 @admin_router.get("/customers/{customer_id}")
-async def customer_detail(customer_id: str):
+async def customer_detail(customer_id: str, current=Depends(require("customers.view"))):
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -455,13 +568,19 @@ async def customer_detail(customer_id: str):
 # Settings
 # ---------------------------------------------------------------------------
 @admin_router.get("/settings")
-async def get_all_settings():
+async def get_all_settings(current=Depends(require("settings.view"))):
     docs = await db.website_settings.find({}, {"_id": 0}).to_list(200)
     return {d["setting_key"]: d["setting_value"] for d in docs}
 
 
+SECRET_LIKE_KEY = re.compile(r"(secret|password|token|api_?key|mongo|jwt)", re.I)
+
+
 @admin_router.put("/settings")
-async def update_settings(payload: dict):
+async def update_settings(payload: dict, current=Depends(require("settings.edit"))):
+    bad = [k for k in payload if not isinstance(k, str) or not re.fullmatch(r"[a-z0-9_]{1,64}", k) or SECRET_LIKE_KEY.search(k)]
+    if bad:
+        raise HTTPException(status_code=400, detail="Invalid setting key(s). Secrets belong in the hosting environment, never in settings.")
     for key, value in payload.items():
         await db.website_settings.update_one(
             {"setting_key": key},
@@ -491,7 +610,7 @@ def _csv_response(rows: List[dict], fields: List[str], filename: str):
 
 
 @admin_router.get("/export/products")
-async def export_products():
+async def export_products(current=Depends(require("export.products"))):
     products = await db.products.find({}, {"_id": 0}).to_list(2000)
     fields = ["product_name", "slug", "sku", "category_slug", "selling_price", "discount_price",
               "cost_price", "stock_quantity", "material", "color", "size", "status",
@@ -500,7 +619,7 @@ async def export_products():
 
 
 @admin_router.get("/export/orders")
-async def export_orders():
+async def export_orders(current=Depends(require("export.orders"))):
     orders = await db.orders.find({}, {"_id": 0}).to_list(5000)
     rows = []
     for o in orders:
@@ -513,7 +632,7 @@ async def export_orders():
 
 
 @admin_router.get("/export/customers")
-async def export_customers():
+async def export_customers(current=Depends(require("export.customers"))):
     customers = await db.customers.find({}, {"_id": 0}).to_list(5000)
     fields = ["full_name", "phone", "email", "district", "total_orders", "successful_orders", "cancelled_orders", "created_at"]
     return _csv_response(customers, fields, "aayna_customers.csv")
@@ -531,7 +650,7 @@ def _to_bool(v):
 
 
 @admin_router.post("/import/products")
-async def import_products(file: UploadFile = File(...)):
+async def import_products(file: UploadFile = File(...), current=Depends(require("import.products"))):
     content = (await file.read()).decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(content))
     created, updated, errors = 0, 0, []
@@ -566,7 +685,6 @@ async def import_products(file: UploadFile = File(...)):
             "product_name": name, "sku": sku, "category_slug": cat_slug, "category_name": cat_name,
             "selling_price": selling,
             "discount_price": discount,
-            "cost_price": _to_float(norm.get("cost price estimate (bdt)") or norm.get("cost price") or norm.get("cost_price")) or 0,
             "stock_quantity": int(stock),
             "material": norm.get("material", ""), "color": norm.get("color", ""), "size": norm.get("size", ""),
             "short_description": norm.get("short description") or norm.get("short_description", ""),
@@ -575,8 +693,20 @@ async def import_products(file: UploadFile = File(...)):
             "is_new_arrival": _to_bool(norm.get("new arrival")),
             "updated_at": now_iso(),
         }
+        cost = _to_float(norm.get("cost price estimate (bdt)") or norm.get("cost price") or norm.get("cost_price"))
+        if cost is not None and has_permission(current, "products.cost"):
+            fields["cost_price"] = cost
         existing = await db.products.find_one({"sku": sku})
         if existing:
+            # An update never blanks existing text, and stock on an existing
+            # product only changes through the inventory workflow (logged).
+            for k in ("material", "color", "size", "short_description", "full_description"):
+                if not fields.get(k):
+                    fields.pop(k, None)
+            if int(stock) != int(existing.get("stock_quantity") or 0):
+                errors.append(f"Row {idx}: stock for existing SKU {sku} not changed - use Inventory to adjust stock")
+            fields.pop("stock_quantity", None)
+            stock = existing.get("stock_quantity") or 0
             # Status changes only when the CSV says so; otherwise a re-import must
             # never publish a draft/inactive product (stock may still toggle
             # active <-> out_of_stock).
@@ -584,7 +714,8 @@ async def import_products(file: UploadFile = File(...)):
             await db.products.update_one({"sku": sku}, {"$set": fields})
             updated += 1
         else:
-            fields["status"] = status_for_stock(status_in or "active", int(stock))
+            fields.setdefault("cost_price", 0)
+            fields["status"] = status_for_stock(status_in or "draft", int(stock))
             slug = norm.get("slug") or slugify(name)
             if await db.products.find_one({"slug": slug}):
                 slug = f"{slug}-{uuid.uuid4().hex[:4]}"

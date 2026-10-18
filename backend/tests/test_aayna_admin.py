@@ -184,6 +184,7 @@ class TestProducts:
             "selling_price": 999,
             "stock_quantity": 5,
             "is_new_arrival": True,
+            "status": "active",  # new products default to draft
         }
         r = admin.post(f"{API}/admin/products", json=payload, timeout=30)
         assert r.status_code == 200, r.text
@@ -228,7 +229,7 @@ class TestProducts:
         # Create product, place an order against it, then attempt delete -> deactivate
         sku = f"TEST-HIST-{uuid.uuid4().hex[:6].upper()}"
         payload = {"product_name": "TEST_HistProduct", "sku": sku,
-                   "category_slug": "earrings", "selling_price": 500, "stock_quantity": 5}
+                   "category_slug": "earrings", "selling_price": 500, "stock_quantity": 5, "status": "active"}
         cr = admin.post(f"{API}/admin/products", json=payload, timeout=30)
         assert cr.status_code == 200
         pid = cr.json()["id"]

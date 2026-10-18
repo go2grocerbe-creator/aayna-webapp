@@ -6,7 +6,7 @@ import requests
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Response
 
 from db import db, now_iso
-from auth import get_current_admin
+from auth import get_current_admin, require
 
 logger = logging.getLogger("aayna.storage")
 
@@ -91,7 +91,7 @@ def get_object(path: str):
 
 
 @storage_router.post("/upload")
-async def upload_image(file: UploadFile = File(...), current=Depends(get_current_admin)):
+async def upload_image(file: UploadFile = File(...), current=Depends(require("products.edit"))):
     if not storage_enabled():
         raise HTTPException(status_code=503, detail="Image uploads are not configured on this server.")
     ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()

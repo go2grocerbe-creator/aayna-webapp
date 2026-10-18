@@ -63,8 +63,7 @@ tag = uuid.uuid4().hex[:6]
 def product(stock, alert=3, status=None, price=200):
     body = {"product_name": f"REL {tag} {uuid.uuid4().hex[:4]}", "sku": f"REL-{uuid.uuid4().hex[:8]}", "category_slug": "earrings",
             "selling_price": price, "stock_quantity": stock, "low_stock_alert": alert}
-    if status:
-        body["status"] = status
+    body["status"] = status or "active"  # new products default to draft
     r = s.post(f"{API}/admin/products", json=body, headers=H)
     assert r.status_code == 200, r.text
     return r.json()

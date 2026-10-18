@@ -13,8 +13,41 @@ from db import db, now_iso
 logger = logging.getLogger("aayna.auth")
 
 JWT_ALGORITHM = "HS256"
-ACCESS_TTL_DAYS = 7
+ACCESS_TTL_HOURS = 12
 ADMIN_ROLES = {"super_admin", "admin", "order_manager", "product_manager"}
+
+# Server-side permission matrix. Every sensitive admin endpoint checks one of
+# these (hiding a button in the UI is never the control). Only super_admin and
+# admin may see or change purchase costs and internal pricing data.
+_ALL = frozenset(ADMIN_ROLES)
+_OPS = frozenset({"super_admin", "admin"})
+PERMISSIONS = {
+    "dashboard.view": _ALL,
+    "products.view": _ALL,
+    "products.edit": _OPS | {"product_manager"},
+    "products.delete": _OPS,
+    "products.cost": _OPS,
+    "categories.edit": _OPS | {"product_manager"},
+    "inventory.view": _ALL,
+    "inventory.adjust": _OPS | {"product_manager"},
+    "orders.view": _OPS | {"order_manager"},
+    "orders.edit": _OPS | {"order_manager"},
+    "customers.view": _OPS | {"order_manager"},
+    "settings.view": _OPS,
+    "settings.edit": _OPS,
+    "export.products": _OPS,
+    "export.orders": _OPS | {"order_manager"},
+    "export.customers": _OPS | {"order_manager"},
+    "import.products": _OPS | {"product_manager"},
+}
+
+
+def has_permission(user: dict, perm: str) -> bool:
+    return (user or {}).get("role") in PERMISSIONS.get(perm, frozenset())
+
+
+def permissions_for(role: str):
+    return sorted(p for p, roles in PERMISSIONS.items() if role in roles)
 
 APP_ENV = os.environ.get("APP_ENV", "development").strip().lower()
 IS_PRODUCTION = APP_ENV in ("production", "prod")
@@ -97,9 +130,11 @@ def validate_security_config():
                 APP_ENV,
             )
         return
-    missing = [k for k in ("JWT_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD") if not os.environ.get(k)]
-    if missing:
-        raise RuntimeError(f"Missing required production environment variables: {', '.join(missing)}")
+    # JWT_SECRET is always required. ADMIN_EMAIL/ADMIN_PASSWORD are only a
+    # first-run bootstrap (seed_admin creates an account only when no admin
+    # exists and never changes an existing password), so they are optional.
+    if not os.environ.get("JWT_SECRET"):
+        raise RuntimeError("Missing required production environment variables: JWT_SECRET")
     if os.environ.get("ADMIN_PASSWORD") == _DEV_FALLBACK_ADMIN[1]:
         raise RuntimeError("Refusing to start in production with the default ADMIN_PASSWORD. Set a strong ADMIN_PASSWORD.")
     if os.environ.get("JWT_SECRET") == _DEV_FALLBACK_SECRET:
@@ -109,7 +144,7 @@ def validate_security_config():
     if len(os.environ.get("JWT_SECRET", "")) < MIN_JWT_SECRET_LEN:
         raise RuntimeError(f"JWT_SECRET must be at least {MIN_JWT_SECRET_LEN} characters in production "
                            "(e.g. python -c \"import secrets;print(secrets.token_hex(32))\").")
-    if len(os.environ.get("ADMIN_PASSWORD", "")) < MIN_ADMIN_PASSWORD_LEN:
+    if os.environ.get("ADMIN_PASSWORD") and len(os.environ.get("ADMIN_PASSWORD", "")) < MIN_ADMIN_PASSWORD_LEN:
         raise RuntimeError(f"ADMIN_PASSWORD must be at least {MIN_ADMIN_PASSWORD_LEN} characters in production.")
 
     # Production must never run against a development/test database.
@@ -149,7 +184,9 @@ def create_access_token(user: dict) -> str:
         "email": user["email"],
         "role": user["role"],
         "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(days=ACCESS_TTL_DAYS),
+        # session version: bumped on logout, so every token issued before it stops working
+        "sv": int(user.get("session_version", 0) or 0),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TTL_HOURS),
     }
     return jwt.encode(payload, _secret(), algorithm=JWT_ALGORITHM)
 
@@ -161,6 +198,7 @@ def public_user(user: dict) -> dict:
         "email": user["email"],
         "role": user["role"],
         "status": user.get("status", "active"),
+        "permissions": permissions_for(user.get("role")),
     }
 
 
@@ -175,9 +213,13 @@ async def get_current_admin(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid session")
+    if payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid session")
     user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0})
     if not user or user.get("status") != "active":
         raise HTTPException(status_code=401, detail="Account not found or inactive")
+    if int(payload.get("sv", 0) or 0) != int(user.get("session_version", 0) or 0):
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
     if user.get("role") not in ADMIN_ROLES:
         raise HTTPException(status_code=403, detail="Admin access required")
     user.pop("password_hash", None)
@@ -264,19 +306,37 @@ async def me(current=Depends(get_current_admin)):
 
 @auth_router.post("/logout")
 async def logout(current=Depends(get_current_admin)):
+    # Server-side invalidation: every token issued to this account before now
+    # (on any device) is rejected from here on.
+    await db.users.update_one({"id": current["id"]}, {"$inc": {"session_version": 1}})
     return {"ok": True}
 
 
+def require(perm: str):
+    """FastAPI dependency: 403 unless the signed-in admin's role has `perm`."""
+    async def _check(current=Depends(get_current_admin)):
+        if not has_permission(current, perm):
+            raise HTTPException(status_code=403, detail="You do not have permission for this action")
+        return current
+    return _check
+
+
 async def seed_admin():
+    """First-run bootstrap only. Creates the super admin from ADMIN_EMAIL /
+    ADMIN_PASSWORD when NO admin account exists yet. It never changes an
+    existing account or password (a password reset is an explicit, owner-run
+    step: scripts/admin_account.py). Outside production the local dev account
+    keeps following ADMIN_PASSWORD so test environments stay reproducible."""
     email, password = get_admin_credentials()
     if not email or not password:
-        logger.warning(
-            "ADMIN_EMAIL/ADMIN_PASSWORD are not set in production — skipping admin seeding. "
-            "Set them and restart to create the admin account."
-        )
+        if IS_PRODUCTION:
+            logger.info("ADMIN_EMAIL/ADMIN_PASSWORD not set - no admin bootstrap (existing accounts are untouched).")
         return
     existing = await db.users.find_one({"email": email})
     if not existing:
+        if IS_PRODUCTION and await db.users.count_documents({"role": {"$in": sorted(ADMIN_ROLES)}}) > 0:
+            logger.info("An admin account already exists - production bootstrap skipped.")
+            return
         await db.users.insert_one({
             "id": str(uuid.uuid4()),
             "name": "Super Admin",
@@ -287,7 +347,7 @@ async def seed_admin():
             "created_at": now_iso(),
             "updated_at": now_iso(),
         })
-    elif not verify_password(password, existing["password_hash"]):
+    elif not IS_PRODUCTION and not verify_password(password, existing["password_hash"]):
         await db.users.update_one(
             {"email": email},
             {"$set": {"password_hash": hash_password(password), "updated_at": now_iso()}},
