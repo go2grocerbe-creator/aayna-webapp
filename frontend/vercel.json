@@ -12,5 +12,11 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "buildCommand": "rm -rf aayna_backend && mkdir aayna_backend && cp ../backend/*.py aayna_backend/ && yarn build",
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{build/**,src/**,public/**,plugins/**,node_modules/**}"
+    }
+  }
 }
