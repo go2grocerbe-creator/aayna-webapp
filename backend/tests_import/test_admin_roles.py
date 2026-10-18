@@ -278,3 +278,55 @@ def test_production_config_requires_jwt_but_not_admin_password(monkeypatch):
     monkeypatch.delenv("JWT_SECRET")
     with pytest.raises(RuntimeError):
         auth.validate_security_config()
+
+
+# --- preview-only admin bootstrap (PREVIEW_ADMIN_BOOTSTRAP) -------------------------------
+def _preview_env(monkeypatch, mode="sync", db_name="aayna_preview", site="https://aayna-webapp-git-x-go2-grocer.vercel.app",
+                 email=" Preview.Admin@Example.test ", pw="preview-admin-password-1 \n"):
+    monkeypatch.setenv("PREVIEW_ADMIN_BOOTSTRAP", mode)
+    monkeypatch.setenv("DB_NAME", db_name)
+    monkeypatch.setenv("PUBLIC_SITE_URL", site)
+    monkeypatch.setenv("ADMIN_EMAIL", email)
+    monkeypatch.setenv("ADMIN_PASSWORD", pw)
+
+
+@pytest.mark.parametrize("db_name,site", [("aayna_prod", "https://aayna-webapp-git-x-go2-grocer.vercel.app"),
+                                          ("aayna_preview", "https://shopaayna.com"), ("aayna_dev", "https://x.vercel.app")])
+def test_preview_bootstrap_refuses_outside_the_preview(env, monkeypatch, db_name, site):
+    _preview_env(monkeypatch, db_name=db_name, site=site)
+    before = run(env["db"].users.count_documents({}))
+    assert run(auth.preview_admin_bootstrap()) == {"refused": True}
+    assert run(env["db"].users.count_documents({})) == before
+
+
+def test_preview_bootstrap_off_by_default(env, monkeypatch):
+    monkeypatch.delenv("PREVIEW_ADMIN_BOOTSTRAP", raising=False)
+    assert run(auth.preview_admin_bootstrap()) is None
+
+
+def test_preview_bootstrap_check_changes_nothing_and_reports_whitespace(env, monkeypatch):
+    _preview_env(monkeypatch, mode="check")
+    r = run(auth.preview_admin_bootstrap())
+    assert r["account_exists"] is False and r["action"] == "none" and r["password_has_outer_whitespace"] is True
+    assert run(env["db"].users.find_one({"email": "preview.admin@example.test"})) is None
+
+
+def test_preview_bootstrap_sync_creates_once_and_repairs(env, monkeypatch):
+    _preview_env(monkeypatch)
+    sa = run(env["db"].users.find_one({"role": "super_admin"}))
+    r1 = run(auth.preview_admin_bootstrap())
+    assert r1["action"] == "created"
+    r2 = run(auth.preview_admin_bootstrap())
+    assert r2["action"] == "none" and r2["password_verifies_trimmed"] is True
+    assert run(env["db"].users.count_documents({"email": "preview.admin@example.test"})) == 1
+    # trimmed password signs in through the real login endpoint
+    ok = env["c"].post("/api/admin/login", json={"email": "preview.admin@example.test", "password": "preview-admin-password-1"})
+    assert ok.status_code == 200 and ok.json()["user"]["role"] == "super_admin"
+    # broken hash + disabled -> repaired, old sessions signed out
+    run(env["db"].users.update_one({"email": "preview.admin@example.test"}, {"$set": {"password_hash": auth.hash_password("something-else-1234"), "status": "inactive"}}))
+    r3 = run(auth.preview_admin_bootstrap())
+    u = run(env["db"].users.find_one({"email": "preview.admin@example.test"}))
+    assert r3["action"] == "reset" and u["status"] == "active" and u.get("session_version") == 1
+    # other accounts are never touched
+    assert run(env["db"].users.find_one({"id": sa["id"]}))["password_hash"] == sa["password_hash"]
+    assert "preview-admin-password" not in str(r3)

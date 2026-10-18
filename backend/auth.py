@@ -362,6 +362,69 @@ async def seed_admin():
         )
 
 
+PREVIEW_ADMIN_DB = "aayna_preview"
+
+
+async def preview_admin_bootstrap():
+    """TEST PREVIEW ONLY - explicit, scoped admin check/repair.
+
+    Runs only when PREVIEW_ADMIN_BOOTSTRAP is "check" or "sync" AND DB_NAME is
+    exactly "aayna_preview" AND PUBLIC_SITE_URL is a *.vercel.app address; it
+    refuses everything else (in particular aayna_prod), so production keeps the
+    no-overwrite behaviour of seed_admin. It touches only the one account whose
+    email equals ADMIN_EMAIL.
+
+      check: logs facts (account exists, role, status, whether the configured
+             password verifies, whether the configured values carry leading or
+             trailing whitespace). Changes nothing.
+      sync:  creates that account if missing (super_admin, active) or, when the
+             configured password does not verify, stores a new hash of it
+             (whitespace-trimmed), re-enables it and signs out old sessions.
+             Idempotent: a matching active super_admin is left untouched.
+    Never logs emails, passwords or hashes."""
+    mode = (os.environ.get("PREVIEW_ADMIN_BOOTSTRAP") or "").strip().lower()
+    if mode not in ("check", "sync"):
+        return None
+    db_name = (os.environ.get("DB_NAME") or "").strip()
+    site = (os.environ.get("PUBLIC_SITE_URL") or "").strip().lower()
+    host = site.split("://", 1)[-1].split("/", 1)[0]
+    if db_name != PREVIEW_ADMIN_DB or not host.endswith(".vercel.app"):
+        logger.warning("PREVIEW_ADMIN_BOOTSTRAP refused: only allowed on the aayna_preview test preview")
+        return {"refused": True}
+    raw_email = os.environ.get("ADMIN_EMAIL") or ""
+    raw_pw = os.environ.get("ADMIN_PASSWORD") or ""
+    email, pw = raw_email.strip().lower(), raw_pw.strip()
+    if not email or len(pw) < MIN_ADMIN_PASSWORD_LEN:
+        logger.warning("PREVIEW_ADMIN_BOOTSTRAP: ADMIN_EMAIL/ADMIN_PASSWORD missing or too short - nothing done")
+        return {"configured": False}
+    user = await db.users.find_one({"email": email})
+    report = {
+        "mode": mode,
+        "admin_accounts": await db.users.count_documents({"role": {"$in": sorted(ADMIN_ROLES)}}),
+        "account_exists": bool(user),
+        "role": (user or {}).get("role"),
+        "status": (user or {}).get("status"),
+        "password_verifies_raw": bool(user) and verify_password(raw_pw, user["password_hash"]),
+        "password_verifies_trimmed": bool(user) and verify_password(pw, user["password_hash"]),
+        "email_has_outer_whitespace": raw_email != raw_email.strip(),
+        "password_has_outer_whitespace": raw_pw != pw,
+        "action": "none",
+    }
+    if mode == "sync":
+        if not user:
+            await db.users.insert_one({"id": str(uuid.uuid4()), "name": "Preview Admin", "email": email,
+                                       "password_hash": hash_password(pw), "role": "super_admin", "status": "active",
+                                       "created_at": now_iso(), "updated_at": now_iso()})
+            report["action"] = "created"
+        elif not (report["password_verifies_trimmed"] and user.get("status") == "active" and user.get("role") == "super_admin"):
+            await db.users.update_one({"email": email}, {
+                "$set": {"password_hash": hash_password(pw), "status": "active", "role": "super_admin", "updated_at": now_iso()},
+                "$inc": {"session_version": 1}})
+            report["action"] = "reset"
+    logger.warning("PREVIEW_ADMIN_BOOTSTRAP %s", report)
+    return report
+
+
 async def ensure_indexes():
     """Baseline indexes. Each is created only if no index on that key exists yet, so the
     stricter unique indexes applied by scripts/diagnostics/index_migration.py are kept

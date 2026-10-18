@@ -26,7 +26,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from db import db, client, now_iso, effective_price
-from auth import auth_router, seed_admin, ensure_indexes, validate_security_config, IS_PRODUCTION, _client_ip
+from auth import auth_router, seed_admin, preview_admin_bootstrap, ensure_indexes, validate_security_config, IS_PRODUCTION, _client_ip
 from storage import storage_router, files_router, init_storage_safe
 from admin_routes import admin_router
 import emailer
@@ -213,6 +213,7 @@ async def on_startup():
     validate_security_config()
     await seed_database()
     await seed_admin()
+    await preview_admin_bootstrap()
     await ensure_indexes()
     await ensure_customer_indexes()
     await ensure_promotion_indexes()
