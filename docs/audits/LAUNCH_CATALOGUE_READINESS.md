@@ -35,7 +35,7 @@ One row, `REJ-EAR-SHL-001` Seashell Earrings, sits in the "rejected" block. The 
 |---|---|
 | SKUs | 10 unique. Each one has a reviewed static photo gallery; the 2–4 photos per SKU are listed in `PRODUCT_PHOTOGRAPHY_INTEGRATION.md`. |
 | Names | Present on all rows. The gold and silver versions of Floral Bloom and of Floral Charm share a name, so the importer appends the sheet's colour, e.g. "Aayna Floral Bloom Earrings - Golden". |
-| **Selling price** | **Missing on all 10 rows.** The importer blocks every row ("Missing selling price"), so nothing is ready to import. |
+| **Selling price** | Not in the sheet. **Resolved 2026-10-18:** the founder set a cost-plus rule (confidential values in `backend/.env`). `--cost-price-rule` prices all 10 rows from their recorded cost (see `PRODUCT_PRICING_UPDATE.md`). |
 | Compare-at / discount price | Not in the sheet. This is optional. |
 | Stock | Present and valid (whole numbers ≥ 0) on all rows. No numbers were invented. |
 | Description | No column. Products would be created with empty short and full descriptions. Descriptions are optional for publishing but needed for a quality launch and for SEO. |
@@ -122,10 +122,10 @@ One row, `REJ-EAR-SHL-001` Seashell Earrings, sits in the "rejected" block. The 
   - test databases refused
   - static photo mode available
 
-Overall, **0 of 10 can be imported today**: every row is blocked only by the missing selling price.
+Overall, prices are no longer a blocker: with `--cost-price-rule` all 10 rows get a price from their recorded cost. Import is still blocked by the missing catalogue database.
 
 ### Missing founder decisions
-1. **Selling price (BDT) for each of the 10 SKUs.** Add a "Selling price (BDT)" column to the sheet. The alternative is a founder-approved `--temp-price`, which applies one price to all 10 and flags them as temporary.
+1. ~~Selling price for each SKU~~ **Decided 2026-10-18:** cost-plus rule. Still to confirm: the extra amount applies per pair for earrings, and the sheet costs exclude shipping/fees (`PRODUCT_PRICING_UPDATE.md`).
 2. **Compare-at prices**, if any (optional).
 3. **Crystal Stone Cuff SKU.** Keep `AYN-CUF-STN-SLV`, or rename it (e.g. `AYN-CUF-STN-GLD`) **before** the first import.
 4. **Product copy.** For each product: short and full description, material and care note. These are optional for publishing but recommended for launch and SEO. Nothing will be invented.
@@ -136,7 +136,7 @@ Overall, **0 of 10 can be imported today**: every row is blocked only by the mis
 1. There is no real catalogue database (see §2). Nothing can be imported until one is provisioned and its `DB_NAME` is set.
 2. Categories must exist in that database. A production database starts empty, because demo seeding is disabled; create the four categories in Admin first.
 3. Object storage is disabled. Use `--static-images`; database uploads come later, with a storage provider.
-4. Selling prices: see founder decision 1. The importer will not guess them.
+4. ~~Selling prices~~ resolved by the cost-based rule.
 
 ### Safe next actions
 1. Founder adds prices (and, optionally, copy and material) to the spreadsheet, and settles the cuff SKU.
@@ -144,7 +144,7 @@ Overall, **0 of 10 can be imported today**: every row is blocked only by the mis
 3. Run a dry run, which touches nothing:
 
    ```
-   python scripts/import_inventory.py manifest --xlsx "<sheet>" --photos "<photo folder>" --out import_manifest.json
+   python scripts/import_inventory.py manifest --xlsx "<sheet>" --photos "<photo folder>" --cost-price-rule --out import_manifest.json
    ```
 
    The summary must show `ready: 10`.

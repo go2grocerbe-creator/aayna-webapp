@@ -136,7 +136,8 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [x] Catalogue audit of 10 SKUs via importer parser (safe fields only; no costs/notes in reports)
 - [x] Cuff SKU rename impact audited: cheapest before first import; after import it is a DB migration
 - [x] Importer: `--target-db` guard (refuses test DBs incl. `aayna_release_test`) + `--static-images` mode; 124 offline tests pass
-- [ ] FOUNDER: selling prices for all 10 SKUs (blocks every row today)
+- [x] Selling prices: founder cost-plus rule (values only in backend/.env); importer `--cost-price-rule`, `reprice_from_cost.py`, stale-cart price fix; test env 40/40 + 150 offline (PRODUCT_PRICING_UPDATE.md)
+- [ ] FOUNDER: confirm extra amount per pair for earrings, costs exclude shipping/fees, exact vs rounded prices
 - [ ] FOUNDER: keep or rename `AYN-CUF-STN-SLV` before first import
 - [ ] FOUNDER: descriptions / material / care notes (optional, recommended)
 - [ ] FOUNDER: choose and provision the real catalogue DB; create 4 categories in Admin
