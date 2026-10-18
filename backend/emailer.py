@@ -324,5 +324,29 @@ async def send(event: str, template: str, to: str, ctx: dict, dedupe_key: Option
     return {"status": log["status"], "log_id": log["id"]}
 
 
+_PREVIEW_ACCESS_RE = __import__("re").compile(r"^_vercel_share=[A-Za-z0-9]{16,64}$")
+
+
+def _preview_access_query() -> str:
+    """TEST PREVIEWS ONLY. Vercel Deployment Protection sends anyone without a
+    Vercel login to vercel.com/login, so email links on a protected preview
+    cannot reach the app. EMAIL_LINK_PREVIEW_ACCESS may hold a temporary,
+    deployment-scoped Vercel shareable-link code ("_vercel_share=...") that is
+    appended to links in emails. It is ignored unless the site is a
+    *.vercel.app preview address, so it can never affect a real domain."""
+    q = _env("EMAIL_LINK_PREVIEW_ACCESS")
+    host = _site_url().split("://", 1)[-1].split("/", 1)[0].lower()
+    if not q or not host.endswith(".vercel.app") or not _PREVIEW_ACCESS_RE.match(q):
+        return ""
+    return q
+
+
 def site_link(path: str) -> str:
-    return _site_url() + path
+    """Absolute link into the site. A #fragment (where one-time tokens live)
+    always stays last, after any query string."""
+    access = _preview_access_query()
+    if not access:
+        return _site_url() + path
+    base, sep, frag = path.partition("#")
+    base += ("&" if "?" in base else "?") + access
+    return _site_url() + base + (sep + frag if sep else "")

@@ -926,3 +926,17 @@ def test_templates_escape_and_render(env):
                    ("order_status", {"name": evil, "url": "https://x", "label": "Delivered", "order": {"order_number": "ORD-1", "courier_name": "Pathao"}})):
         m = emailer.render(t, ctx)
         assert "<script>" not in m["html"] and m["text"] and m["subject"]
+
+
+def test_preview_access_code_only_on_vercel_preview_links(env, monkeypatch):
+    code = "_vercel_share=" + "A1b2C3d4E5f6G7h8I9j0"
+    monkeypatch.setenv("EMAIL_LINK_PREVIEW_ACCESS", code)
+    # real domain: never appended
+    monkeypatch.setenv("PUBLIC_SITE_URL", "https://shopaayna.com")
+    assert emailer.site_link("/verify-email#token=abc") == "https://shopaayna.com/verify-email#token=abc"
+    monkeypatch.setenv("PUBLIC_SITE_URL", "https://aayna-webapp-git-x-go2-grocer.vercel.app")
+    assert emailer.site_link("/verify-email#token=abc") == f"https://aayna-webapp-git-x-go2-grocer.vercel.app/verify-email?{code}#token=abc"
+    assert emailer.site_link("/track-order?order=ORD-1") == f"https://aayna-webapp-git-x-go2-grocer.vercel.app/track-order?order=ORD-1&{code}"
+    # anything that is not a Vercel share code is ignored
+    monkeypatch.setenv("EMAIL_LINK_PREVIEW_ACCESS", "x-vercel-protection-bypass=secret&evil=1")
+    assert emailer.site_link("/login") == "https://aayna-webapp-git-x-go2-grocer.vercel.app/login"
