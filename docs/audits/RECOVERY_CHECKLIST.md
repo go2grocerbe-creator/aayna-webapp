@@ -141,8 +141,9 @@ Legend: [x] done with evidence · [ ] open · [~] NOT VERIFIED (environment limi
 - [ ] FOUNDER: confirm sheet costs exclude shipping/fees (landed-cost assumption)
 - [x] Crystal Stone Cuff SKU renamed `AYN-CUF-STN-SLV` -> `AYN-CUF-STN-GLD` (workbook cell A13 with backup, photo map, gallery JSON) before first import
 - [ ] FOUNDER: descriptions / material / care notes (optional, recommended)
-- [ ] FOUNDER: choose and provision the real catalogue DB; create 4 categories in Admin
-- [ ] Import 1 SKU as draft -> review -> publish -> remaining 9
+- [x] Real catalogue DB `aayna_prod` (Atlas Project 0, `aayna-prod`) with 4 categories (founder)
+- [x] 10 products imported into `aayna_prod` as DRAFT (static images), read back twice, nothing public, no duplicates (LAUNCH_CATALOGUE_READINESS.md §5)
+- [ ] FOUNDER: review drafts in Admin and publish
 
 ## Phase 5 — Production readiness (not started)
 - [x] Backend suite, backend_admin_checks and mongo_release_checks on real MongoDB (test cluster): exit 0, 2026-10-17

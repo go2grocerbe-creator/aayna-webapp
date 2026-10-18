@@ -168,3 +168,62 @@ Overall, prices are no longer a blocker: with `--cost-price-rule` all 10 rows ge
 | Offline import tests | 124 passed |
 | Responsive audit (production build, 17 pages × 14 viewports) | 0 overflow, clipped headings, JS errors, small targets, unnamed controls, missing focus, broken or distorted images |
 | Real or production database contacted | **No** |
+
+## 5. Production import — done 2026-10-18 (drafts only)
+
+**Target.** Atlas Project 0, cluster `aayna-prod` (M0, MongoDB 8.0.34), database `aayna_prod`, as the app user `aayna_prod_app` (readWrite on `aayna_prod` only). The connection string lived only in a git-ignored file on the founder PC. No credentials or costs appear in any report or commit.
+
+**Before the import (read-only pre-flight):**
+
+| Collection | Documents | Indexes |
+|---|---|---|
+| categories | 4 (earrings, necklaces, rings, bracelets, all active) | `_id_`, `slug_1` |
+| customers | 0 | `_id_`, `phone_1` |
+| orders | 0 | `_id_`, `order_number_1` |
+| products | 0 | `_id_`, `slug_1` |
+| users | 1 | `_id_`, `email_1` (unique) |
+
+**Import.** `scripts/prod_catalogue_import.py import` (existing `import_inventory.import_products`, `--static-images`) at commit `134ff47`:
+- created 10, updated 0, skipped 0, failed 0
+- 0 images uploaded
+- writes: 10 `products` (all `draft`) and 10 `inventory_logs` stock-in entries from the importer
+- nothing else created or changed: no indexes, users, categories or settings
+
+**Read back from `aayna_prod`, twice (after import and a separate verify run):**
+
+| SKU | Price | Qty | Category | Status | Static gallery |
+|---|---|---|---|---|---|
+| AYN-NKL-LUN-GLD | ৳1,350 | 1 | necklaces | draft | 3 photos |
+| AYN-NKL-AUR-GLD | ৳1,350 | 1 | necklaces | draft | 3 photos |
+| AYN-CUF-CRS-GLD | ৳1,050 | 2 | bracelets | draft | 4 photos |
+| AYN-CUF-STN-GLD | ৳990 | 12 | bracelets | draft | 3 photos (photo 4 excluded) |
+| AYN-EAR-CHK-GLD | ৳870 | 6 | earrings | draft | 2 photos |
+| AYN-EAR-FLR-GLD | ৳1,410 | 5 | earrings | draft | 2 photos |
+| AYN-EAR-FLR-SLV | ৳1,410 | 5 | earrings | draft | 3 photos |
+| AYN-BRC-FLR-GLD | ৳1,310 | 5 | bracelets | draft | 3 photos |
+| AYN-BRC-FLR-SLV | ৳1,310 | 4 | bracelets | draft | 4 photos |
+| AYN-RNG-CLS-GLD | ৳1,290 | 5 | rings | draft | 4 photos |
+
+Each record also checked:
+- source metadata (`inventory_xlsx`, workbook row)
+- purchase cost kept, as an admin-only field
+- pricing metadata
+- colour and size
+- unique slug
+- no database images
+- exactly one stock-in log
+
+Totals: 10 products, 46 units. The rejected row was not imported.
+
+**Public exposure.**
+- Public product list: 0 products.
+- Every draft's product page: 404.
+- Every draft in the cart: unavailable.
+- The public field whitelist, applied to the real records, returns no cost, pricing, history, source or notes field.
+
+**Re-run.** Would create 0 products (every SKU exists exactly once). A second `import` is refused by the pre-flight.
+
+**Still open.**
+- Publishing (founder, in Admin).
+- A unique index on `products.sku` does not exist yet. The app's startup creates its own indexes; the import relied on its own SKU check.
+- The storefront must be rebuilt and deployed with the updated gallery file for the renamed cuff SKU to show photos.
