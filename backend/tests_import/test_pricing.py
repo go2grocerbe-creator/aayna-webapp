@@ -45,21 +45,30 @@ imp = _load("import_inventory_p", "scripts/import_inventory.py")
 
 FAKE_RULE = (40, 2.5)  # NOT the real rule
 
-# (cost, adjusted, selling, profit) computed by hand: adjusted = cost + 40, selling = adjusted * 2.5.
-EXPECTED = [(100, 140, 350, 210), (250, 290, 725, 435), (75, 115, 287.5, 172.5), (333, 373, 932.5, 559.5),
-            (1, 41, 102.5, 61.5)]
+# (cost, adjusted, unrounded, selling, profit) computed by hand: adjusted = cost + 40,
+# unrounded = adjusted * 2.5, selling = unrounded rounded UP to the next ৳10.
+EXPECTED = [(100, 140, 350, 350, 210), (250, 290, 725, 730, 440), (75, 115, 287.5, 290, 175),
+            (333, 373, 932.5, 940, 567), (1, 41, 102.5, 110, 69), (152, 192, 480, 480, 288)]
 
 
-@pytest.mark.parametrize("cost,adjusted,selling,profit", EXPECTED)
-def test_rule_matches_hand_computed_prices(cost, adjusted, selling, profit):
+@pytest.mark.parametrize("cost,adjusted,unrounded,selling,profit", EXPECTED)
+def test_rule_matches_hand_computed_prices(cost, adjusted, unrounded, selling, profit):
     bd = pricing.price_from_cost(cost, *FAKE_RULE)
-    assert (bd["cost"], bd["extra"], bd["multiplier"], bd["adjusted_cost"], bd["selling_price"], bd["gross_profit"]) == \
-        (cost, 40, 2.5, adjusted, selling, profit)
-    assert bd["gross_margin_pct"] == 60.0 and bd["rule"] == pricing.RULE_ID
+    assert (bd["cost"], bd["extra"], bd["multiplier"], bd["adjusted_cost"], bd["unrounded_price"],
+            bd["selling_price"], bd["gross_profit"]) == (cost, 40, 2.5, adjusted, unrounded, selling, profit)
+    assert bd["selling_price"] % 10 == 0 and bd["round_up_to"] == 10 and bd["rule"] == pricing.RULE_ID
+    assert bd["gross_margin_pct"] == round(profit / selling * 100, 2)
+
+
+@pytest.mark.parametrize("amount,expected", [(1302, 1310), (1350, 1350), (1301.01, 1310), (1300.004, 1300),
+                                             (1349.9999999, 1350), (0.5, 10), (990, 990), (991, 1000)])
+def test_round_up_to_next_ten(amount, expected):
+    assert pricing.round_up(amount) == expected
 
 
 def test_rule_keeps_paisa_precision_and_whole_taka_ints():
-    assert pricing.price_from_cost(99.5, *FAKE_RULE)["selling_price"] == 348.75
+    assert pricing.price_from_cost(99.5, *FAKE_RULE)["unrounded_price"] == 348.75
+    assert pricing.price_from_cost(99.5, *FAKE_RULE)["selling_price"] == 350
     assert isinstance(pricing.price_from_cost(100, *FAKE_RULE)["selling_price"], int)
 
 
@@ -150,7 +159,7 @@ def repriced_db():
             await dbmod.db[c].delete_many({})
         await dbmod.db.products.insert_many([
             _prod("p-real", "R-1", 100, 999),                          # eligible -> 350
-            _prod("p-draft", "R-2", 250, 0.01, status="draft"),        # eligible draft -> 725
+            _prod("p-draft", "R-2", 250, 0.01, status="draft"),        # eligible draft -> 725 -> 730
             _prod("p-demo", "D-1", 100, 999, source=False),            # seed/demo -> skip
             _prod("p-nocost", "R-3", None, 500),                       # flag, never guessed
             _prod("p-badcost", "R-4", "abc", 500),                     # flag
@@ -188,7 +197,7 @@ def test_apply_is_idempotent_keeps_cost_history_and_orders(repriced_db):
     assert p["selling_price"] == 350 and p["previous_selling_price"] == 999 and p["cost_price"] == 100
     assert p["pricing"]["adjusted_cost"] == 140 and len(p["price_history"]) == 1
     assert p["price_history"][0]["from"] == 999 and p["price_history"][0]["to"] == 350
-    assert asyncio.run(get("p-draft"))["selling_price"] == 725
+    assert asyncio.run(get("p-draft"))["selling_price"] == 730
     # untouched records
     assert asyncio.run(get("p-demo"))["selling_price"] == 999
     assert asyncio.run(get("p-nocost"))["selling_price"] == 500
@@ -224,7 +233,7 @@ def test_public_api_shows_new_price_but_no_cost_or_pricing_fields(repriced_db):
     c = TestClient(server.app)
     for body in (c.get("/api/products").text, c.get("/api/products/p-real").text):
         for secret in ("cost_price", "pricing", "price_history", "previous_selling_price", "adjusted_cost",
-                       "gross_profit", "gross_margin", "multiplier", "internal_notes", "secret-note", "inventory_xlsx"):
+                       "gross_profit", "gross_margin", "multiplier", "unrounded_price", "round_up_to", "internal_notes", "secret-note", "inventory_xlsx"):
             assert secret not in body
     assert c.get("/api/products/p-real").json()["product"]["selling_price"] == 350
     v = c.post("/api/cart/validate", json={"items": [{"product_id": "p-real", "quantity": 2}]}).json()
@@ -264,3 +273,15 @@ def test_cli_without_configured_rule_exits_before_db(monkeypatch):
     with pytest.raises(SystemExit) as e:
         rp.main()
     assert "not configured" in str(e.value)
+
+
+def test_records_priced_before_rounding_are_updated_once(repriced_db):
+    # a product priced by the pre-rounding rule (no round_up_to in its metadata) is re-priced
+    # once to the rounded price, then stays unchanged
+    asyncio.run(repriced_db.products.update_one({"id": "p-draft"}, {"$set": {"selling_price": 725, "pricing": {
+        "rule": pricing.RULE_ID, "cost": 250, "extra": 40, "multiplier": 2.5, "selling_price": 725}}}))
+    plan = _by(asyncio.run(rp.reprice(repriced_db, dbmod.now_iso, FAKE_RULE, apply=True, only={"R-2"})))["R-2"]
+    p = asyncio.run(repriced_db.products.find_one({"id": "p-draft"}))
+    assert plan["action"] == "update" and p["selling_price"] == 730 and p["previous_selling_price"] == 725
+    again = _by(asyncio.run(rp.reprice(repriced_db, dbmod.now_iso, FAKE_RULE, apply=True, only={"R-2"})))["R-2"]
+    assert again["action"] == "unchanged"

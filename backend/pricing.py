@@ -2,9 +2,13 @@
 AAYNA cost-based selling-price rule.
 
     adjusted_cost  = cost_price + EXTRA            (fixed amount per sold unit; per pair for earrings)
-    selling_price  = adjusted_cost * MULTIPLIER
+    selling_price  = adjusted_cost * MULTIPLIER, rounded UP to the next ৳10
+                     (founder decision 2026-10-18; already-whole tens stay unchanged)
     gross_profit   = selling_price - adjusted_cost
-    gross_margin   = gross_profit / selling_price
+    gross_margin   = gross_profit / selling_price  (on the rounded price)
+
+The extra amount is added once per sellable unit; for earrings sold as a pair,
+once per pair (founder-confirmed 2026-10-18).
 
 The two founder-set values are BUSINESS-CONFIDENTIAL and are NOT in this
 (public) repository: together with a public selling price they would reveal the
@@ -25,10 +29,12 @@ every pricing/history field written by the importer and scripts/reprice_from_cos
 """
 import math
 import os
+from decimal import Decimal, ROUND_CEILING
 
 RULE_ID = "cost_plus_fixed_x_multiplier"
 ENV_EXTRA = "AAYNA_PRICE_EXTRA_BDT"
 ENV_MULTIPLIER = "AAYNA_PRICE_MULTIPLIER"
+ROUND_UP_TO_BDT = 10
 
 
 class PricingError(ValueError):
@@ -53,6 +59,15 @@ def _money(x):
     return int(x) if x == int(x) else x
 
 
+def round_up(amount, step=ROUND_UP_TO_BDT):
+    """Round a BDT amount up to the next multiple of `step` (exact multiples unchanged).
+
+    Decimal on the 2-dp value, so float noise (e.g. 1349.9999999) never bumps a
+    whole price to the next ten."""
+    d = Decimal(str(round(amount, 2)))
+    return _money(float((d / step).to_integral_value(rounding=ROUND_CEILING) * step))
+
+
 def rule_from_env(env=None):
     """Return (extra, multiplier) from the environment, or raise PricingError."""
     env = os.environ if env is None else env
@@ -69,7 +84,8 @@ def price_from_cost(cost, extra, multiplier):
     e = _number(extra, "extra", allow_zero=True)
     m = _number(multiplier, "multiplier")
     adjusted = c + e
-    selling = adjusted * m
+    unrounded = adjusted * m
+    selling = round_up(unrounded)
     profit = selling - adjusted
     return {
         "rule": RULE_ID,
@@ -77,6 +93,8 @@ def price_from_cost(cost, extra, multiplier):
         "extra": _money(e),
         "multiplier": _money(m),
         "adjusted_cost": _money(adjusted),
+        "unrounded_price": _money(unrounded),
+        "round_up_to": ROUND_UP_TO_BDT,
         "selling_price": _money(selling),
         "gross_profit": _money(profit),
         "gross_margin_pct": round(profit / selling * 100, 2),

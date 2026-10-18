@@ -2,7 +2,7 @@
 """
 Re-derive selling prices of existing products from their recorded cost.
 
-    selling_price = (cost_price + extra) * multiplier        (backend/pricing.py)
+    selling_price = (cost_price + extra) * multiplier, rounded up to the next ৳10   (backend/pricing.py)
 
 The two values are business-confidential (with a public price they reveal the
 cost) and are read from AAYNA_PRICE_EXTRA_BDT / AAYNA_PRICE_MULTIPLIER in
@@ -69,7 +69,7 @@ def plan_product(p, rule, override_manual=False):
         return {**row, "action": "flag", "reason": f"discount price {dp} >= new selling price"}
     meta = p.get("pricing") or {}
     last_rule_price = meta.get("selling_price") if meta.get("rule") == bd["rule"] else None
-    same_rule = all(meta.get(k) == bd[k] for k in ("rule", "cost", "extra", "multiplier"))
+    same_rule = all(meta.get(k) == bd[k] for k in ("rule", "cost", "extra", "multiplier", "round_up_to"))
     if (not override_manual and last_rule_price is not None and p.get("selling_price") is not None
             and float(p["selling_price"]) != float(last_rule_price)):
         return {**row, "action": "flag",
