@@ -19,7 +19,7 @@ export default function Shop() {
 
   useSeo({
     title: search ? `Search: ${search}` : "The Edit",
-    description: "Browse the AAYNA edit — earrings, necklaces and rings, women's accessories in Bangladesh.",
+    description: "Browse the AAYNA edit — earrings, necklaces, rings and bracelets, women's accessories in Bangladesh.",
   });
 
   const handleCategoryChange = (slug) => {

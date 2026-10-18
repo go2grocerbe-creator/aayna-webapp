@@ -58,14 +58,10 @@ export default function TheEdit({
   const [sort, setSort] = useState("newest");
   const [hovered, setHovered] = useState(null);
 
-  // Backend /api/products only filters by one exact category slug at a time
-  // (no multi-category param, and the API contract stays frozen for this
-  // milestone) - so a single-category request is scoped server-side, but
-  // "All" has to be scoped here, to exactly the Earrings/Necklaces/Rings
-  // categories this component was handed, or unrelated categories like
-  // Hair Accessories or Bracelets leak into The Edit.
-  const allowedSlugs = new Set(categories.map((c) => c.slug));
-
+  // "All" shows every product the public API serves (active, in stock) in every
+  // category - including Bracelets/cuffs, which have no filter chip of their own.
+  // The category chips (passed in by the caller) are unchanged and still scope
+  // the request server-side to one exact category slug.
   const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["products", "the-edit", activeCategory, sort, search],
     queryFn: () =>
@@ -80,7 +76,7 @@ export default function TheEdit({
     // excluded from this discovery grid until intentionally restocked.
     select: (data) => {
       const inStock = data.filter((p) => !isOutOfStock(p));
-      return activeCategory ? inStock : inStock.filter((p) => allowedSlugs.has(p.category_slug));
+      return inStock;
     },
     retry: 1,
   });
