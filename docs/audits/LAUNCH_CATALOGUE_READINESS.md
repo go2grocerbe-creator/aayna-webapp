@@ -125,7 +125,7 @@ One row, `REJ-EAR-SHL-001` Seashell Earrings, sits in the "rejected" block. The 
 Overall, prices are no longer a blocker: with `--cost-price-rule` all 10 rows get a price from their recorded cost. Import is still blocked by the missing catalogue database.
 
 ### Missing founder decisions
-1. ~~Selling price for each SKU~~ **Decided 2026-10-18:** cost-plus rule. Still to confirm: the extra amount applies per pair for earrings, and the sheet costs exclude shipping/fees (`PRODUCT_PRICING_UPDATE.md`).
+1. ~~Selling price for each SKU~~ **Decided 2026-10-18:** cost-plus rule. Confirmed: once per pair for earrings; prices round up to the next ৳10. Still to confirm: the sheet costs exclude shipping/fees (`PRODUCT_PRICING_UPDATE.md`).
 2. **Compare-at prices**, if any (optional).
 3. **Crystal Stone Cuff SKU.** Keep `AYN-CUF-STN-SLV`, or rename it (e.g. `AYN-CUF-STN-GLD`) **before** the first import.
 4. **Product copy.** For each product: short and full description, material and care note. These are optional for publishing but recommended for launch and SEO. Nothing will be invented.

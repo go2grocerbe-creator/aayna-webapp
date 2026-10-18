@@ -22,7 +22,7 @@ const rec = (name, ok, detail = "") => {
 // identical to frontend/src/lib/format.js formatBDT
 const bdt = (n) => `৳${Number(n || 0).toLocaleString("en-US")}`;
 const SECRETS = ["cost_price", "\"pricing\"", "price_history", "previous_selling_price", "adjusted_cost",
-  "gross_profit", "gross_margin", "internal_notes", "inventory_xlsx", "supplier"];
+  "gross_profit", "gross_margin", "unrounded_price", "round_up_to", "multiplier", "internal_notes", "inventory_xlsx", "supplier"];
 const api = (p, opt = {}) => fetch(API + p, opt).then((r) => r.json());
 
 (async () => {
@@ -72,9 +72,50 @@ const api = (p, opt = {}) => fetch(API + p, opt).then((r) => r.json());
     const onShop = new Set(cards.filter((c) => c.url === "/shop").map((c) => c.href));
     rec(`${vp.name} listing cards show the new price (${seen}/${PRICES.length} listed; ${PRICES.filter((p) => onShop.has(`/product/${p.slug}`)).length} on /shop)`,
       seen === PRICES.length && !cardFails.length, cardFails.join(","));
+    const missingOnShop = PRICES.filter((p) => !onShop.has(`/product/${p.slug}`)).map((p) => p.sku);
+    rec(`${vp.name} /shop "All" lists every active product, cuffs and bracelets included`, missingOnShop.length === 0, missingOnShop.join(","));
+
+    // existing category chips still work and still scope to one category
+    await page.goto(`${BASE}/shop`, { waitUntil: "networkidle" });
+    const chips = await page.$$eval('[data-testid^="the-edit-cat-"]', (els) => els.map((e) => e.getAttribute("data-testid").replace("the-edit-cat-", "")));
+    await page.click('[data-testid="the-edit-cat-earrings"]');
+    await page.waitForTimeout(900);
+    const hrefs = await page.$$eval('a[href^="/product/"]', (as) => [...new Set(as.map((a) => a.getAttribute("href")))]);
+    const catOf = Object.fromEntries((await api("/products?limit=100")).map((x) => [`/product/${x.slug}`, x.category_slug]));
+    const nonEar = hrefs.filter((h) => catOf[h] && catOf[h] !== "earrings");
+    rec(`${vp.name} category chips unchanged (${chips.join(",")}); Earrings chip shows only earrings`,
+      chips.join(",") === "earrings,necklaces,rings" && hrefs.some((h) => catOf[h] === "earrings") && nonEar.length === 0, nonEar.join(","));
+
+    // all 10 products in one cart (qty 1, saved at the OLD price): every line, the subtotal and the
+    // checkout total use the intended prices. Not submitted (keeps test stock for the order below).
+    const products = await api("/products?limit=100");
+    const all = PRICES.map((p) => ({ ...p, prod: products.find((x) => x.sku === p.sku) })).filter((p) => p.prod && p.prod.stock_quantity > 0);
+    await page.evaluate((items) => localStorage.setItem("aayna_cart", JSON.stringify(items)), all.map((p) => ({
+      product_id: p.prod.id, slug: p.slug, name: p.prod.product_name, image: "", sku: p.sku,
+      selling_price: p.old_price, discount_price: null, unit_price: p.old_price, stock: p.prod.stock_quantity, quantity: 1 })));
+    await page.goto(`${BASE}/cart`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(700);
+    const allSub = all.reduce((s, p) => s + p.price, 0);
+    const badLines = [];
+    for (const p of all) {
+      const t = (await page.getByTestId(`cart-item-${p.slug}`).innerText()).replace(/\s+/g, " ");
+      if (!t.includes(bdt(p.price))) badLines.push(p.sku);
+    }
+    const allShown = (await page.getByTestId("cart-subtotal").innerText()).trim();
+    rec(`${vp.name} cart with all ${all.length} products: each line + subtotal ${bdt(allSub)}`, all.length === PRICES.length && !badLines.length && allShown === bdt(allSub), `shown "${allShown}" bad=${badLines}`);
+    await page.goto(`${BASE}/checkout`, { waitUntil: "networkidle" });
+    await page.click('[data-testid="checkout-district"]');
+    await page.locator('[role="option"]').filter({ hasText: "Dhaka" }).first().click();
+    await page.waitForTimeout(500);
+    const allSrv = await api("/cart/validate", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ district: "Dhaka", items: all.map((p) => ({ product_id: p.prod.id, quantity: 1 })) }) });
+    const allTotal = (await page.getByTestId("checkout-total").innerText()).trim();
+    const coText = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    rec(`${vp.name} checkout with all ${all.length}: lines + total ${bdt(allSrv.total)} = server`, allSrv.subtotal === allSub && allTotal === bdt(allSrv.total)
+      && all.every((p) => coText.includes(`${bdt(p.price)} × 1`)), `shown "${allTotal}"`);
+    await page.screenshot({ path: path.join(OUT, `checkout-all-${vp.name}.png`), fullPage: true });
 
     // stale cart: saved in the browser at the OLD price -> cart/checkout must show the server price
-    const products = await api("/products?limit=100");
     // two products with enough stock for qty 1 and 2 (orders placed by this script consume test stock)
     const pick = PRICES.map((p) => ({ ...p, prod: products.find((x) => x.sku === p.sku) }))
       .filter((p) => p.prod && p.prod.stock_quantity >= 4).slice(0, 2).map((p, i) => ({ ...p, qty: i + 1 }));
