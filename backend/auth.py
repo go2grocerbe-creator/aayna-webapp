@@ -300,7 +300,8 @@ async def login(body: LoginRequest, request: Request):
     # Generic error — never reveal whether the email or the password was wrong.
     if not user or not verify_password(body.password, user["password_hash"]) or user.get("status") != "active":
         record_failed_login(ip, email)
-        logger.warning("Failed admin login for %s from %s", email, ip)
+        masked = (email.split("@")[0][:2] + "***@" + email.split("@")[-1]) if "@" in email else "***"
+        logger.warning("Failed admin login for %s from %s", masked, ip)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     clear_failed_logins(ip, email)
     token = create_access_token(user)
