@@ -5,6 +5,7 @@ import { Loader2, Save } from "lucide-react";
 import { getAdminSettings, updateAdminSettings } from "@/admin/adminApi";
 import { Switch } from "@/components/ui/switch";
 import ImageUpload from "@/admin/ImageUpload";
+import AdminLoadError from "@/admin/AdminLoadError";
 
 const TEXT_FIELDS = [
   ["brand_name", "Brand Name"],
@@ -40,12 +41,13 @@ const looksPlaceholder = (v) => {
 };
 
 export default function Settings() {
-  const { data, isLoading } = useQuery({ queryKey: ["admin-settings"], queryFn: getAdminSettings });
+  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-settings"], queryFn: getAdminSettings });
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { if (data) setForm(data); }, [data]);
 
+  if (isError) return <AdminLoadError what="settings" error={error} onRetry={refetch} />;
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -74,7 +76,12 @@ export default function Settings() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-aayna-charcoal mb-6">Website Settings</h1>
+      <h1 className="text-2xl font-bold text-aayna-charcoal mb-2">Website Settings</h1>
+      <p data-testid="settings-scope-note" className="text-sm text-gray-500 mb-6">
+        These values are <strong>public</strong>: they appear on the storefront (contact details, payment numbers, delivery charges).
+        Private configuration such as the database connection, login keys and passwords is never stored or shown here;
+        it lives only in the hosting provider&apos;s environment settings.
+      </p>
 
       {placeholderWarnings.length > 0 && (
         <div data-testid="settings-placeholder-warning" className="mb-6 border border-amber-300 bg-amber-50 text-amber-900 rounded-lg p-4 text-sm">

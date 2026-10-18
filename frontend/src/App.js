@@ -18,7 +18,7 @@ import StaticPage from "@/pages/StaticPage";
 import NotFound from "@/pages/NotFound";
 
 import { AdminAuthLayout } from "@/admin/AdminAuthContext";
-import AdminLayout, { AdminProtected } from "@/admin/AdminLayout";
+import AdminLayout, { AdminProtected, RequirePermission } from "@/admin/AdminLayout";
 import AdminLogin from "@/admin/AdminLogin";
 import Dashboard from "@/admin/pages/Dashboard";
 import Products from "@/admin/pages/Products";
@@ -70,17 +70,17 @@ function App() {
               <Route path="login" element={<AdminLogin />} />
               <Route element={<AdminProtected />}>
                 <Route element={<AdminLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="products" element={<Products />} />
-                  <Route path="products/new" element={<ProductForm />} />
-                  <Route path="products/:id" element={<ProductForm />} />
-                  <Route path="categories" element={<Categories />} />
-                  <Route path="orders" element={<Orders />} />
-                  <Route path="orders/:orderNumber" element={<OrderDetail />} />
-                  <Route path="inventory" element={<Inventory />} />
-                  <Route path="customers" element={<Customers />} />
-                  <Route path="customers/:id" element={<CustomerDetail />} />
-                  <Route path="settings" element={<Settings />} />
+                  <Route index element={<RequirePermission perm="dashboard.view"><Dashboard /></RequirePermission>} />
+                  <Route path="products" element={<RequirePermission perm="products.view"><Products /></RequirePermission>} />
+                  <Route path="products/new" element={<RequirePermission perm="products.edit"><ProductForm /></RequirePermission>} />
+                  <Route path="products/:id" element={<RequirePermission perm="products.view"><ProductForm /></RequirePermission>} />
+                  <Route path="categories" element={<RequirePermission perm="products.view"><Categories /></RequirePermission>} />
+                  <Route path="orders" element={<RequirePermission perm="orders.view"><Orders /></RequirePermission>} />
+                  <Route path="orders/:orderNumber" element={<RequirePermission perm="orders.view"><OrderDetail /></RequirePermission>} />
+                  <Route path="inventory" element={<RequirePermission perm="inventory.view"><Inventory /></RequirePermission>} />
+                  <Route path="customers" element={<RequirePermission perm="customers.view"><Customers /></RequirePermission>} />
+                  <Route path="customers/:id" element={<RequirePermission perm="customers.view"><CustomerDetail /></RequirePermission>} />
+                  <Route path="settings" element={<RequirePermission perm="settings.view"><Settings /></RequirePermission>} />
                 </Route>
               </Route>
             </Route>

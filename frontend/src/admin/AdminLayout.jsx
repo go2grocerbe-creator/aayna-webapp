@@ -9,16 +9,30 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useSeo } from "@/lib/seo";
 
 const navItems = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/categories", label: "Categories", icon: FolderTree },
-  { to: "/admin/inventory", label: "Inventory", icon: Boxes },
-  { to: "/admin/customers", label: "Customers", icon: Users },
-  { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
+  { to: "/admin/orders", label: "Orders", icon: ShoppingCart, perm: "orders.view" },
+  { to: "/admin/products", label: "Products", icon: Package, perm: "products.view" },
+  { to: "/admin/categories", label: "Categories", icon: FolderTree, perm: "products.view" },
+  { to: "/admin/inventory", label: "Inventory", icon: Boxes, perm: "inventory.view" },
+  { to: "/admin/customers", label: "Customers", icon: Users, perm: "customers.view" },
+  { to: "/admin/settings", label: "Settings", icon: SettingsIcon, perm: "settings.view" },
 ];
 
+// Shown when a role opens a page it may not use. The API refuses the data
+// anyway (403); this just explains it instead of an error.
+export function RequirePermission({ perm, children }) {
+  const { can } = useAdminAuth();
+  if (can(perm)) return children;
+  return (
+    <div data-testid="admin-no-access" className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+      <h1 className="text-lg font-semibold text-aayna-charcoal">No access</h1>
+      <p className="text-sm text-gray-500 mt-1">Your role does not include this section. Ask the account owner if you need it.</p>
+    </div>
+  );
+}
+
 function SidebarContent({ onNavigate, user, onLogout }) {
+  const allowed = navItems.filter((i) => (user?.permissions || []).includes(i.perm));
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-5 border-b border-gray-200">
@@ -26,7 +40,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
         <p className="text-xs text-gray-400 mt-0.5">Admin Panel</p>
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
+        {allowed.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -83,8 +97,8 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/admin/login");
   };
 

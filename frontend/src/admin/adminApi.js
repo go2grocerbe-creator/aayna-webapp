@@ -23,6 +23,8 @@ export const fullImageUrl = (urlPath) => `${BACKEND}${urlPath}`;
 export const adminLogin = (email, password) =>
   axios.post(`${API}/admin/login`, { email, password }).then((r) => r.data);
 export const adminMe = () => api.get("/admin/me").then((r) => r.data);
+// Server-side logout: invalidates every session token issued to this account.
+export const adminLogout = () => api.post("/admin/logout").then((r) => r.data);
 
 // Dashboard
 export const getDashboard = () => api.get("/admin/dashboard").then((r) => r.data);

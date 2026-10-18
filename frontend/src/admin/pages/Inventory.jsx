@@ -6,6 +6,7 @@ import { Loader2, Plus, History, AlertTriangle } from "lucide-react";
 import { getInventory, adjustStock, getInventoryLogs } from "@/admin/adminApi";
 import { statusStyle } from "@/admin/statusColors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useAdminAuth } from "@/admin/AdminAuthContext";
 
 export default function Inventory() {
   const qc = useQueryClient();
@@ -14,6 +15,7 @@ export default function Inventory() {
   const [logsFor, setLogsFor] = useState(null);
   const [adj, setAdj] = useState({ change_type: "stock_in", quantity_change: "", reason: "" });
   const [saving, setSaving] = useState(false);
+  const { can } = useAdminAuth();
 
   const { data: products = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-inventory", lowOnly], queryFn: () => getInventory(lowOnly) });
   const { data: logs = [] } = useQuery({ queryKey: ["inv-logs", logsFor?.id], queryFn: () => getInventoryLogs(logsFor.id), enabled: Boolean(logsFor) });
@@ -24,12 +26,16 @@ export default function Inventory() {
 
   const saveAdjust = async () => {
     const qty = Number(adj.quantity_change);
-    if (!qty) { toast.error("Enter a quantity (use negative to reduce)"); return; }
+    if (!qty || !Number.isInteger(qty)) { toast.error("Enter a whole-number quantity (use negative to reduce)"); return; }
+    if (adjustFor.stock_quantity + qty < 0) { toast.error(`Stock cannot go below 0 (current stock is ${adjustFor.stock_quantity})`); return; }
+    if (!adj.reason.trim()) { toast.error("Enter a reason for this stock change"); return; }
     setSaving(true);
     try {
       await adjustStock(adjustFor.id, { change_type: adj.change_type, quantity_change: qty, reason: adj.reason });
       toast.success("Stock updated");
       qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      qc.invalidateQueries({ queryKey: ["inv-logs"] });
+      qc.invalidateQueries({ queryKey: ["admin-products"] });
       setAdjustFor(null);
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed");
@@ -78,7 +84,7 @@ export default function Inventory() {
                   <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span></td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openAdjust(p)} data-testid={`adjust-stock-${p.sku}`} className="px-3 min-h-[44px] text-xs border border-gray-300 rounded-md flex items-center gap-1 hover:bg-gray-50"><Plus className="h-3.5 w-3.5" /> Adjust</button>
+                      {can("inventory.adjust") && <button onClick={() => openAdjust(p)} data-testid={`adjust-stock-${p.sku}`} className="px-3 min-h-[44px] text-xs border border-gray-300 rounded-md flex items-center gap-1 hover:bg-gray-50"><Plus className="h-3.5 w-3.5" /> Adjust</button>}
                       <button onClick={() => setLogsFor(p)} aria-label={`View stock log for ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy" title="View log"><History className="h-4 w-4" /></button>
                     </div>
                   </td>
@@ -110,8 +116,8 @@ export default function Inventory() {
               <p className="text-xs text-gray-400 mt-1">Use a negative number to reduce stock.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason</label>
-              <input className={field} value={adj.reason} onChange={(e) => setAdj((a) => ({ ...a, reason: e.target.value }))} />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason *</label>
+              <input data-testid="adjust-reason" required placeholder="e.g. new shipment received, damaged in storage" className={field} value={adj.reason} onChange={(e) => setAdj((a) => ({ ...a, reason: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>

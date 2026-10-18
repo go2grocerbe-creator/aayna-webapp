@@ -9,6 +9,7 @@ import { statusStyle } from "@/admin/statusColors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import ImageUpload from "@/admin/ImageUpload";
+import { useAdminAuth } from "@/admin/AdminAuthContext";
 
 const EMPTY = { name: "", slug: "", description: "", sku_prefix: "", image_url: "", sort_order: 0, status: "active" };
 
@@ -18,6 +19,7 @@ export default function Categories() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const { can } = useAdminAuth();
 
   const { data: categories = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-categories"], queryFn: getAdminCategories });
 
@@ -48,7 +50,7 @@ export default function Categories() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-aayna-charcoal">Categories</h1>
-        <button data-testid="add-category-btn" onClick={openNew} className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark"><Plus className="h-4 w-4" /> Add Category</button>
+        {can("categories.edit") && <button data-testid="add-category-btn" onClick={openNew} className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark"><Plus className="h-4 w-4" /> Add Category</button>}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -81,7 +83,7 @@ export default function Categories() {
                 <td className="px-4 py-3">{c.sort_order}</td>
                 <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(c.status)}`}>{c.status}</span></td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => openEdit(c)} data-testid={`edit-category-${c.slug}`} className="p-2 text-gray-500 hover:text-aayna-burgundy"><Pencil className="h-4 w-4" /></button>
+                  {can("categories.edit") && <button onClick={() => openEdit(c)} data-testid={`edit-category-${c.slug}`} aria-label={`Edit ${c.name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy"><Pencil className="h-4 w-4" /></button>}
                 </td>
               </tr>
             ))}

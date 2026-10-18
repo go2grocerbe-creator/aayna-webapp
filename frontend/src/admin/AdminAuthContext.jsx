@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { adminMe, adminLogin, getToken, setToken, clearToken } from "@/admin/adminApi";
+import { adminMe, adminLogin, adminLogout, getToken, setToken, clearToken } from "@/admin/adminApi";
 
 const AdminAuthContext = createContext(null);
 
@@ -27,13 +27,21 @@ export function AdminAuthLayout() {
     return data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      if (getToken()) await adminLogout();
+    } catch {
+      // token already invalid/expired: nothing to revoke server-side
+    }
     clearToken();
     setUser(false);
   };
 
+  // UI convenience only - the API enforces every permission server-side.
+  const can = (perm) => Boolean(user && Array.isArray(user.permissions) && user.permissions.includes(perm));
+
   return (
-    <AdminAuthContext.Provider value={{ user, login, logout }}>
+    <AdminAuthContext.Provider value={{ user, login, logout, can }}>
       <Outlet />
     </AdminAuthContext.Provider>
   );

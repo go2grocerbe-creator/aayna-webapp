@@ -8,12 +8,15 @@ import { Plus, Search, Pencil, Trash2, Download, Upload, Loader2 } from "lucide-
 import { getAdminProducts, deleteProduct, downloadCsv, importProducts, getAdminCategories } from "@/admin/adminApi";
 import { formatBDT, effectivePrice } from "@/lib/format";
 import { statusStyle } from "@/admin/statusColors";
+import { primaryImage } from "@/lib/productImages";
+import { useAdminAuth } from "@/admin/AdminAuthContext";
 
 export default function Products() {
   const qc = useQueryClient();
   const fileRef = useRef();
   const [filters, setFilters] = useState({ category: "", status: "", search: "" });
   const [importing, setImporting] = useState(false);
+  const { can } = useAdminAuth();
 
   const { data: products = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-products", filters],
@@ -31,7 +34,7 @@ export default function Products() {
       toast.success(r.deleted ? "Product deleted" : "Product deactivated (has order history)");
       qc.invalidateQueries({ queryKey: ["admin-products"] });
     },
-    onError: () => toast.error("Action failed"),
+    onError: (err) => toast.error(err?.response?.data?.detail || "Action failed"),
   });
 
   const handleImport = async (e) => {
@@ -42,8 +45,8 @@ export default function Products() {
       const r = await importProducts(file);
       toast.success(`Imported: ${r.created} created, ${r.updated} updated${r.errors.length ? `, ${r.errors.length} errors` : ""}`);
       qc.invalidateQueries({ queryKey: ["admin-products"] });
-    } catch {
-      toast.error("Import failed");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Import failed");
     } finally {
       setImporting(false);
       e.target.value = "";
@@ -53,18 +56,33 @@ export default function Products() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-aayna-charcoal">Products</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-aayna-charcoal">Products</h1>
+          {!isLoading && !isError && (
+            <p data-testid="products-summary" className="text-sm text-gray-500 mt-0.5">
+              {products.length} product{products.length === 1 ? "" : "s"} · {products.reduce((n, p) => n + (Number(p.stock_quantity) || 0), 0)} units in stock
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => downloadCsv("products", "aayna_products.csv")} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
-            <Download className="h-4 w-4" /> Export
-          </button>
-          <button data-testid="import-products-btn" onClick={() => fileRef.current?.click()} disabled={importing} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
-            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
-          </button>
-          <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Link to="/admin/products/new" data-testid="add-product-btn" className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark">
-            <Plus className="h-4 w-4" /> Add Product
-          </Link>
+          {can("export.products") && (
+            <button onClick={() => downloadCsv("products", "aayna_products.csv").catch(() => toast.error("Export failed"))} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
+              <Download className="h-4 w-4" /> Export
+            </button>
+          )}
+          {can("import.products") && (
+            <>
+              <button data-testid="import-products-btn" onClick={() => fileRef.current?.click()} disabled={importing} className="h-11 px-3 border border-gray-300 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50">
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
+              </button>
+              <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+            </>
+          )}
+          {can("products.edit") && (
+            <Link to="/admin/products/new" data-testid="add-product-btn" className="h-11 px-4 bg-aayna-burgundy text-white rounded-md text-sm font-semibold flex items-center gap-1.5 hover:bg-aayna-burgundy-dark">
+              <Plus className="h-4 w-4" /> Add Product
+            </Link>
+          )}
         </div>
       </div>
 
@@ -111,7 +129,7 @@ export default function Products() {
                 <tr key={p.id} data-testid={`product-row-${p.sku}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <AdminThumb src={p.images?.[0]?.image_url} className="h-11 w-11 rounded flex-shrink-0" />
+                      <AdminThumb src={primaryImage(p).src} alt={p.product_name} className="h-11 w-11 rounded flex-shrink-0" />
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium text-aayna-charcoal line-clamp-1">{p.product_name}</span>
                       </div>
@@ -125,7 +143,7 @@ export default function Products() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} aria-label={`Edit ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy" title="Edit"><Pencil className="h-4 w-4" /></Link>
-                      <button onClick={() => { if (window.confirm(`Delete/deactivate ${p.product_name}?`)) del.mutate(p.id); }} aria-label={`Delete ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-red-600" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                      {can("products.delete") && <button onClick={() => { if (window.confirm(`Delete/deactivate ${p.product_name}?`)) del.mutate(p.id); }} aria-label={`Delete ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-red-600" title="Delete"><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </td>
                 </tr>
