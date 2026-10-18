@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -26,9 +26,15 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from db import db, client, now_iso, effective_price
-from auth import auth_router, seed_admin, ensure_indexes, validate_security_config, IS_PRODUCTION
+from auth import auth_router, seed_admin, ensure_indexes, validate_security_config, IS_PRODUCTION, _client_ip
 from storage import storage_router, files_router, init_storage_safe
 from admin_routes import admin_router
+import emailer
+import ratelimit
+import promotions
+from customer_auth import (customer_router, customer_admin_router, optional_customer,
+                           ensure_customer_indexes, order_timeline)
+from promotions import promotions_router, promotions_admin_router, ensure_promotion_indexes, CouponError
 
 # Interactive API docs list every admin endpoint; keep them off in production.
 app = FastAPI(
@@ -145,6 +151,8 @@ class CartLine(BaseModel):
 class CartValidateRequest(BaseModel):
     items: List[CartLine]
     district: Optional[str] = None
+    coupon_code: Optional[str] = None
+    phone: Optional[str] = None
 
 
 class CheckoutRequest(BaseModel):
@@ -159,6 +167,7 @@ class CheckoutRequest(BaseModel):
     sender_number: Optional[str] = ""
     items: List[CartLine]
     client_request_id: Optional[str] = None
+    coupon_code: Optional[str] = None
 
 
 class TrackRequest(BaseModel):
@@ -205,6 +214,8 @@ async def on_startup():
     await seed_database()
     await seed_admin()
     await ensure_indexes()
+    await ensure_customer_indexes()
+    await ensure_promotion_indexes()
     init_storage_safe()
 
 
@@ -388,7 +399,7 @@ async def get_settings_map() -> dict:
 
 
 @api_router.post("/cart/validate")
-async def validate_cart(req: CartValidateRequest):
+async def validate_cart(req: CartValidateRequest, request: Request):
     settings = await get_settings_map()
     lines = []
     subtotal = 0.0
@@ -423,14 +434,34 @@ async def validate_cart(req: CartValidateRequest):
             "out_of_stock": out_of_stock,
             "line_total": line_total,
             "available": not out_of_stock and line.quantity <= stock,
+            "category_slug": product.get("category_slug"),
         })
 
     delivery = delivery_charge_for(settings, req.district) if req.district else 0
+    coupon = None
+    discount = 0
+    if (req.coupon_code or "").strip():
+        await ratelimit.enforce("coupon-check", _client_ip(request), 30, 600,
+                                "Too many code attempts. Please wait a few minutes.")
+        account = await optional_customer(request)
+        coupon_lines = [{"product_id": l["product_id"], "category_slug": l.get("category_slug"), "line_total": l["line_total"]}
+                        for l in lines if l.get("available")]
+        try:
+            ev = await promotions.evaluate(req.coupon_code, account, normalize_phone(req.phone or "") if req.phone else None,
+                                           coupon_lines)
+            discount = ev["discount"]
+            coupon = {"code": ev["code"], "valid": True, "discount": discount, "eligible_subtotal": ev["eligible_subtotal"]}
+        except CouponError as err:
+            coupon = {"code": promotions.normalize_code(req.coupon_code), "valid": False, "message": err.message, "reason": err.code}
+    for l in lines:
+        l.pop("category_slug", None)
     return {
         "items": lines,
         "subtotal": subtotal,
+        "discount_amount": discount,
+        "coupon": coupon,
         "delivery_charge": delivery,
-        "total": subtotal + delivery,
+        "total": subtotal - discount + delivery,
         "has_issue": has_issue,
     }
 
@@ -579,7 +610,7 @@ async def send_order_notification(order: dict):
 # Checkout / order creation
 # ---------------------------------------------------------------------------
 @api_router.post("/checkout")
-async def checkout(req: CheckoutRequest):
+async def checkout(req: CheckoutRequest, request: Request):
     """Idempotent order placement.
 
     The client_request_id is claimed by inserting it as the _id of a
@@ -589,9 +620,14 @@ async def checkout(req: CheckoutRequest):
     for that order and return it. If the claimed attempt fails, the claim is
     released so the customer can try again.
     """
+    # The account comes from the session cookie only - never from the request body -
+    # so an order can never be attached to someone else's account.
+    account = await optional_customer(request)
+    if account and not account.get("email_verified"):
+        account = None
     rid = (req.client_request_id or "").strip()
     if not rid:
-        return await _place_order(req)
+        return await _place_order(req, account)
     if len(rid) > 100:
         raise HTTPException(status_code=400, detail="Invalid request id")
     existing = await db.orders.find_one({"client_request_id": rid}, {"_id": 0, "order_number": 1})
@@ -609,7 +645,7 @@ async def checkout(req: CheckoutRequest):
             await asyncio.sleep(0.25)
         raise HTTPException(status_code=409, detail="This order is already being processed. Please wait a moment, then check Track Order before trying again.")
     try:
-        result = await _place_order(req)
+        result = await _place_order(req, account)
     except BaseException:
         await db.checkout_requests.delete_one({"_id": rid, "status": "processing"})
         raise
@@ -617,7 +653,7 @@ async def checkout(req: CheckoutRequest):
     return result
 
 
-async def _place_order(req: CheckoutRequest):
+async def _place_order(req: CheckoutRequest, account: Optional[dict] = None):
     # 1-2. Validate required fields
     if not req.customer_name.strip():
         raise HTTPException(status_code=400, detail="Full name is required")
@@ -637,6 +673,7 @@ async def _place_order(req: CheckoutRequest):
 
     # 4-5. Validate stock & recalc subtotal from DB
     order_items = []
+    coupon_lines = []
     subtotal = 0.0
     stock_ops = []  # (product, qty)
     for line in req.items:
@@ -665,6 +702,7 @@ async def _place_order(req: CheckoutRequest):
             "total_price": line_total,
         })
         stock_ops.append((product, line.quantity))
+        coupon_lines.append({"product_id": product["id"], "category_slug": product.get("category_slug"), "line_total": line_total})
 
     # The same product on several lines is checked against stock as one total.
     wanted = {}
@@ -674,6 +712,14 @@ async def _place_order(req: CheckoutRequest):
         if qty > int(product.get("stock_quantity", 0)):
             raise HTTPException(status_code=400,
                                 detail=f"Only {int(product.get('stock_quantity', 0))} left of {product['product_name']}")
+
+    # Coupon: validated against database prices before anything is reserved.
+    coupon_eval = None
+    if (req.coupon_code or "").strip():
+        try:
+            coupon_eval = await promotions.evaluate(req.coupon_code, account, phone, coupon_lines)
+        except CouponError as err:
+            raise HTTPException(status_code=400, detail=err.message)
 
     # Reserve stock atomically BEFORE creating the customer or the order: each
     # decrement only succeeds if the product is still public and still has
@@ -708,11 +754,19 @@ async def _place_order(req: CheckoutRequest):
     # Everything after the reservation is rolled back together: if the customer
     # write, order numbering or order insert fails, reserved stock is released.
     customer_undo = None  # how to undo this request's customer write if the order fails
+    coupon_handle = None
     try:
-        # 6-7. Delivery + total
+        # 6-7. Delivery + total (a coupon discounts merchandise only, never delivery)
         settings = await get_settings_map()
         delivery_charge = delivery_charge_for(settings, req.district)
-        total = subtotal + delivery_charge
+        discount_amount = 0
+        if coupon_eval:
+            try:
+                coupon_handle = await promotions.reserve(coupon_eval)
+            except CouponError as err:
+                raise HTTPException(status_code=409, detail=err.message)
+            discount_amount = min(int(coupon_eval["discount"]), int(subtotal))
+        total = subtotal - discount_amount + delivery_charge
 
         # 8. Upsert customer
         customer = await db.customers.find_one({"phone": phone})
@@ -761,15 +815,18 @@ async def _place_order(req: CheckoutRequest):
             "order_confirmation_token_hash": confirmation_token_hash,
             "client_request_id": req.client_request_id,
             "customer_id": customer_id,
+            "account_id": account["id"] if account else None,
             "customer_name": req.customer_name,
             "customer_phone": phone,
-            "customer_email": req.customer_email or "",
+            "customer_email": (req.customer_email or "").strip() or (account or {}).get("email", ""),
             "delivery_address": req.delivery_address,
             "district": req.district,
             "delivery_note": req.delivery_note or "",
             "subtotal": subtotal,
             "delivery_charge": delivery_charge,
-            "discount_amount": 0,
+            "discount_amount": discount_amount,
+            "coupon_code": coupon_eval["code"] if coupon_eval else None,
+            "promotion_id": coupon_eval["promotion"]["id"] if coupon_eval else None,
             "total_amount": total,
             "payment_method": payment_method_display,
             "payment_status": payment_status,
@@ -785,8 +842,11 @@ async def _place_order(req: CheckoutRequest):
             "updated_at": now_iso(),
         }
         await db.orders.insert_one({**order})
+        if coupon_eval:
+            await promotions.record_redemption(coupon_eval, coupon_handle, order)
     except BaseException:
         await release_reserved()
+        await promotions.release(coupon_handle)
         if customer_undo and customer_undo[0] == "dec":
             await db.customers.update_one({"id": customer_undo[1]}, {"$inc": {"total_orders": -1}})
         elif customer_undo:
@@ -802,6 +862,22 @@ async def _place_order(req: CheckoutRequest):
             "reason": "Order placed", "reference_order_id": order_number,
             "created_by": "system", "created_at": now_iso(),
         })
+
+    # Append-only status history (customer timeline uses only recorded events).
+    await db.order_events.insert_one({"id": str(uuid.uuid4()), "order_id": order["id"], "order_number": order_number,
+                                      "status": "New", "source": "checkout", "created_at": order["created_at"]})
+
+    # Order confirmation email (non-blocking; never cancels or delays the order on failure).
+    if order["customer_email"]:
+        try:
+            link = f"/account/orders/{order_number}" if order.get("account_id") else f"/track-order?order={order_number}"
+            res = await emailer.send("order_confirmation", "order_confirmation", order["customer_email"],
+                                     {"name": order["customer_name"], "order": order, "url": emailer.site_link(link)},
+                                     dedupe_key=f"order_confirmation:{order['id']}", account_id=order.get("account_id"),
+                                     order_number=order_number)
+            await db.orders.update_one({"id": order["id"]}, {"$set": {"confirmation_email_status": res["status"]}})
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Order email error for %s: %s", order_number, type(exc).__name__)
 
     # 14. Notification (non-blocking; failure never cancels order)
     try:
@@ -835,11 +911,14 @@ async def get_order_confirmation(order_number: str, token: Optional[str] = Query
         "customer_name": order["customer_name"],
         "subtotal": order["subtotal"],
         "delivery_charge": order["delivery_charge"],
+        "discount_amount": order.get("discount_amount") or 0,
+        "coupon_code": order.get("coupon_code"),
         "total_amount": order["total_amount"],
         "payment_method": order["payment_method"],
         "payment_status": order["payment_status"],
         "order_status": order["order_status"],
         "district": order["district"],
+        "linked_to_account": bool(order.get("account_id")),
         "items": [
             {"product_name": it["product_name_snapshot"], "sku": it["sku_snapshot"],
              "quantity": it["quantity"], "unit_price": it["unit_price"],
@@ -851,9 +930,12 @@ async def get_order_confirmation(order_number: str, token: Optional[str] = Query
 
 
 @api_router.post("/track")
-async def track_order(req: TrackRequest):
+async def track_order(req: TrackRequest, request: Request):
     # Public order lookup requires BOTH the order number AND the matching phone,
     # so sequential order numbers cannot be guessed to reveal order data.
+    # Rate limited across instances so phone numbers cannot be enumerated per order.
+    await ratelimit.enforce("track-ip", _client_ip(request), 20, 600,
+                            "Too many lookups. Please wait a few minutes and try again.")
     order_number = (req.order_number or "").strip().upper()
     phone = normalize_phone(req.phone or "")
     if not order_number or not phone:
@@ -882,10 +964,12 @@ async def track_order(req: TrackRequest):
             "courier_name": order.get("courier_name"),
             "courier_tracking_code": order.get("courier_tracking_code"),
             "created_at": order["created_at"],
+            "discount_amount": order.get("discount_amount") or 0,
             "items": [
                 {"product_name": it["product_name_snapshot"], "quantity": it["quantity"]}
                 for it in order["items"]
             ],
+            "timeline": await order_timeline(order),
         }
     ]
 
@@ -965,7 +1049,10 @@ def _render_robots() -> str:
         "Disallow: /checkout\n"
         "Disallow: /order-confirmation\n"
         "Disallow: /api/admin\n"
-        "Disallow: /api/auth\n\n"
+        "Disallow: /api/auth\n"
+        "Disallow: /account\n"
+        "Disallow: /login\n"
+        "Disallow: /register\n\n"
         f"Sitemap: {base}/sitemap.xml\n"
     )
 
@@ -995,6 +1082,10 @@ app.include_router(auth_router)
 app.include_router(storage_router)
 app.include_router(files_router)
 app.include_router(admin_router)
+app.include_router(customer_router)
+app.include_router(customer_admin_router)
+app.include_router(promotions_router)
+app.include_router(promotions_admin_router)
 
 @app.middleware("http")
 async def json_errors_inside_cors(request, call_next):

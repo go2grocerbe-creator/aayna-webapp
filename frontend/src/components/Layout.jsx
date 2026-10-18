@@ -4,6 +4,7 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import WelcomePopup from "@/components/WelcomePopup";
 import { useSettings } from "@/hooks/useStore";
 import { useJsonLd } from "@/lib/seo";
 import { isPlaceholder } from "@/lib/format";
@@ -79,6 +80,7 @@ export default function Layout() {
       </main>
       <Footer />
       <WhatsAppFloat clearStickyBar={hasStickyCommerceBar} />
+      <WelcomePopup />
     </>
   );
 }

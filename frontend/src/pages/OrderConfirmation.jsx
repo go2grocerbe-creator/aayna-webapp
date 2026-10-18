@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, Copy, Check } from "lucide-react";
 import { getOrder } from "@/lib/api";
+import { claimOrder, apiError } from "@/lib/customerApi";
+import { useCustomer } from "@/context/CustomerAuthContext";
 import { formatBDT, customerStatusLabel } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
 import ProductImage from "@/components/ProductImage";
@@ -42,6 +44,16 @@ export default function OrderConfirmation() {
     retry: 1,
   });
   const [copied, setCopied] = useState(false);
+  const { signedIn } = useCustomer();
+  const [saved, setSaved] = useState(null);
+  const saveToAccount = async () => {
+    try {
+      await claimOrder(order.order_number, token);
+      setSaved({ ok: true, text: "Saved. You'll find this order in My AAYNA." });
+    } catch (err) {
+      setSaved({ ok: false, text: apiError(err).message });
+    }
+  };
   useSeo({ title: "Order Confirmed", description: "Your AAYNA order has been placed.", noindex: true });
 
   const copyOrderNumber = async () => {
@@ -143,6 +155,9 @@ export default function OrderConfirmation() {
 
         <div className="py-5 space-y-2.5 text-sm border-b border-aayna-beige">
           <div className="flex justify-between"><span className="text-aayna-taupe">Subtotal</span><span className="text-aayna-charcoal">{formatBDT(order.subtotal)}</span></div>
+          {order.discount_amount > 0 && (
+            <div className="flex justify-between text-emerald-800" data-testid="confirmation-discount"><span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>−{formatBDT(order.discount_amount)}</span></div>
+          )}
           <div className="flex justify-between"><span className="text-aayna-taupe">Delivery ({order.district})</span><span className="text-aayna-charcoal">{formatBDT(order.delivery_charge)}</span></div>
           <div className="flex justify-between"><span className="text-aayna-taupe">Payment Method</span><span className="text-aayna-charcoal">{order.payment_method}</span></div>
         </div>
@@ -156,6 +171,22 @@ export default function OrderConfirmation() {
       <p className="text-sm text-aayna-taupe mt-8 text-center">
         We'll confirm your order shortly. You can check its status anytime on the Track Order page.
       </p>
+
+      {order.linked_to_account ? (
+        <p className="text-sm text-center mt-3" data-testid="confirmation-in-account">
+          This order is in <Link to={`/account/orders/${order.order_number}`} className="text-aayna-burgundy underline underline-offset-2">your account</Link>.
+        </p>
+      ) : signedIn && token ? (
+        <div className="mt-4 text-center" data-testid="confirmation-save">
+          {saved ? <p role="status" className={`text-sm ${saved.ok ? "text-emerald-800" : "text-red-700"}`}>{saved.text}</p> : (
+            <button type="button" onClick={saveToAccount} className="min-h-[44px] text-sm text-aayna-burgundy font-medium underline underline-offset-2">Save this order to my account</button>
+          )}
+        </div>
+      ) : !signedIn ? (
+        <p className="text-sm text-center mt-3 text-aayna-taupe">
+          <Link to="/register" className="text-aayna-burgundy underline underline-offset-2">Create an account</Link> to track future orders in one place.
+        </p>
+      ) : null}
 
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
         <Link

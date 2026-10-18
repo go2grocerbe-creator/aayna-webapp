@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/context/CartContext";
 import { useCategories } from "@/hooks/useStore";
+import { useCustomer } from "@/context/CustomerAuthContext";
 
 // Restrained D1.6-D3 header treatment (AAYNA / nav / Search / Bag; Home via
 // the wordmark). Phase 3: phones AND tablets (< lg) use the menu sheet, so
@@ -18,6 +19,7 @@ const desktopNavClass = ({ isActive }) =>
 
 export default function Header() {
   const { count } = useCart();
+  const { signedIn } = useCustomer();
   const { data: allCategories = [] } = useCategories();
   // Nav is a merchandising surface too - don't link to a category with
   // nothing to buy yet (Visual QA Fix Sprint item 4).
@@ -86,6 +88,9 @@ export default function Header() {
                     </Link>
                   ))}
                   <div className="mt-4 border-t border-aayna-beige pt-3">
+                    <Link to={signedIn ? "/account" : "/login"} data-testid="mobile-nav-account" onClick={() => setMobileOpen(false)} className="flex items-center min-h-[44px] px-2 text-sm text-aayna-charcoal">
+                      {signedIn ? "My account" : "Sign in / Create account"}
+                    </Link>
                     <Link to="/track-order" onClick={() => setMobileOpen(false)} className="flex items-center min-h-[44px] px-2 text-sm text-aayna-charcoal">
                       Track Order
                     </Link>
@@ -135,6 +140,15 @@ export default function Header() {
             >
               <Search className="h-5 w-5" />
             </button>
+            <Link
+              to={signedIn ? "/account" : "/login"}
+              data-testid="account-icon"
+              aria-label={signedIn ? "My account" : "Sign in"}
+              className="relative h-11 w-11 flex items-center justify-center text-aayna-charcoal hover:text-aayna-burgundy transition-colors"
+            >
+              <User className="h-5 w-5" />
+              {signedIn && <span aria-hidden="true" className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-aayna-coral" />}
+            </Link>
             <Link
               to="/cart"
               data-testid="cart-icon"

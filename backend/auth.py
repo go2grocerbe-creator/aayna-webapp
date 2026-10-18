@@ -39,6 +39,14 @@ PERMISSIONS = {
     "export.orders": _OPS | {"order_manager"},
     "export.customers": _OPS | {"order_manager"},
     "import.products": _OPS | {"product_manager"},
+    # Customer accounts: suspending/reactivating sign-in is an ops decision.
+    "customers.manage": _OPS,
+    # Promotions are owner/ops only - product and order managers get nothing here.
+    # Making a code usable (activation) and the welcome campaign's global limits
+    # are high-risk money decisions, reserved to the super admin.
+    "promotions.view": _OPS,
+    "promotions.manage": _OPS,
+    "promotions.activate": frozenset({"super_admin"}),
 }
 
 

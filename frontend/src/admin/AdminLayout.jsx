@@ -2,7 +2,7 @@ import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Boxes, Users, Settings as SettingsIcon,
-  LogOut, Menu, ExternalLink, Loader2,
+  LogOut, Menu, ExternalLink, Loader2, UserCheck, Tag,
 } from "lucide-react";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -15,6 +15,8 @@ const navItems = [
   { to: "/admin/categories", label: "Categories", icon: FolderTree, perm: "products.view" },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes, perm: "inventory.view" },
   { to: "/admin/customers", label: "Customers", icon: Users, perm: "customers.view" },
+  { to: "/admin/accounts", label: "Accounts", icon: UserCheck, perm: "customers.view" },
+  { to: "/admin/promotions", label: "Promotions", icon: Tag, perm: "promotions.view" },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon, perm: "settings.view" },
 ];
 

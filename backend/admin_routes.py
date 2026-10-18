@@ -10,11 +10,15 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from db import db, now_iso
+import emailer
 from auth import get_current_admin, require, has_permission
 
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
 
 ORDER_STATUSES = ["New", "Confirmed", "Packed", "Sent to Courier", "Delivered", "Cancelled", "Returned"]
+# Meaningful changes the customer is emailed about (Packed is internal-only).
+CUSTOMER_EMAIL_STATUSES = {"Confirmed": "Confirmed", "Sent to Courier": "Handed to courier",
+                           "Delivered": "Delivered", "Cancelled": "Cancelled"}
 PRODUCT_STATUSES = {"active", "draft", "inactive", "out_of_stock"}
 # Business day boundary for "today" on the dashboard (Bangladesh, UTC+6, no DST).
 BUSINESS_UTC_OFFSET = timedelta(hours=6)
@@ -419,7 +423,7 @@ async def list_orders(status: Optional[str] = None, search: Optional[str] = None
             {"customer_name": {"$regex": pattern, "$options": "i"}},
             {"customer_phone": {"$regex": pattern, "$options": "i"}},
         ]
-    orders = await db.orders.find(q, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    orders = await db.orders.find(q, {"_id": 0, "order_confirmation_token_hash": 0}).sort("created_at", -1).to_list(limit)
     return orders
 
 
@@ -430,6 +434,10 @@ async def get_order(order_number: str, current=Depends(require("orders.view"))):
         raise HTTPException(status_code=404, detail="Order not found")
     notifs = await db.notification_logs.find({"order_id": order_number}, {"_id": 0, "message": 0}).sort("created_at", -1).to_list(50)
     order["notifications"] = notifs
+    order["emails"] = await db.email_logs.find({"order_number": order_number}, {"_id": 0, "to_hash": 0, "dedupe_key": 0}).sort("created_at", -1).to_list(50)
+    order["events"] = await db.order_events.find({"order_id": order.get("id")}, {"_id": 0}).sort("created_at", 1).to_list(100)
+    order["redemptions"] = await db.promotion_redemptions.find({"order_id": order.get("id")}, {"_id": 0, "usage_key": 0}).to_list(10)
+    order.pop("order_confirmation_token_hash", None)
     return order
 
 
@@ -458,6 +466,22 @@ async def update_order(order_number: str, payload: OrderUpdate, current=Depends(
             inc[counter[new_status]] = inc.get(counter[new_status], 0) + 1
         if inc:
             await db.customers.update_one({"id": order["customer_id"]}, {"$inc": inc})
+    if new_status and new_status != old_status:
+        # Append-only history: the customer timeline shows only recorded transitions.
+        await db.order_events.insert_one({"id": str(uuid.uuid4()), "order_id": order["id"], "order_number": order_number,
+                                          "status": new_status, "previous_status": old_status, "source": "admin",
+                                          "actor": current["email"], "created_at": now_iso()})
+        if new_status in CUSTOMER_EMAIL_STATUSES and order.get("customer_email"):
+            fresh = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
+            link = f"/account/orders/{order_number}" if order.get("account_id") else f"/track-order?order={order_number}"
+            try:
+                await emailer.send("order_status", "order_status", order["customer_email"],
+                                   {"name": order.get("customer_name"), "order": fresh, "label": CUSTOMER_EMAIL_STATUSES[new_status],
+                                    "url": emailer.site_link(link)},
+                                   dedupe_key=f"order_status:{order['id']}:{new_status}", account_id=order.get("account_id"),
+                                   order_number=order_number)
+            except Exception:  # noqa: BLE001 - a status change never fails because of email
+                pass
     return await db.orders.find_one({"order_number": order_number}, {"_id": 0})
 
 

@@ -5,6 +5,7 @@ import { Loader2, Search, SearchX } from "lucide-react";
 import { trackOrder } from "@/lib/api";
 import { formatBDT, customerStatusLabel } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
+import OrderTimeline from "@/components/account/OrderTimeline";
 
 // D6 - presentation only. Verification is unchanged: both order number AND
 // phone are required, the backend never distinguishes which one was wrong,
@@ -133,7 +134,9 @@ export default function TrackOrder() {
                 </span>
               </div>
 
-              {stepIdx >= 0 && !isStopped && (
+              {o.timeline ? (
+                <div className="mb-6"><OrderTimeline timeline={o.timeline} testid={`track-timeline-${o.order_number}`} /></div>
+              ) : stepIdx >= 0 && !isStopped && (
                 <div className="flex items-center mb-6" aria-hidden="true">
                   {STATUS_STEPS.map((s, i) => (
                     <div key={s} className="flex-1 flex items-center last:flex-none">

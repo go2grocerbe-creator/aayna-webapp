@@ -19,10 +19,11 @@ fs.mkdirSync(OUT, { recursive: true });
 const results = [];
 const rec = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "PASS" : "FAIL"}  ${n}${d ? "  — " + d : ""}`); };
 
-const NAV = { super_admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "settings"],
-  admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "settings"],
+// Accounts = registered customer sign-ins (customers.view); Promotions = owner/ops only.
+const NAV = { super_admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
+  admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
   product_manager: ["dashboard", "products", "categories", "inventory"],
-  order_manager: ["dashboard", "orders", "products", "categories", "inventory", "customers"] };
+  order_manager: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts"] };
 const COST_ROLES = new Set(["super_admin", "admin"]);
 const EDIT_ROLES = new Set(["super_admin", "admin", "product_manager"]);
 

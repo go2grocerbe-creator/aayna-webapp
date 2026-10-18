@@ -94,7 +94,7 @@ export default function OrderDetail() {
             <div className="border-t border-gray-100 mt-3 pt-3 space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatBDT(order.subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Delivery</span><span>{formatBDT(order.delivery_charge)}</span></div>
-              {order.discount_amount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-{formatBDT(order.discount_amount)}</span></div>}
+              {order.discount_amount > 0 && <div className="flex justify-between" data-testid="admin-order-discount"><span className="text-gray-500">Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>-{formatBDT(order.discount_amount)}</span></div>}
               <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-aayna-burgundy">{formatBDT(order.total_amount)}</span></div>
               <div className="flex justify-between pt-1"><span className="text-gray-500">Payment</span><span>{order.payment_method} · {order.payment_status}</span></div>
             </div>
@@ -114,6 +114,30 @@ export default function OrderDetail() {
               </ul>
             ) : <p className="text-sm text-gray-400">No notifications logged.</p>}
             <p className="text-xs text-gray-400 mt-3">Notifications are a placeholder in this version (no real send).</p>
+          </div>
+
+          {/* Customer emails + status history */}
+          <div className="bg-white border border-gray-200 rounded-lg p-5" data-testid="admin-order-emails">
+            <h2 className="font-semibold text-aayna-charcoal mb-3">Customer Emails</h2>
+            {order.emails?.length ? (
+              <ul className="space-y-2 text-sm">
+                {order.emails.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3">
+                    <span className="text-gray-600">{m.template.replace(/_/g, " ")} · {m.to_masked}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{m.status.replace("_", " ")}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-gray-400">{order.customer_email ? "No emails recorded for this order." : "No email address on this order."}</p>}
+            <h3 className="font-semibold text-aayna-charcoal mt-5 mb-2 text-sm">Status History</h3>
+            {order.events?.length ? (
+              <ul className="space-y-1.5 text-sm">
+                {order.events.map((e) => (
+                  <li key={e.id} className="flex justify-between gap-3"><span>{e.status}{e.actor ? <span className="text-gray-400"> · {e.actor}</span> : null}</span><span className="text-gray-500 text-xs">{new Date(e.created_at).toLocaleString("en-GB")}</span></li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-gray-400">No recorded history (order placed before history was kept).</p>}
+            {order.account_id && <p className="text-xs text-gray-500 mt-4">Linked to a registered customer account.</p>}
           </div>
         </div>
 

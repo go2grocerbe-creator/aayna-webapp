@@ -56,6 +56,25 @@ export const getInventoryLogs = (id) => api.get(`/admin/inventory/${id}/logs`).t
 export const getCustomers = (params) => api.get("/admin/customers", { params }).then((r) => r.data);
 export const getCustomer = (id) => api.get(`/admin/customers/${id}`).then((r) => r.data);
 
+// Customer accounts (registered sign-ins; separate from guest customer records)
+export const getCustomerAccounts = (params) => api.get("/admin/customer-accounts", { params }).then((r) => r.data);
+export const getCustomerAccount = (id) => api.get(`/admin/customer-accounts/${id}`).then((r) => r.data);
+export const suspendCustomerAccount = (id, reason) => api.post(`/admin/customer-accounts/${id}/suspend`, { reason }).then((r) => r.data);
+export const reactivateCustomerAccount = (id) => api.post(`/admin/customer-accounts/${id}/reactivate`, {}).then((r) => r.data);
+
+// Promotions
+export const getPromotions = (kind = "codes") => api.get("/admin/promotions", { params: { kind } }).then((r) => r.data);
+export const getPromotion = (id) => api.get(`/admin/promotions/${id}`).then((r) => r.data);
+export const createPromotion = (d) => api.post("/admin/promotions", d).then((r) => r.data);
+export const updatePromotion = (id, d) => api.put(`/admin/promotions/${id}`, d).then((r) => r.data);
+export const activatePromotion = (id, note) => api.post(`/admin/promotions/${id}/activate`, { confirm: true, note }).then((r) => r.data);
+export const pausePromotion = (id) => api.post(`/admin/promotions/${id}/pause`).then((r) => r.data);
+export const archivePromotion = (id) => api.post(`/admin/promotions/${id}/archive`).then((r) => r.data);
+export const previewPromotion = (d) => api.post("/admin/promotions/preview", d).then((r) => r.data);
+export const restoreRedemption = (id, note) => api.post(`/admin/promotions/redemptions/${id}/restore`, { confirm: true, note }).then((r) => r.data);
+export const getWelcomeCampaign = () => api.get("/admin/promotions/campaigns/welcome").then((r) => r.data);
+export const updateWelcomeCampaign = (d) => api.put("/admin/promotions/campaigns/welcome", d).then((r) => r.data);
+
 // Settings
 export const getAdminSettings = () => api.get("/admin/settings").then((r) => r.data);
 export const updateAdminSettings = (d) => api.put("/admin/settings", d).then((r) => r.data);

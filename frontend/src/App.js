@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/CartContext";
+import { CustomerAuthProvider } from "@/context/CustomerAuthContext";
 import Layout from "@/components/Layout";
 import Analytics from "@/components/Analytics";
 import Home from "@/pages/Home";
@@ -16,6 +17,14 @@ import TrackOrder from "@/pages/TrackOrder";
 import Contact from "@/pages/Contact";
 import StaticPage from "@/pages/StaticPage";
 import NotFound from "@/pages/NotFound";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import { VerifyEmail, ForgotPassword, ResetPassword, ConfirmEmailChange, ConfirmOrderClaim } from "@/pages/auth/TokenPages";
+import {
+  AccountLayout, AccountHome, AccountOrders, AccountOrderDetail, AccountAddresses, AccountProfile, AccountSecurity, AccountRewards,
+} from "@/pages/account/AccountPages";
+import Promotions from "@/admin/pages/Promotions";
+import CustomerAccounts, { CustomerAccountDetail } from "@/admin/pages/CustomerAccounts";
 
 import { AdminAuthLayout } from "@/admin/AdminAuthContext";
 import AdminLayout, { AdminProtected, RequirePermission } from "@/admin/AdminLayout";
@@ -43,6 +52,7 @@ function App() {
   return (
     <div className="App">
       <CartProvider>
+        <CustomerAuthProvider>
         <BrowserRouter>
           <ScrollToTop />
           <Analytics />
@@ -62,6 +72,22 @@ function App() {
               <Route path="/returns" element={<StaticPage pageKey="returns" />} />
               <Route path="/privacy" element={<StaticPage pageKey="privacy" />} />
               <Route path="/terms" element={<StaticPage pageKey="terms" />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/confirm-email" element={<ConfirmEmailChange />} />
+              <Route path="/account/orders/claim" element={<ConfirmOrderClaim />} />
+              <Route path="/account" element={<AccountLayout />}>
+                <Route index element={<AccountHome />} />
+                <Route path="orders" element={<AccountOrders />} />
+                <Route path="orders/:orderNumber" element={<AccountOrderDetail />} />
+                <Route path="addresses" element={<AccountAddresses />} />
+                <Route path="profile" element={<AccountProfile />} />
+                <Route path="security" element={<AccountSecurity />} />
+                <Route path="rewards" element={<AccountRewards />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Route>
 
@@ -80,12 +106,16 @@ function App() {
                   <Route path="inventory" element={<RequirePermission perm="inventory.view"><Inventory /></RequirePermission>} />
                   <Route path="customers" element={<RequirePermission perm="customers.view"><Customers /></RequirePermission>} />
                   <Route path="customers/:id" element={<RequirePermission perm="customers.view"><CustomerDetail /></RequirePermission>} />
+                  <Route path="accounts" element={<RequirePermission perm="customers.view"><CustomerAccounts /></RequirePermission>} />
+                  <Route path="accounts/:id" element={<RequirePermission perm="customers.view"><CustomerAccountDetail /></RequirePermission>} />
+                  <Route path="promotions" element={<RequirePermission perm="promotions.view"><Promotions /></RequirePermission>} />
                   <Route path="settings" element={<RequirePermission perm="settings.view"><Settings /></RequirePermission>} />
                 </Route>
               </Route>
             </Route>
           </Routes>
         </BrowserRouter>
+        </CustomerAuthProvider>
         <Toaster position="top-center" richColors />
       </CartProvider>
     </div>

@@ -3,7 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
-import { getDistricts, checkout, validateCart } from "@/lib/api";
+import { getDistricts } from "@/lib/api";
+import { validateCartWithSession as validateCart, checkoutWithSession as checkout, listAddresses } from "@/lib/customerApi";
+import { useCustomer } from "@/context/CustomerAuthContext";
 import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, isPlaceholder } from "@/lib/format";
@@ -84,6 +86,69 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const { account, signedIn } = useCustomer();
+  const { data: addresses = [] } = useQuery({ queryKey: ["account-addresses"], queryFn: listAddresses, enabled: signedIn });
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState(null); // {code, discount} once the server accepts it
+  const [couponMsg, setCouponMsg] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // Signed-in customers: prefill once from the profile and default address (still editable).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!account || prefilled.current) return;
+    prefilled.current = true;
+    const addr = account.default_address;
+    setForm((f) => ({
+      ...f,
+      customer_name: f.customer_name || addr?.recipient_name || account.full_name || "",
+      customer_phone: f.customer_phone || (addr?.phone || account.phone || "").replace(/^\+880/, "0"),
+      customer_email: f.customer_email || account.email || "",
+      district: f.district || addr?.district || "",
+      delivery_address: f.delivery_address || addr?.address || "",
+      delivery_note: f.delivery_note || addr?.instructions || "",
+    }));
+  }, [account]);
+
+  const pickAddress = (id) => {
+    const a = addresses.find((x) => x.id === id);
+    if (!a) return;
+    setForm((f) => ({ ...f, customer_name: a.recipient_name, customer_phone: a.phone.replace(/^\+880/, "0"),
+                      district: a.district, delivery_address: a.address, delivery_note: a.instructions || "" }));
+    setErrors({});
+  };
+
+  const applyCoupon = async (code = couponInput) => {
+    const c = (code || "").trim();
+    if (!c) return;
+    setCouponLoading(true);
+    setCouponMsg(null);
+    try {
+      const r = await validateCart({
+        items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        coupon_code: c, phone: form.customer_phone || undefined,
+      });
+      if (r.coupon?.valid) {
+        setCoupon({ code: r.coupon.code, discount: r.coupon.discount });
+        setCouponMsg({ tone: "ok", text: `${r.coupon.code} applied` });
+      } else {
+        setCoupon(null);
+        setCouponMsg({ tone: "error", text: r.coupon?.message || "This code isn't valid." });
+      }
+    } catch (err) {
+      setCoupon(null);
+      setCouponMsg({ tone: "error", text: err?.response?.data?.detail || "We couldn't check this code. Please try again." });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+  const removeCoupon = () => { setCoupon(null); setCouponMsg(null); setCouponInput(""); };
+  // The cart changed: re-check the code against the new items (server decides).
+  const itemsKey = items.map((i) => `${i.product_id}:${i.quantity}`).join(",");
+  useEffect(() => {
+    if (coupon) applyCoupon(coupon.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
 
   useSeo({ title: "Checkout", description: "Complete your AAYNA order securely.", noindex: true });
 
@@ -99,7 +164,8 @@ export default function Checkout() {
       : Number(settings.delivery_charge_outside_dhaka);
   }, [form.district, settings]);
 
-  const total = subtotal + deliveryCharge;
+  const discount = coupon ? Math.min(coupon.discount, subtotal) : 0;
+  const total = subtotal - discount + deliveryCharge;
 
   // Presentation-only progress read from the same fields/validation the
   // form already has - not a second source of truth, not a gate.
@@ -151,6 +217,7 @@ export default function Checkout() {
         ...form,
         items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
         client_request_id: requestId.current,
+        coupon_code: coupon?.code || undefined,
       });
       clearCart();
       const token = encodeURIComponent(res.order_confirmation_token || "");
@@ -219,6 +286,11 @@ export default function Checkout() {
           <div id="checkout-section-contact">
             <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">01 — Contact</p>
             <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Contact</h2>
+            {signedIn ? (
+              <p className="text-xs text-aayna-taupe mb-4" data-testid="checkout-signed-in">Signed in as <span className="text-aayna-charcoal break-all">{account.email}</span> - this order will appear in your account.</p>
+            ) : (
+              <p className="text-xs text-aayna-taupe mb-4">Have an account? <Link to="/login?next=/checkout" className="text-aayna-burgundy underline underline-offset-2">Sign in</Link> to track this order in My AAYNA. Or continue as a guest.</p>
+            )}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label htmlFor="checkout-name" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Full Name *</label>
@@ -270,6 +342,16 @@ export default function Checkout() {
           <div id="checkout-section-delivery">
             <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">02 — Delivery</p>
             <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Delivery Information</h2>
+            {addresses.length > 0 && (
+              <div className="mb-4">
+                <label htmlFor="checkout-saved-address" className="block text-sm font-medium text-aayna-charcoal mb-1.5">Saved addresses</label>
+                <select id="checkout-saved-address" data-testid="checkout-saved-address" defaultValue="" onChange={(e) => pickAddress(e.target.value)}
+                        className="w-full h-11 border border-aayna-beige bg-white px-3 text-aayna-charcoal text-[15px] outline-none focus:border-aayna-burgundy">
+                  <option value="" disabled>Choose a saved address</option>
+                  {addresses.map((a) => <option key={a.id} value={a.id}>{(a.label ? `${a.label} - ` : "") + `${a.recipient_name}, ${a.district}`}</option>)}
+                </select>
+              </div>
+            )}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label htmlFor="checkout-district" className="block text-sm font-medium text-aayna-charcoal mb-1.5">District *</label>
@@ -405,8 +487,31 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
+            <div className="border-t border-aayna-beige pt-4 pb-4" data-testid="checkout-coupon">
+              {coupon ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-emerald-800 font-medium">Code {coupon.code} applied</span>
+                  <button type="button" onClick={removeCoupon} className="min-h-[44px] text-aayna-taupe hover:text-aayna-burgundy underline-offset-2 hover:underline">Remove</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <label htmlFor="checkout-coupon-input" className="sr-only">Discount code</label>
+                  <input id="checkout-coupon-input" data-testid="checkout-coupon-input" value={couponInput} autoComplete="off" autoCapitalize="characters"
+                         onChange={(e) => { setCouponInput(e.target.value); setCouponMsg(null); }}
+                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
+                         placeholder="Discount code" maxLength={40}
+                         className="flex-1 min-w-0 h-11 border border-aayna-beige bg-white px-3 text-sm uppercase outline-none focus:border-aayna-burgundy focus:ring-1 focus:ring-aayna-burgundy" />
+                  <button type="button" onClick={() => applyCoupon()} disabled={couponLoading || !couponInput.trim()} data-testid="checkout-coupon-apply"
+                          className="h-11 px-4 border border-aayna-burgundy text-aayna-burgundy text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                    {couponLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}Apply
+                  </button>
+                </div>
+              )}
+              {couponMsg?.tone === "error" && <p role="alert" data-testid="checkout-coupon-error" className="text-xs text-red-700 mt-1.5">{couponMsg.text}</p>}
+            </div>
             <div className="border-t border-aayna-beige pt-4 space-y-2.5 text-sm">
               <div className="flex justify-between"><span className="text-aayna-taupe">Subtotal</span><span className="font-semibold">{formatBDT(subtotal)}</span></div>
+              {discount > 0 && <div className="flex justify-between text-emerald-800" data-testid="checkout-discount"><span>Discount ({coupon.code})</span><span className="font-semibold">−{formatBDT(discount)}</span></div>}
               <div className="flex justify-between">
                 <span className="text-aayna-taupe">Delivery {form.district ? `(${form.district})` : ""}</span>
                 <span data-testid="checkout-delivery" className="font-semibold">{form.district ? formatBDT(deliveryCharge) : "Calculated at checkout"}</span>
@@ -426,7 +531,7 @@ export default function Checkout() {
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {submitting ? "Placing Order..." : "Place Order"}
             </button>
-            <p className="text-xs text-aayna-taupe text-center mt-3">No account needed. We'll confirm your order shortly.</p>
+            <p className="text-xs text-aayna-taupe text-center mt-3">{signedIn ? "We'll confirm your order shortly." : "No account needed. We'll confirm your order shortly."}</p>
           </div>
         </div>
       </form>
