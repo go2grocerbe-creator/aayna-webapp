@@ -122,3 +122,40 @@ def test_confirmed_prices_match_the_pricing_doc():
     doc = (ROOT / "docs/audits/PRODUCT_PRICING_UPDATE.md").read_text(encoding="utf-8")
     for sku, price in pci.CONFIRMED_PRICES.items():
         assert f"| {sku} |" in doc and f"৳{price:,}" in doc.split(f"| {sku} |")[1].split("\n")[0]
+
+
+# --- scripts/admin_account.py (owner-run password reset) -------------------------------
+def _acct():
+    spec2 = importlib.util.spec_from_file_location("admin_account", ROOT / "scripts" / "admin_account.py")
+    m = importlib.util.module_from_spec(spec2)
+    sys.path.insert(0, str(ROOT / "scripts"))
+    spec2.loader.exec_module(m)
+    return m
+
+
+def test_admin_password_reset_hashes_and_signs_out(monkeypatch):
+    import bcrypt
+    acct = _acct()
+    db = mongomock.MongoClient()["aayna_prod"]
+    db.users.insert_one({"id": "u1", "email": "owner@example.test", "role": "super_admin", "status": "active",
+                         "password_hash": "old", "session_version": 2})
+    answers = iter(["a-new-strong-password", "a-new-strong-password"])
+    monkeypatch.setattr(acct.getpass, "getpass", lambda prompt="": next(answers))
+    acct.set_password(db, " Owner@Example.test ")
+    u = db.users.find_one({"id": "u1"})
+    assert bcrypt.checkpw(b"a-new-strong-password", u["password_hash"].encode()) and u["session_version"] == 3
+    assert u["role"] == "super_admin" and u["status"] == "active"
+
+
+@pytest.mark.parametrize("pw1,pw2", [("short", "short"), ("a-new-strong-password", "different-password-1")])
+def test_admin_password_reset_refuses_bad_input(monkeypatch, pw1, pw2):
+    acct = _acct()
+    db = mongomock.MongoClient()["aayna_prod"]
+    db.users.insert_one({"id": "u1", "email": "owner@example.test", "role": "super_admin", "password_hash": "old"})
+    answers = iter([pw1, pw2])
+    monkeypatch.setattr(acct.getpass, "getpass", lambda prompt="": next(answers))
+    with pytest.raises(acct.Stop):
+        acct.set_password(db, "owner@example.test")
+    assert db.users.find_one({"id": "u1"})["password_hash"] == "old"
+    with pytest.raises(acct.Stop):
+        acct.set_password(db, "nobody@example.test")
