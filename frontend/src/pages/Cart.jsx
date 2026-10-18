@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Minus, Plus, AlertCircle } from "lucide-react";
@@ -12,7 +13,7 @@ import ProductImage from "@/components/ProductImage";
 // presentation pass only. No card shells, no shadows: items are separated by
 // hairlines and space, matching D2/D3's restrained editorial treatment.
 export default function Cart() {
-  const { items, updateQty, removeItem, subtotal } = useCart();
+  const { items, updateQty, removeItem, refreshPrices, subtotal } = useCart();
   useSeo({ title: "The Selection", description: "Review the pieces you've chosen.", noindex: true });
 
   const { data: validation } = useQuery({
@@ -21,6 +22,11 @@ export default function Cart() {
       validateCart({ items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })) }),
     enabled: items.length > 0,
   });
+
+  // Server price is authoritative: replace any stale price saved in the browser.
+  useEffect(() => {
+    if (validation?.items) refreshPrices(validation.items);
+  }, [validation, refreshPrices]);
 
   const issueMap = {};
   (validation?.items || []).forEach((v) => {

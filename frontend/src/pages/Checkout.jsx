@@ -1,9 +1,9 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
-import { getDistricts, checkout } from "@/lib/api";
+import { getDistricts, checkout, validateCart } from "@/lib/api";
 import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, isPlaceholder } from "@/lib/format";
@@ -51,7 +51,19 @@ const FIELD_TESTID = {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, refreshPrices } = useCart();
+  // Same server price check as the cart page, so a customer arriving here
+  // directly never sees a stale browser-saved price (the order is always
+  // charged at the server's current price).
+  const { data: priceCheck } = useQuery({
+    queryKey: ["cart-validate", items.map((i) => `${i.product_id}:${i.quantity}`).join(",")],
+    queryFn: () =>
+      validateCart({ items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })) }),
+    enabled: items.length > 0,
+  });
+  useEffect(() => {
+    if (priceCheck?.items) refreshPrices(priceCheck.items);
+  }, [priceCheck, refreshPrices]);
   const { data: settings } = useSettings();
   const { data: districts = [] } = useQuery({ queryKey: ["districts"], queryFn: getDistricts });
   const requestId = useRef(

@@ -68,13 +68,37 @@ export function CartProvider({ children }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  // The cart is kept in localStorage, so a price saved when the item was added
+  // can be stale. The server (/cart/validate) is the price authority: copy its
+  // current unit/selling/discount price onto matching lines so the cart and
+  // checkout show exactly what the order will charge.
+  const refreshPrices = useCallback((serverLines) => {
+    const byId = {};
+    (serverLines || []).forEach((l) => {
+      if (l && l.product_id && typeof l.unit_price === "number") byId[l.product_id] = l;
+    });
+    setItems((prev) => {
+      let changed = false;
+      const next = prev.map((i) => {
+        const l = byId[i.product_id];
+        if (!l) return i;
+        const discount = l.discount_price ?? null;
+        if (i.unit_price === l.unit_price && i.selling_price === l.selling_price &&
+            (i.discount_price ?? null) === discount) return i;
+        changed = true;
+        return { ...i, unit_price: l.unit_price, selling_price: l.selling_price, discount_price: discount };
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   const count = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
   const subtotal = useMemo(
     () => items.reduce((s, i) => s + i.unit_price * i.quantity, 0),
     [items]
   );
 
-  const value = { items, addItem, updateQty, removeItem, clearCart, count, subtotal };
+  const value = { items, addItem, updateQty, removeItem, clearCart, refreshPrices, count, subtotal };
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
