@@ -82,8 +82,9 @@ Frontend needs no new variables (same-origin `/api`). No secret reaches the brow
 
 Google Cloud Console → APIs & Services → OAuth consent screen (External, app name AAYNA, support email, authorised domain `shopaayna.com` and `vercel.app` for the preview) → Credentials → Create OAuth client ID → Web application:
 
-* Authorised JavaScript origins: the site origin(s), e.g. the preview alias below and later `https://shopaayna.com`.
-* Authorised redirect URIs: `<origin>/api/auth/google/callback` for each origin.
+* Authorised JavaScript origins: `https://aayna-webapp-git-feat-customer-accounts-20261018-go2-grocer.vercel.app` (test preview) and later `https://shopaayna.com` (and `https://www.shopaayna.com` if used).
+* Authorised redirect URIs: `https://aayna-webapp-git-feat-customer-accounts-20261018-go2-grocer.vercel.app/api/auth/google/callback`, later `https://shopaayna.com/api/auth/google/callback`.
+* While the consent screen is in "Testing", add the Google accounts allowed to sign in under Test users.
 * Put the Client ID and Client Secret into Vercel as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (Sensitive), scoped like the other secrets.
 
 ## 6. Database changes (non-destructive)
@@ -98,3 +99,10 @@ Before this reaches `aayna_prod`: back up, record collection counts, deploy, con
 
 * `backend/tests_import/test_customer_accounts.py` — 48 offline tests (mongomock): registration/policy, hashing, verification, enumeration, CSRF/Origin, lockout, sessions, admin/customer separation, reset (expiry, replay, concurrency, throttling), Google OIDC (new/repeat, wrong aud/iss/azp/nonce/key/kid, expired, replay, missing state, login-CSRF binding, cancel, unverified email, open redirect, no email-only merge, set-password rules), addresses isolation, email change, guest/authenticated checkout, IDOR, claiming, timeline, track rate limit, promotions (permissions, server-side maths, rules, limits, concurrency, failed checkout, idempotency, restore policy, customer-specific, preview), welcome campaign, admin accounts, email engine.
 * `scripts/verify/customer_accounts_ui.js` — real-browser suite (Playwright/Chromium) against an isolated backend in capture mode: 70 checks across 390/768/1280.
+
+## 8. Test preview (isolated)
+
+* URL: `https://aayna-webapp-git-feat-customer-accounts-20261018-go2-grocer.vercel.app` (Vercel login required).
+* Database: `aayna_preview` on the same cluster, used by a separate user `aayna_preview_app` with readWrite on `aayna_preview` only - it cannot read `aayna_prod`. Demo catalogue seeded there (`ALLOW_PRODUCTION_SEED=true` scoped to this branch only).
+* Non-secret variables are set per branch. Secrets (`MONGO_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `RESEND_API_KEY`, optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) are entered by the owner as Sensitive, Preview, branch `feat/customer-accounts-20261018`.
+* The production-data admin preview (`chore/production-consolidation-20261015`) is unaffected: its variables are scoped to its own branch.
