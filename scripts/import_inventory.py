@@ -33,8 +33,13 @@ Rules this script enforces (see task brief):
     price, discount, material, description or category is guessed. A product
     without a selling price is NOT ready and is skipped.
   * Selling price comes from a "Selling price (BDT)" column if present, else
-    from --temp-price (founder-approved temporary price, flagged
-    price_is_temporary). Final prices are managed in Admin > Products.
+    from --cost-price-rule ((Unit cost BDT + extra) x multiplier, founder rule
+    2026-10-18; the two values are confidential and read from
+    AAYNA_PRICE_EXTRA_BDT / AAYNA_PRICE_MULTIPLIER in backend/.env, see
+    backend/pricing.py; the admin-only breakdown is stored in `pricing`),
+    else from --temp-price (founder-approved temporary price,
+    flagged price_is_temporary). Final prices are managed in Admin > Products
+    or re-derived from cost with scripts/reprice_from_cost.py.
   * Images go through the app's existing object storage (storage.put_object +
     db.files record), exactly like the admin upload endpoint. Local Windows
     paths never reach a product record. Originals are never modified; an
@@ -60,6 +65,9 @@ import sys
 import uuid
 from collections import Counter, defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+import pricing  # noqa: E402  (pure module: cost -> selling price rule, no I/O)
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 MAX_EDGE = 1600
@@ -139,7 +147,7 @@ def read_inventory(xlsx_path):
     return {"sheet": ws.title, "header": header or [], "products": products}
 
 
-def map_row(raw, temp_price=None):
+def map_row(raw, temp_price=None, price_rule=None):
     mapped, warnings, blockers = {}, [], []
     for h, v in raw.items():
         if h == "_row":
@@ -180,6 +188,18 @@ def map_row(raw, temp_price=None):
             continue
         if not isinstance(v, (int, float)) or v < 0:
             blockers.append(f"Invalid {f}: {v!r}")
+    if price_rule:
+        if "selling_price" in mapped:
+            # never apply the rule on top of an existing retail price
+            blockers.append("Sheet already has a selling price; remove it or drop --cost-price-rule")
+        else:
+            try:
+                bd = pricing.price_from_cost(mapped.get("cost_price"), *price_rule)
+            except pricing.PricingError as exc:
+                blockers.append(f"Cost-based price not possible: {exc}")
+            else:
+                mapped["selling_price"] = bd["selling_price"]
+                mapped["pricing"] = bd  # ADMIN ONLY breakdown
     if "selling_price" not in mapped and temp_price is not None:
         # Founder-approved TEMPORARY price; final price is set in Admin.
         # Never written back to the spreadsheet.
@@ -260,11 +280,14 @@ def match_photos(products, photos):
 # ---------------------------------------------------------------------------
 # Manifest
 # ---------------------------------------------------------------------------
-def build_manifest(xlsx, photo_dir, temp_price=None):
+def build_manifest(xlsx, photo_dir, temp_price=None, price_rule=None):
+    """price_rule: None, or (extra_bdt, multiplier) - see pricing.rule_from_env()."""
+    if temp_price is not None and price_rule:
+        raise ValueError("Use either --temp-price or --cost-price-rule, not both")
     inv = read_inventory(xlsx)
     records = []
     for raw in inv["products"]:
-        mapped, warnings, blockers = map_row(raw, temp_price)
+        mapped, warnings, blockers = map_row(raw, temp_price, price_rule)
         records.append({"source_row": raw["_row"], **mapped, "_w": warnings, "_b": blockers})
 
     # duplicates
@@ -461,6 +484,7 @@ async def import_products(manifest, photo_dir, public_base, only=None, db=None, 
                 "selling_price": float(rec["selling_price"]),
                 "discount_price": float(rec["discount_price"]) if rec.get("discount_price") else None,
                 "price_is_temporary": bool(rec.get("price_is_temporary")),  # admin-only marker
+                **({"pricing": {**rec["pricing"], "computed_at": storage.now_iso()}} if rec.get("pricing") else {}),
                 "images": images,
                 "stock_quantity": rec["stock_quantity"], "low_stock_alert": 3,
                 "short_description": "", "full_description": "", "material": fields.get("material", ""),
@@ -488,6 +512,9 @@ def main():
     m.add_argument("--out", default="import_manifest.json")
     m.add_argument("--temp-price", type=float,
                    help="founder-approved temporary selling price (BDT) for rows without one; products stay draft")
+    m.add_argument("--cost-price-rule", action="store_true",
+                   help="selling price = (Unit cost BDT + extra) x multiplier for rows without a selling price; "
+                        "values from AAYNA_PRICE_EXTRA_BDT / AAYNA_PRICE_MULTIPLIER (backend/.env, confidential)")
     i = sub.add_parser("import")
     i.add_argument("--manifest", required=True)
     i.add_argument("--photos", help="override photo dir from manifest")
@@ -500,7 +527,15 @@ def main():
     a = ap.parse_args()
 
     if a.cmd == "manifest":
-        man = build_manifest(a.xlsx, a.photos, a.temp_price)
+        rule = None
+        if a.cost_price_rule:
+            from dotenv import load_dotenv
+            load_dotenv(Path(__file__).resolve().parent.parent / "backend" / ".env")
+            try:
+                rule = pricing.rule_from_env()
+            except pricing.PricingError as exc:
+                sys.exit(f"--cost-price-rule: {exc} (set it in backend/.env; never commit it)")
+        man = build_manifest(a.xlsx, a.photos, a.temp_price, rule)
         Path(a.out).write_text(json.dumps(man, indent=2, ensure_ascii=False), encoding="utf-8")
         print(json.dumps(man["summary"], indent=2, ensure_ascii=False))
         return
