@@ -12,11 +12,12 @@ import ProductCard from "@/components/ProductCard";
 import ProductImage from "@/components/ProductImage";
 import { productImages, primaryImage } from "@/lib/productImages";
 import { useSeo, useJsonLd } from "@/lib/seo";
+import { LAUNCH_CATEGORY_SLUGS } from "@/lib/catalogue";
 
 // Matches the same launch-scope allowlist used by Shop.jsx/Category.jsx (D2
 // "The Edit"). A product outside these categories is real catalogue, just
 // not launch-promoted - noindex, not deleted or hidden from direct visitors.
-const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
+const EDIT_CATEGORY_SLUGS = LAUNCH_CATEGORY_SLUGS;
 
 // The Object (D3, concept-d3-the-object.html). The product is the visual
 // protagonist; no letterform, no scattered typography — one hairline seam

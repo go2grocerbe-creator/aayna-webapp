@@ -35,7 +35,7 @@ async function setup() {
   const login = await fetch(`${API}/admin/login`, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }) }).then((r) => r.json());
   const products = await fetch(`${API}/products`).then((r) => r.json());
-  const inStock = products.filter((p) => p.stock_quantity > 0 && ["earrings", "necklaces", "rings"].includes(p.category_slug));
+  const inStock = products.filter((p) => p.stock_quantity > 0 && ["earrings", "necklaces", "rings", "bracelets"].includes(p.category_slug));
   const pdp = inStock.find((p) => p.discount_price) || inStock[0];
   const cart = inStock.slice(0, 2).map((p) => ({
     product_id: p.id, slug: p.slug, name: p.product_name, image: p.images?.[0]?.image_url, sku: p.sku,

@@ -5,12 +5,13 @@ import { getCategory } from "@/lib/api";
 import { useCategories } from "@/hooks/useStore";
 import TheEdit from "@/components/TheEdit";
 import { useSeo } from "@/lib/seo";
+import { LAUNCH_CATEGORY_SLUGS } from "@/lib/catalogue";
 
 // /category/:slug — same D2 "The Edit" presentation as /shop, just with the
 // current category already active. Switching to a different category in the
 // nav navigates to that category's own route (real per-category SEO/URL,
 // not client-side-only filtering), preserving existing route architecture.
-const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
+const EDIT_CATEGORY_SLUGS = LAUNCH_CATEGORY_SLUGS;
 
 export default function Category() {
   const { slug } = useParams();

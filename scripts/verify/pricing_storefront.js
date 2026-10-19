@@ -50,7 +50,7 @@ const api = (p, opt = {}) => fetch(API + p, opt).then((r) => r.json());
     }
     await page.screenshot({ path: path.join(OUT, `pdp-${vp.name}.png`) });
 
-    // listings: /shop ("The Edit": earrings, necklaces, rings by design) and every category page.
+    // listings: /shop ("The Edit": earrings, necklaces, rings, bracelets) and every category page.
     // Each product must appear on at least one listing, always with its new price, never the old one.
     const cards = [];
     const cats = [...new Set((await api("/products?limit=100")).filter((x) => PRICES.some((p) => p.sku === x.sku)).map((x) => x.category_slug))];
@@ -84,7 +84,7 @@ const api = (p, opt = {}) => fetch(API + p, opt).then((r) => r.json());
     const catOf = Object.fromEntries((await api("/products?limit=100")).map((x) => [`/product/${x.slug}`, x.category_slug]));
     const nonEar = hrefs.filter((h) => catOf[h] && catOf[h] !== "earrings");
     rec(`${vp.name} category chips unchanged (${chips.join(",")}); Earrings chip shows only earrings`,
-      chips.join(",") === "earrings,necklaces,rings" && hrefs.some((h) => catOf[h] === "earrings") && nonEar.length === 0, nonEar.join(","));
+      chips.join(",") === "earrings,necklaces,rings,bracelets" && hrefs.some((h) => catOf[h] === "earrings") && nonEar.length === 0, nonEar.join(","));
 
     // all 10 products in one cart (qty 1, saved at the OLD price): every line, the subtotal and the
     // checkout total use the intended prices. Not submitted (keeps test stock for the order below).

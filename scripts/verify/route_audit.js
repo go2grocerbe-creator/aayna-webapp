@@ -32,8 +32,8 @@ const lastLink = (kind, to) => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const products = await (await fetch(`${API}/products`)).json();
   const cats = await (await fetch(`${API}/categories`)).json();
-  const P = products.find((p) => p.status === "active" && p.stock_quantity > 2 && ["earrings", "necklaces", "rings"].includes(p.category_slug));
-  const LAUNCH = new Set(["earrings", "necklaces", "rings"]); // backend LAUNCH_CATEGORY_SLUGS: only these are indexable
+  const LAUNCH = new Set(["earrings", "necklaces", "rings", "bracelets"]); // = backend LAUNCH_CATEGORY_SLUGS: only these are indexable
+  const P = products.find((p) => p.status === "active" && p.stock_quantity > 2 && LAUNCH.has(p.category_slug));
   const soldOut = products.find((p) => p.status === "out_of_stock" && LAUNCH.has(p.category_slug));
   const offLaunch = products.find((p) => p.status === "active" && !LAUNCH.has(p.category_slug));
   // test order (for confirmation + account detail routes)

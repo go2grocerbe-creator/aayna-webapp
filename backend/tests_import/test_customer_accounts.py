@@ -988,3 +988,9 @@ def test_admin_customers_list_shows_latest_order_date(env):
     rows = client().get("/api/admin/customers", headers=admin_h(env)).json()
     assert len(rows) == 1 and rows[0]["total_orders"] == 2 and rows[0]["last_order_date"] == newest
     assert first != second
+
+
+def test_launch_categories_match_frontend():
+    js = (ROOT / "frontend" / "src" / "lib" / "catalogue.js").read_text()
+    front = set(re.findall(r'"([a-z-]+)"', re.search(r"LAUNCH_CATEGORY_SLUGS = \[([^\]]*)\]", js).group(1)))
+    assert front == set(server.LAUNCH_CATEGORY_SLUGS) == {"earrings", "necklaces", "rings", "bracelets"}

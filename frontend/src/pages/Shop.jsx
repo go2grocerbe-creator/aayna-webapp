@@ -2,12 +2,13 @@ import { useSearchParams } from "react-router-dom";
 import { useCategories } from "@/hooks/useStore";
 import TheEdit from "@/components/TheEdit";
 import { useSeo } from "@/lib/seo";
+import { LAUNCH_CATEGORY_SLUGS } from "@/lib/catalogue";
 
 // The Edit — Shop (D2, concept-d2-the-edit.html). "All" is active when
 // arriving directly at /shop; ?category=slug preselects a category, mirroring
 // the previous Shop.jsx's own query-param pattern so old /shop?category=...
 // links keep working.
-const EDIT_CATEGORY_SLUGS = ["earrings", "necklaces", "rings"];
+const EDIT_CATEGORY_SLUGS = LAUNCH_CATEGORY_SLUGS;
 
 export default function Shop() {
   const [params, setParams] = useSearchParams();

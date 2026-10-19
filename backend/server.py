@@ -991,13 +991,12 @@ SITEMAP_STATIC_PATHS = [
     "/delivery-policy", "/returns", "/privacy", "/terms",
 ]
 
-# L4: mirrors the frontend's launch-scope allowlist (Shop.jsx/Category.jsx/
-# ProductDetail.jsx EDIT_CATEGORY_SLUGS). Bracelets/Hair Accessories/Gift
-# Sets are real, active catalogue - not deleted, not deactivated - but not
-# launch-promoted; those pages are noindex on the frontend, so they are kept
-# out of the sitemap rather than sending crawlers a page and a noindex
-# signal at once. Update both lists together if launch scope changes.
-LAUNCH_CATEGORY_SLUGS = {"earrings", "necklaces", "rings"}
+# Mirrors the frontend's launch-scope allowlist (frontend/src/lib/catalogue.js).
+# These are the four categories of the genuine aayna_prod catalogue (4 of its
+# 10 products are bracelets/cuffs). Any other category stays reachable but is
+# noindex on the frontend, so it is kept out of the sitemap rather than sending
+# crawlers a page and a noindex signal at once. Update both lists together.
+LAUNCH_CATEGORY_SLUGS = {"earrings", "necklaces", "rings", "bracelets"}
 
 
 def _public_site_url() -> str:

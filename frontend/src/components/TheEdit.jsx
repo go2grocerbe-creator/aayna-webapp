@@ -49,7 +49,7 @@ function CategoryLetter({ hovered }) {
 }
 
 export default function TheEdit({
-  categories, // real categories from useCategories(), pre-filtered to Earrings/Necklaces/Rings by the caller
+  categories, // real categories from useCategories(), pre-filtered to the launch categories (lib/catalogue.js) by the caller
   activeCategory, // slug or null ("All")
   onCategoryChange, // (slug|null) => void — Shop.jsx updates a query param, Category.jsx navigates
   contextLabel, // optional "Your Edit — Earrings"-style line when arriving with a category preselected
@@ -59,7 +59,7 @@ export default function TheEdit({
   const [hovered, setHovered] = useState(null);
 
   // "All" shows every product the public API serves (active, in stock) in every
-  // category - including Bracelets/cuffs, which have no filter chip of their own.
+  // category; the launch categories (lib/catalogue.js) each have a filter chip.
   // The category chips (passed in by the caller) are unchanged and still scope
   // the request server-side to one exact category slug.
   const { data: products = [], isLoading, isError, refetch } = useQuery({
@@ -90,7 +90,7 @@ export default function TheEdit({
           <p className="text-aayna-taupe text-sm mt-2 max-w-lg">
             {search
               ? `Showing results for "${search}"`
-              : "Earrings, necklaces and rings — the current AAYNA edit, ready to wear."}
+              : "Earrings, necklaces, rings and bracelets — the current AAYNA edit, ready to wear."}
           </p>
           {contextLabel && (
             <p className="font-display italic text-aayna-burgundy text-sm mt-1.5">{contextLabel}</p>

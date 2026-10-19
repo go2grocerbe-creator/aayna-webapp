@@ -1,9 +1,15 @@
-"""Back up the LOCAL AAYNA MongoDB databases and verify the backup. Read-only on the database.
+"""Back up AAYNA MongoDB databases and verify the backup. Read-only on the database.
 
     python scripts/backup/backup_local_db.py --env-file ..\\Aayna-Webapp\\backend\\.env ^
         --dbs aayna_dev,aayna_test --out-root ..\\aayna-private-backups [--probe]
 
-* Refuses any MONGO_URL that is not a loopback host (this is the founder-PC tool).
+    # production, before a release (founder-run, from the founder's PC):
+    python scripts/backup/backup_local_db.py --env-file ..\\aayna-prod-import\\.env.prod-import ^
+        --dbs aayna_prod --production --out-root ..\\aayna-private-backups
+
+* Without --production: refuses any MONGO_URL that is not a loopback host.
+* With --production: allows only a MongoDB Atlas host (*.mongodb.net) and only the
+  single database aayna_prod. Still read-only: nothing is written to the database.
 * Uses `mongodump --gzip --out` when the MongoDB Database Tools are installed;
   otherwise writes the same directory layout itself (<db>/<collection>.bson +
   <collection>.metadata.json) from raw BSON, which `mongorestore` can restore.
@@ -82,18 +88,24 @@ def main():
     ap.add_argument("--out-root", required=True)
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--force-python-export", action="store_true", help="ignore mongodump (testing)")
+    ap.add_argument("--production", action="store_true", help="read-only backup of aayna_prod on Atlas")
     a = ap.parse_args()
 
     env = read_env(a.env_file)
     url = env.get("MONGO_URL", "")
     hosts = [h.split(":")[0].strip("[]").lower() for h in urlsplit(url).netloc.rsplit("@", 1)[-1].split(",") if h]
-    if not url or not hosts or not all(h in LOOPBACK for h in hosts):
+    if a.production:
+        if [d.strip() for d in a.dbs.split(",") if d.strip()] != ["aayna_prod"]:
+            sys.exit("Refusing: --production backs up exactly one database: --dbs aayna_prod")
+        if not url or not hosts or not all(h.endswith(".mongodb.net") for h in hosts):
+            sys.exit("Refusing: --production needs the Atlas connection string (*.mongodb.net) in the env file")
+    elif not url or not hosts or not all(h in LOOPBACK for h in hosts):
         sys.exit("Refusing: MONGO_URL in the env file is not a local (loopback) MongoDB")
     client = pymongo.MongoClient(url, serverSelectionTimeoutMS=8000)
     try:
         client.admin.command("ping")
     except Exception as exc:  # noqa: BLE001
-        sys.exit(f"Local MongoDB is not reachable ({type(exc).__name__}). Is the MongoDB service running?")
+        sys.exit(f"MongoDB is not reachable ({type(exc).__name__}). Check the service, network or Atlas access list.")
     build = client.admin.command("buildInfo")
     engine = (f"FerretDB {build['ferretdbVersion']}" if "ferretdbVersion" in build
               else f"MongoDB {build.get('version')}")
@@ -118,14 +130,15 @@ def main():
         sys.exit(f"Refusing: requested database(s) not present: {missing}")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    root = os.path.abspath(os.path.join(a.out_root, f"aayna-local-{stamp}"))
+    root = os.path.abspath(os.path.join(a.out_root, f"aayna-{'prod' if a.production else 'local'}-{stamp}"))
     if os.path.exists(root):
         sys.exit(f"Refusing: {root} already exists")
     dump_dir = os.path.join(root, "dump")
     os.makedirs(dump_dir)
     manifest = {"created_utc": stamp, "engine": engine, "method": None, "databases": {}}
 
-    # Live snapshot of counts/digests (the local dev DB is expected to be idle during backup).
+    # Live snapshot of counts/digests. The database must be idle (no orders being placed) during the backup:
+    # for production, take it before the release while the shop is not public.
     live = {d: {c: content_digest(client[d].get_collection(c, codec_options=RAW).find())
                 for c in sorted(client[d].list_collection_names()) if not c.startswith("system.")}
             for d in dbs}
@@ -177,8 +190,12 @@ def main():
     with open(os.path.join(root, "RESTORE.txt"), "w", encoding="utf-8") as fh:
         fh.write("PRIVATE: contains real customer data. Do not commit, upload or share.\n\n"
                  "Restore into a NEW database name first and compare before replacing anything, e.g.\n"
-                 "  mongorestore --uri=mongodb://localhost:27017 --nsFrom=\"aayna_dev.*\" "
-                 "--nsTo=\"aayna_dev_restored.*\" " + ("--gzip " if dump_tool else "") + "dump\n")
+                 + (f"  mongorestore --uri=<the same Atlas connection string> --nsFrom=\"aayna_prod.*\" "
+                    f"--nsTo=\"aayna_prod_restored.*\" " if a.production else
+                    "  mongorestore --uri=mongodb://localhost:27017 --nsFrom=\"aayna_dev.*\" "
+                    "--nsTo=\"aayna_dev_restored.*\" ") + ("--gzip " if dump_tool else "") + "dump\n"
+                 "Then compare counts with manifest.json. Only after that, and only if production data was\n"
+                 "damaged, restore over aayna_prod with --drop, per collection.\n")
     print(f"\nbackup folder: {root}\nmethod: {manifest['method']}")
     for d, colls in manifest["databases"].items():
         bad = [c for c, e in colls.items() if e["status"] != "verified"]
