@@ -24,14 +24,19 @@ def session():
     return s
 
 
+def _expected_delivery(merchandise_subtotal):
+    # Founder policy 2026-10-19: ৳100 below ৳1,500, free from ৳1,500, before discounts.
+    return 0 if merchandise_subtotal >= 1500 else 100
+
+
 # ---------------- Settings & meta ----------------
 class TestSettings:
     def test_settings(self, session):
         r = session.get(f"{API}/settings", timeout=30)
         assert r.status_code == 200
         data = r.json()
-        assert str(data.get("delivery_charge_inside_dhaka")) == "80"
-        assert str(data.get("delivery_charge_outside_dhaka")) == "130"
+        # nationwide policy (backend/delivery.py): ৳100, free from a ৳1,500 merchandise subtotal
+        assert data.get("delivery_policy") == {"charge": 100, "free_threshold": 1500}
         assert "whatsapp_number" in data
         assert "bkash_number" in data or "bkash_personal_number" in data or any("bkash" in k for k in data)
         assert "announcement" in data or any("announcement" in k for k in data)
@@ -147,10 +152,10 @@ class TestCartValidate:
         r = session.post(f"{API}/cart/validate", json=payload, timeout=30)
         assert r.status_code == 200
         d = r.json()
-        assert d["delivery_charge"] == 80
+        expected_price = p.get("discount_price") or p["selling_price"]
+        assert d["delivery_charge"] == _expected_delivery(expected_price)
         assert d["has_issue"] is False
         # backend recalculated price (not from client)
-        expected_price = p.get("discount_price") or p["selling_price"]
         assert d["subtotal"] == expected_price
         assert d["total"] == d["subtotal"] + d["delivery_charge"]
 
@@ -163,7 +168,8 @@ class TestCartValidate:
             timeout=30,
         )
         assert r.status_code == 200
-        assert r.json()["delivery_charge"] == 130
+        # same charge in every district
+        assert r.json()["delivery_charge"] == _expected_delivery(p.get("discount_price") or p["selling_price"])
 
     def test_cart_validate_over_quantity(self, session):
         prods = session.get(f"{API}/products", timeout=30).json()
@@ -298,11 +304,11 @@ class TestCheckout:
         assert "delivery_address" not in cd
         assert "order_confirmation_token" not in cd
         assert "order_confirmation_token_hash" not in cd
-        # backend recalculated totals — Dhaka delivery=80
-        assert cd["delivery_charge"] == 80
+        # backend recalculated totals — nationwide delivery policy
         expected_price = p.get("discount_price") or p["selling_price"]
+        assert cd["delivery_charge"] == _expected_delivery(expected_price)
         assert cd["subtotal"] == expected_price
-        assert cd["total_amount"] == expected_price + 80
+        assert cd["total_amount"] == expected_price + _expected_delivery(expected_price)
         assert cd["order_status"] == "New"
         # Save for next tests
         pytest.shared_order_number = order_number  # type: ignore[attr-defined]
@@ -326,7 +332,7 @@ class TestCheckout:
         conf = session.get(
             f"{API}/orders/{order_number}", params={"token": rd["order_confirmation_token"]}, timeout=30
         ).json()
-        assert conf["delivery_charge"] == 130
+        assert conf["delivery_charge"] == _expected_delivery(conf["subtotal"])
         assert "bKash" in conf["payment_method"] or "bkash" in conf["payment_method"].lower()
 
 

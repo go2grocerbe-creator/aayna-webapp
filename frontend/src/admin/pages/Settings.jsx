@@ -20,9 +20,11 @@ const TEXT_FIELDS = [
   ["tiktok_url", "TikTok Link"],
 ];
 
+// Delivery policy (founder decision 2026-10-19): ৳100 nationwide, free from a ৳1,500
+// product subtotal before discounts. Defaults match backend/delivery.py.
 const NUMBER_FIELDS = [
-  ["delivery_charge_inside_dhaka", "Delivery Inside Dhaka (৳)"],
-  ["delivery_charge_outside_dhaka", "Delivery Outside Dhaka (৳)"],
+  ["delivery_charge_bdt", "Delivery charge, nationwide (৳)", 100],
+  ["free_delivery_min_subtotal_bdt", "Free delivery from product subtotal (৳)", 1500],
 ];
 
 const PLACEHOLDER_FIELDS = [
@@ -45,7 +47,7 @@ export default function Settings() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { if (data) setForm(data); }, [data]);
+  useEffect(() => { if (data) setForm({ ...Object.fromEntries(NUMBER_FIELDS.map(([k, , d]) => [k, d])), ...data }); }, [data]);
 
   if (isError) return <AdminLoadError what="settings" error={error} onRetry={refetch} />;
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-aayna-burgundy" /></div>;
@@ -57,8 +59,7 @@ export default function Settings() {
     try {
       const payload = {
         ...TEXT_FIELDS.reduce((a, [k]) => ({ ...a, [k]: form[k] ?? "" }), {}),
-        delivery_charge_inside_dhaka: Number(form.delivery_charge_inside_dhaka) || 0,
-        delivery_charge_outside_dhaka: Number(form.delivery_charge_outside_dhaka) || 0,
+        ...Object.fromEntries(NUMBER_FIELDS.map(([k, , d]) => [k, form[k] === "" || form[k] == null ? d : Number(form[k])])),
         logo_url: form.logo_url || "",
         cod_available: Boolean(form.cod_available),
         maintenance_mode: Boolean(form.maintenance_mode),
@@ -122,12 +123,15 @@ export default function Settings() {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="font-semibold text-aayna-charcoal mb-4">Delivery & Store</h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            {NUMBER_FIELDS.map(([k, label]) => (
+            {NUMBER_FIELDS.map(([k, label, d]) => (
               <div key={k}>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-                <input data-testid={`set-${k}`} type="number" className={field} value={form[k] ?? 0} onChange={(e) => set(k, e.target.value)} />
+                <label htmlFor={`set-${k}`} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+                <input id={`set-${k}`} data-testid={`set-${k}`} type="number" min="0" step="1" inputMode="numeric" className={field} value={form[k] ?? d} onChange={(e) => set(k, e.target.value)} />
               </div>
             ))}
+            <p className="sm:col-span-2 text-xs text-gray-500" data-testid="set-delivery-help">
+              Customers pay the delivery charge when their products total less than the free-delivery amount (before any discount code); at or above it, delivery is free. Same charge for every district.
+            </p>
           </div>
           <div className="mt-5 space-y-4">
             <div className="flex items-center justify-between">

@@ -1130,14 +1130,16 @@ def customer_order_view(order: dict, detail: bool = False) -> dict:
     view = {
         "order_number": order["order_number"], "created_at": order["created_at"], "order_status": order["order_status"],
         "payment_method": order.get("payment_method"), "payment_status": order.get("payment_status"),
-        "subtotal": order.get("subtotal"), "delivery_charge": order.get("delivery_charge"),
+        "subtotal": order.get("subtotal"), "delivery_charge": order.get("delivery_charge"), "free_delivery": bool(order.get("free_delivery")),
         "discount_amount": order.get("discount_amount") or 0, "coupon_code": order.get("coupon_code"),
         "total_amount": order.get("total_amount"),
         "items": [{"product_name": it["product_name_snapshot"], "quantity": it["quantity"], "unit_price": it["unit_price"],
                    "total_price": it["total_price"], "image": it.get("image")} for it in order.get("items", [])],
     }
     if detail:
+        from steadfast import customer_courier_status  # customer-safe label only
         view.update({"courier_name": order.get("courier_name"), "courier_tracking_code": order.get("courier_tracking_code"),
+                     "courier_status": customer_courier_status(order),
                      "district": order.get("district"), "delivery_address": order.get("delivery_address"),
                      "customer_name": order.get("customer_name")})
     return view

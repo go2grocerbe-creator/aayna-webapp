@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from db import db, now_iso
 import emailer
+import delivery
 from auth import get_current_admin, require, has_permission
 
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
@@ -449,14 +450,26 @@ async def update_order(order_number: str, payload: OrderUpdate, current=Depends(
     updates = payload.model_dump(exclude_unset=True)
     if "order_status" in updates and updates["order_status"] not in ORDER_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid order status")
+    # A Steadfast booking owns the courier name and tracking code (Steadfast delivery panel).
+    if (order.get("courier") or {}).get("state") in ("booking", "booked", "needs_reconciliation"):
+        for k in ("courier_name", "courier_tracking_code"):
+            if k in updates and (updates[k] or None) != (order.get(k) or None):
+                raise HTTPException(status_code=409, detail="This order is booked with Steadfast: the courier and tracking code are managed in the Steadfast delivery panel.")
+            updates.pop(k, None)
     updates["updated_at"] = now_iso()
     await db.orders.update_one({"order_number": order_number}, {"$set": updates})
+    await order_status_side_effects(order, updates.get("order_status"), source="admin", actor=current["email"])
+    return await db.orders.find_one({"order_number": order_number}, {"_id": 0})
 
+
+async def order_status_side_effects(order: dict, new_status: Optional[str], source: str, actor: Optional[str]):
+    """Counters, append-only history and the customer email for one status change.
+    Shared by Admin -> Orders and the courier status sync (steadfast.py)."""
+    order_number = order["order_number"]
     # Customer counters follow actual status transitions only, so saving the
     # same status twice (or moving an order out of Delivered/Cancelled) keeps
     # successful_orders / cancelled_orders accurate.
     old_status = order.get("order_status")
-    new_status = updates.get("order_status")
     if new_status and new_status != old_status and order.get("customer_id"):
         counter = {"Delivered": "successful_orders", "Cancelled": "cancelled_orders"}
         inc = {}
@@ -469,8 +482,8 @@ async def update_order(order_number: str, payload: OrderUpdate, current=Depends(
     if new_status and new_status != old_status:
         # Append-only history: the customer timeline shows only recorded transitions.
         await db.order_events.insert_one({"id": str(uuid.uuid4()), "order_id": order["id"], "order_number": order_number,
-                                          "status": new_status, "previous_status": old_status, "source": "admin",
-                                          "actor": current["email"], "created_at": now_iso()})
+                                          "status": new_status, "previous_status": old_status, "source": source,
+                                          "actor": actor, "created_at": now_iso()})
         if new_status in CUSTOMER_EMAIL_STATUSES and order.get("customer_email"):
             fresh = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
             link = f"/account/orders/{order_number}" if order.get("account_id") else f"/track-order?order={order_number}"
@@ -482,7 +495,6 @@ async def update_order(order_number: str, payload: OrderUpdate, current=Depends(
                                    order_number=order_number)
             except Exception:  # noqa: BLE001 - a status change never fails because of email
                 pass
-    return await db.orders.find_one({"order_number": order_number}, {"_id": 0})
 
 
 # ---------------------------------------------------------------------------
@@ -602,6 +614,10 @@ async def update_settings(payload: dict, current=Depends(require("settings.edit"
     bad = [k for k in payload if not isinstance(k, str) or not re.fullmatch(r"[a-z0-9_]{1,64}", k) or SECRET_LIKE_KEY.search(k)]
     if bad:
         raise HTTPException(status_code=400, detail="Invalid setting key(s). Secrets belong in the hosting environment, never in settings.")
+    for key, value in payload.items():
+        problem = delivery.validate_setting(key, value)
+        if problem:
+            raise HTTPException(status_code=400, detail=problem)
     for key, value in payload.items():
         await db.website_settings.update_one(
             {"setting_key": key},

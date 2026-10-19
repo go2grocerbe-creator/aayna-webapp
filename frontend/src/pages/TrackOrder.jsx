@@ -162,6 +162,9 @@ export default function TrackOrder() {
                 {o.courier_name && (
                   <div className="flex justify-between"><span className="text-aayna-taupe">Courier</span><span className="text-aayna-charcoal">{o.courier_name} {o.courier_tracking_code ? `· ${o.courier_tracking_code}` : ""}</span></div>
                 )}
+                {o.courier_status && (
+                  <div className="flex justify-between gap-3"><span className="text-aayna-taupe">Delivery</span><span data-testid="track-courier-status" className="text-aayna-charcoal text-right">{o.courier_status}</span></div>
+                )}
               </div>
             </div>
           );

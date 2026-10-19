@@ -204,7 +204,7 @@ db.website_settings.update_one({"setting_key": f"private_test_{tag}"},
                                {"$set": {"setting_key": f"private_test_{tag}", "setting_value": "SECRET-SETTING"}}, upsert=True)
 pub_settings = requests.get(f"{API}/settings").json()
 rec("public /settings does not expose arbitrary stored keys", "SECRET-SETTING" not in json.dumps(pub_settings), f"{len(pub_settings)} keys")
-rec("public /settings still has storefront keys", all(k in pub_settings for k in ["brand_name", "whatsapp_number", "delivery_charge_inside_dhaka"]))
+rec("public /settings still has storefront keys", all(k in pub_settings for k in ["brand_name", "whatsapp_number", "delivery_policy"]))
 adm_settings = s.get(f"{API}/admin/settings", headers=H).json()
 rec("admin /settings still returns all keys", f"private_test_{tag}" in adm_settings)
 

@@ -267,6 +267,7 @@ export function AccountOrderDetail() {
               <p className="text-aayna-taupe text-xs uppercase tracking-wide mb-1">Courier</p>
               <p className="text-aayna-charcoal">{o.courier_name}</p>
               {o.courier_tracking_code && <p className="text-aayna-taupe break-all">Tracking reference: <span className="text-aayna-charcoal">{o.courier_tracking_code}</span></p>}
+              {o.courier_status && <p className="text-aayna-taupe" data-testid="account-courier-status">{o.courier_status}</p>}
             </div>
           )}
         </section>
@@ -284,7 +285,7 @@ export function AccountOrderDetail() {
           <div className="border-t border-aayna-beige mt-4 pt-4 space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-aayna-taupe">Subtotal</span><span>{formatBDT(o.subtotal)}</span></div>
             {o.discount_amount > 0 && <div className="flex justify-between text-emerald-800" data-testid="account-order-discount"><span>Discount{o.coupon_code ? ` (${o.coupon_code})` : ""}</span><span>−{formatBDT(o.discount_amount)}</span></div>}
-            <div className="flex justify-between"><span className="text-aayna-taupe">Delivery ({o.district})</span><span>{formatBDT(o.delivery_charge)}</span></div>
+            <div className="flex justify-between"><span className="text-aayna-taupe">Delivery ({o.district})</span><span data-testid="account-order-delivery">{o.free_delivery && !o.delivery_charge ? "Free" : formatBDT(o.delivery_charge)}</span></div>
             <div className="flex justify-between font-semibold text-aayna-burgundy pt-2 border-t border-aayna-beige"><span>Total</span><span>{formatBDT(o.total_amount)}</span></div>
             <div className="flex justify-between"><span className="text-aayna-taupe">Payment</span><span className="text-right">{o.payment_method} · {String(o.payment_status || "").replace("_", " ")}</span></div>
           </div>

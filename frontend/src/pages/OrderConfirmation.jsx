@@ -158,7 +158,7 @@ export default function OrderConfirmation() {
           {order.discount_amount > 0 && (
             <div className="flex justify-between text-emerald-800" data-testid="confirmation-discount"><span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>−{formatBDT(order.discount_amount)}</span></div>
           )}
-          <div className="flex justify-between"><span className="text-aayna-taupe">Delivery ({order.district})</span><span className="text-aayna-charcoal">{formatBDT(order.delivery_charge)}</span></div>
+          <div className="flex justify-between"><span className="text-aayna-taupe">Delivery ({order.district})</span><span data-testid="confirmation-delivery" className={order.free_delivery && !order.delivery_charge ? "text-emerald-800" : "text-aayna-charcoal"}>{order.free_delivery && !order.delivery_charge ? "Free" : formatBDT(order.delivery_charge)}</span></div>
           <div className="flex justify-between"><span className="text-aayna-taupe">Payment Method</span><span className="text-aayna-charcoal">{order.payment_method}</span></div>
         </div>
 

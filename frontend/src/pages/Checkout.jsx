@@ -10,6 +10,7 @@ import { useSettings } from "@/hooks/useStore";
 import { useCart } from "@/context/CartContext";
 import { formatBDT, isPlaceholder } from "@/lib/format";
 import ProductImage from "@/components/ProductImage";
+import { deliveryPolicy, deliveryFor } from "@/lib/delivery";
 import {
   Select,
   SelectContent,
@@ -157,12 +158,12 @@ export default function Checkout() {
     setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
-  const deliveryCharge = useMemo(() => {
-    if (!form.district || !settings) return 0;
-    return form.district === "Dhaka"
-      ? Number(settings.delivery_charge_inside_dhaka)
-      : Number(settings.delivery_charge_outside_dhaka);
-  }, [form.district, settings]);
+  // Nationwide rule on the merchandise subtotal BEFORE the discount (server decides at order time).
+  const delivery = useMemo(
+    () => deliveryFor(subtotal, deliveryPolicy(priceCheck?.delivery_policy ? priceCheck : settings)),
+    [subtotal, priceCheck, settings]
+  );
+  const deliveryCharge = delivery.charge;
 
   const discount = coupon ? Math.min(coupon.discount, subtotal) : 0;
   const total = subtotal - discount + deliveryCharge;
@@ -513,9 +514,14 @@ export default function Checkout() {
               <div className="flex justify-between"><span className="text-aayna-taupe">Subtotal</span><span className="font-semibold">{formatBDT(subtotal)}</span></div>
               {discount > 0 && <div className="flex justify-between text-emerald-800" data-testid="checkout-discount"><span>Discount ({coupon.code})</span><span className="font-semibold">−{formatBDT(discount)}</span></div>}
               <div className="flex justify-between">
-                <span className="text-aayna-taupe">Delivery {form.district ? `(${form.district})` : ""}</span>
-                <span data-testid="checkout-delivery" className="font-semibold">{form.district ? formatBDT(deliveryCharge) : "Calculated at checkout"}</span>
+                <span className="text-aayna-taupe">Delivery</span>
+                <span data-testid="checkout-delivery" className={`font-semibold ${delivery.free ? "text-emerald-800" : ""}`}>{delivery.free ? "Free" : formatBDT(deliveryCharge)}</span>
               </div>
+              {!delivery.free && delivery.remaining > 0 && (
+                <p data-testid="checkout-free-delivery-hint" className="text-xs text-aayna-taupe">
+                  Add {formatBDT(delivery.remaining)} more for free delivery.
+                </p>
+              )}
             </div>
             <div className="border-t border-aayna-beige mt-4 pt-4 flex justify-between items-baseline">
               <span className="font-display text-lg text-aayna-charcoal">Total</span>

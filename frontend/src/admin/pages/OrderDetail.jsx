@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Phone, MapPin, Mail, StickyNote } from "lucide-reac
 import { getAdminOrder, updateOrder } from "@/admin/adminApi";
 import { formatBDT } from "@/lib/format";
 import { statusStyle, ORDER_STATUSES } from "@/admin/statusColors";
+import SteadfastPanel from "@/admin/SteadfastPanel";
 
 export default function OrderDetail() {
   const { orderNumber } = useParams();
@@ -36,10 +37,13 @@ export default function OrderDetail() {
   const save = async () => {
     setSaving(true);
     try {
-      await updateOrder(orderNumber, form);
+      const managed = ["booking", "booked", "needs_reconciliation"].includes(order.courier?.state);
+      const { courier_name, courier_tracking_code, ...rest } = form;
+      await updateOrder(orderNumber, managed ? rest : form);
       toast.success("Order updated");
       qc.invalidateQueries({ queryKey: ["admin-order", orderNumber] });
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-courier", orderNumber] });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Update failed");
     } finally {
@@ -93,12 +97,14 @@ export default function OrderDetail() {
             </table>
             <div className="border-t border-gray-100 mt-3 pt-3 space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatBDT(order.subtotal)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Delivery</span><span>{formatBDT(order.delivery_charge)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Delivery</span><span>{order.free_delivery && !order.delivery_charge ? "Free (order ৳1,500+)" : formatBDT(order.delivery_charge)}</span></div>
               {order.discount_amount > 0 && <div className="flex justify-between" data-testid="admin-order-discount"><span className="text-gray-500">Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>-{formatBDT(order.discount_amount)}</span></div>}
               <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-aayna-burgundy">{formatBDT(order.total_amount)}</span></div>
               <div className="flex justify-between pt-1"><span className="text-gray-500">Payment</span><span className="text-right">{order.payment_method} · {String(order.payment_status || "").replace(/_/g, " ")}</span></div>
             </div>
           </div>
+
+          <SteadfastPanel orderNumber={order.order_number} />
 
           {/* Notifications */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -157,6 +163,9 @@ export default function OrderDetail() {
                 </p>
               )}
             </div>
+            {["booking", "booked", "needs_reconciliation"].includes(order.courier?.state) ? (
+              <p className="text-xs text-gray-500" data-testid="order-courier-managed">Courier: Steadfast{order.courier_tracking_code ? ` · ${order.courier_tracking_code}` : ""} (managed in the Steadfast delivery panel)</p>
+            ) : (<>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Courier Name</label>
               <input data-testid="order-courier-name" className={field} value={form.courier_name} onChange={(e) => set("courier_name", e.target.value)} placeholder="e.g. Pathao, Steadfast" />
@@ -165,6 +174,7 @@ export default function OrderDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Tracking Code</label>
               <input data-testid="order-tracking-code" className={field} value={form.courier_tracking_code} onChange={(e) => set("courier_tracking_code", e.target.value)} />
             </div>
+            </>)}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Internal Admin Note</label>
               <textarea rows={3} data-testid="order-admin-note" className={`${field} h-auto py-2 resize-none`} value={form.admin_note} onChange={(e) => set("admin_note", e.target.value)} />

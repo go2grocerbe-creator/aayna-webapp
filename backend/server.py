@@ -32,8 +32,10 @@ from admin_routes import admin_router
 import emailer
 import ratelimit
 import promotions
+import delivery
 from customer_auth import (customer_router, customer_admin_router, optional_customer,
                            ensure_customer_indexes, order_timeline)
+from steadfast import courier_admin_router, courier_internal_router, ensure_courier_indexes, customer_courier_status
 from promotions import promotions_router, promotions_admin_router, ensure_promotion_indexes, CouponError
 
 # Interactive API docs list every admin endpoint; keep them off in production.
@@ -222,6 +224,7 @@ async def on_startup():
     await ensure_indexes()
     await ensure_customer_indexes()
     await ensure_promotion_indexes()
+    await ensure_courier_indexes()
     init_storage_safe()
 
 
@@ -292,7 +295,10 @@ PUBLIC_SETTING_KEYS = set(SEED_SETTINGS.keys()) | {"hero_headline_override", "ma
 @api_router.get("/settings")
 async def get_settings():
     docs = await db.website_settings.find({"setting_key": {"$in": sorted(PUBLIC_SETTING_KEYS)}}, {"_id": 0}).to_list(200)
-    return {d["setting_key"]: d["setting_value"] for d in docs}
+    out = {d["setting_key"]: d["setting_value"] for d in docs}
+    # Effective delivery policy (code defaults unless Admin -> Settings overrides them).
+    out["delivery_policy"] = delivery.policy(out)
+    return out
 
 
 @api_router.get("/districts")
@@ -395,10 +401,11 @@ async def get_product(slug: str):
 # ---------------------------------------------------------------------------
 # Cart validation (recalculates from DB)
 # ---------------------------------------------------------------------------
-def delivery_charge_for(settings: dict, district: str) -> int:
-    if district and district.strip().lower() == "dhaka":
-        return int(settings.get("delivery_charge_inside_dhaka", 80))
-    return int(settings.get("delivery_charge_outside_dhaka", 130))
+def delivery_quote(settings: dict, merchandise_subtotal: float) -> dict:
+    # Founder policy 2026-10-19 (backend/delivery.py): ৳100 below a ৳1,500
+    # merchandise subtotal, free from ৳1,500, nationwide; subtotal is taken
+    # BEFORE promotional discounts. The district no longer changes the charge.
+    return delivery.quote(merchandise_subtotal, settings)
 
 
 async def get_settings_map() -> dict:
@@ -445,7 +452,8 @@ async def validate_cart(req: CartValidateRequest, request: Request):
             "category_slug": product.get("category_slug"),
         })
 
-    delivery = delivery_charge_for(settings, req.district) if req.district else 0
+    dq = delivery_quote(settings, subtotal)
+    delivery_charge = dq["delivery_charge"]
     coupon = None
     discount = 0
     if (req.coupon_code or "").strip():
@@ -468,8 +476,11 @@ async def validate_cart(req: CartValidateRequest, request: Request):
         "subtotal": subtotal,
         "discount_amount": discount,
         "coupon": coupon,
-        "delivery_charge": delivery,
-        "total": subtotal - discount + delivery,
+        "delivery_charge": delivery_charge,
+        "free_delivery": dq["free_delivery"],
+        "amount_to_free_delivery": dq["amount_to_free_delivery"],
+        "delivery_policy": {"charge": dq["charge"], "free_threshold": dq["free_threshold"]},
+        "total": subtotal - discount + delivery_charge,
         "has_issue": has_issue,
     }
 
@@ -766,7 +777,8 @@ async def _place_order(req: CheckoutRequest, account: Optional[dict] = None):
     try:
         # 6-7. Delivery + total (a coupon discounts merchandise only, never delivery)
         settings = await get_settings_map()
-        delivery_charge = delivery_charge_for(settings, req.district)
+        dq = delivery_quote(settings, subtotal)  # on the merchandise subtotal, before the discount
+        delivery_charge = dq["delivery_charge"]
         discount_amount = 0
         if coupon_eval:
             try:
@@ -832,6 +844,8 @@ async def _place_order(req: CheckoutRequest, account: Optional[dict] = None):
             "delivery_note": req.delivery_note or "",
             "subtotal": subtotal,
             "delivery_charge": delivery_charge,
+            "free_delivery": dq["free_delivery"],
+            "delivery_policy": {"charge": dq["charge"], "free_threshold": dq["free_threshold"]},
             "discount_amount": discount_amount,
             "coupon_code": coupon_eval["code"] if coupon_eval else None,
             "promotion_id": coupon_eval["promotion"]["id"] if coupon_eval else None,
@@ -919,6 +933,7 @@ async def get_order_confirmation(order_number: str, token: Optional[str] = Query
         "customer_name": order["customer_name"],
         "subtotal": order["subtotal"],
         "delivery_charge": order["delivery_charge"],
+        "free_delivery": bool(order.get("free_delivery")),
         "discount_amount": order.get("discount_amount") or 0,
         "coupon_code": order.get("coupon_code"),
         "total_amount": order["total_amount"],
@@ -971,6 +986,7 @@ async def track_order(req: TrackRequest, request: Request):
             "total_amount": order["total_amount"],
             "courier_name": order.get("courier_name"),
             "courier_tracking_code": order.get("courier_tracking_code"),
+            "courier_status": customer_courier_status(order),
             "created_at": order["created_at"],
             "discount_amount": order.get("discount_amount") or 0,
             "items": [
@@ -1093,6 +1109,8 @@ app.include_router(customer_router)
 app.include_router(customer_admin_router)
 app.include_router(promotions_router)
 app.include_router(promotions_admin_router)
+app.include_router(courier_admin_router)
+app.include_router(courier_internal_router)
 
 @app.middleware("http")
 async def json_errors_inside_cors(request, call_next):

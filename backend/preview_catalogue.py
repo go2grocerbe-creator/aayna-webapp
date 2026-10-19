@@ -29,30 +29,35 @@ logger = logging.getLogger("aayna")
 
 PREVIEW_DB = "aayna_preview"
 
-# Customer-facing fields only. Prices = founder-confirmed public selling prices.
+# Customer-facing fields only. Prices = founder-approved public selling prices AFTER the
+# +৳100 update of 2026-10-19 (backend/price_targets.py, checked at import below).
 REAL_CATALOGUE = [
     {"sku": "AYN-NKL-LUN-GLD", "product_name": "Aayna Luna Statement Locket", "slug": "aayna-luna-statement-locket",
-     "category_slug": "necklaces", "color": "Golden", "size": '1" diameter', "selling_price": 1350, "stock_quantity": 1},
+     "category_slug": "necklaces", "color": "Golden", "size": '1" diameter', "selling_price": 1450, "stock_quantity": 1},
     {"sku": "AYN-NKL-AUR-GLD", "product_name": "Aayna Aura Statement Locket", "slug": "aayna-aura-statement-locket",
-     "category_slug": "necklaces", "color": "Golden", "size": '1" diameter', "selling_price": 1350, "stock_quantity": 1},
+     "category_slug": "necklaces", "color": "Golden", "size": '1" diameter', "selling_price": 1450, "stock_quantity": 1},
     {"sku": "AYN-CUF-CRS-GLD", "product_name": "Aayna Golden Crossline Cuff", "slug": "aayna-golden-crossline-cuff",
-     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 1050, "stock_quantity": 2},
+     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 1150, "stock_quantity": 2},
     {"sku": "AYN-CUF-STN-GLD", "product_name": "Aayna Crystal Stone Cuff", "slug": "aayna-crystal-stone-cuff",
-     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 990, "stock_quantity": 12},
+     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 1090, "stock_quantity": 12},
     {"sku": "AYN-EAR-CHK-GLD", "product_name": "Aayna Bold Chunky Earrings", "slug": "aayna-bold-chunky-earrings",
-     "category_slug": "earrings", "color": "Golden", "size": '1" per earring', "selling_price": 870, "stock_quantity": 6},
+     "category_slug": "earrings", "color": "Golden", "size": '1" per earring', "selling_price": 970, "stock_quantity": 6},
     {"sku": "AYN-EAR-FLR-GLD", "product_name": "Aayna Floral Bloom Earrings - Golden", "slug": "aayna-floral-bloom-earrings-golden",
-     "category_slug": "earrings", "color": "Golden", "size": '1" per earring', "selling_price": 1410, "stock_quantity": 5},
+     "category_slug": "earrings", "color": "Golden", "size": '1" per earring', "selling_price": 1510, "stock_quantity": 5},
     {"sku": "AYN-EAR-FLR-SLV", "product_name": "Aayna Floral Bloom Earrings - Silver", "slug": "aayna-floral-bloom-earrings-silver",
-     "category_slug": "earrings", "color": "Silver", "size": '1" per earring', "selling_price": 1410, "stock_quantity": 5},
+     "category_slug": "earrings", "color": "Silver", "size": '1" per earring', "selling_price": 1510, "stock_quantity": 5},
     {"sku": "AYN-BRC-FLR-GLD", "product_name": "Aayna Floral Charm Bracelet - Golden", "slug": "aayna-floral-charm-bracelet-golden",
-     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 1310, "stock_quantity": 5},
+     "category_slug": "bracelets", "color": "Golden", "size": '2.5" diameter', "selling_price": 1410, "stock_quantity": 5},
     {"sku": "AYN-BRC-FLR-SLV", "product_name": "Aayna Floral Charm Bracelet - Silver", "slug": "aayna-floral-charm-bracelet-silver",
-     "category_slug": "bracelets", "color": "Silver", "size": '2.5" diameter', "selling_price": 1310, "stock_quantity": 4},
+     "category_slug": "bracelets", "color": "Silver", "size": '2.5" diameter', "selling_price": 1410, "stock_quantity": 4},
     {"sku": "AYN-RNG-CLS-GLD", "product_name": "Aayna Classic Statement Ring", "slug": "aayna-classic-statement-ring",
-     "category_slug": "rings", "color": "Golden", "size": '0.7" diameter', "selling_price": 1290, "stock_quantity": 5},
+     "category_slug": "rings", "color": "Golden", "size": '0.7" diameter', "selling_price": 1390, "stock_quantity": 5},
 ]
 REAL_SKUS = {p["sku"] for p in REAL_CATALOGUE}
+
+from price_targets import PRICE_TARGETS  # noqa: E402
+
+assert {p["sku"]: p["selling_price"] for p in REAL_CATALOGUE} == {k: v[1] for k, v in PRICE_TARGETS.items()}
 
 
 def _now() -> str:

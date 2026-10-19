@@ -395,7 +395,7 @@ class TestSettings:
         new_ann = f"TEST announcement {uuid.uuid4().hex[:5]}"
         r = admin.put(f"{API}/admin/settings", json={
             "announcement_bar_text": new_ann,
-            "delivery_charge_inside_dhaka": 80,
+            "delivery_charge_bdt": 100,
         }, timeout=30)
         assert r.status_code == 200
         # Reflected on public settings

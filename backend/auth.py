@@ -32,6 +32,8 @@ PERMISSIONS = {
     "inventory.adjust": _OPS | {"product_manager"},
     "orders.view": _OPS | {"order_manager"},
     "orders.edit": _OPS | {"order_manager"},
+    # Booking a real courier parcel (Steadfast) - order handling staff only.
+    "courier.book": _OPS | {"order_manager"},
     "customers.view": _OPS | {"order_manager"},
     "settings.view": _OPS,
     "settings.edit": _OPS,

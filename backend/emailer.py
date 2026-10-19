@@ -211,9 +211,11 @@ def render(template: str, ctx: dict) -> dict:
         rows_t = "\n".join(f'- {it["product_name_snapshot"]} x{int(it["quantity"])}: {_money(it["total_price"])}' for it in o["items"])
         disc = float(o.get("discount_amount") or 0)
         totals = [("Subtotal", o["subtotal"])] + ([("Discount" + (f' ({o.get("coupon_code")})' if o.get("coupon_code") else ""), -disc)] if disc else []) \
-            + [("Delivery", o["delivery_charge"]), ("Total", o["total_amount"])]
-        tot_h = "".join(f'<tr><td style="padding:2px 0;color:{TAUPE}">{html.escape(k)}</td><td align="right">{"-" if v < 0 else ""}{_money(abs(v))}</td></tr>' for k, v in totals)
-        tot_t = "\n".join(f'{k}: {"-" if v < 0 else ""}{_money(abs(v))}' for k, v in totals)
+            + [("Delivery", "Free" if o.get("free_delivery") and not float(o.get("delivery_charge") or 0) else o["delivery_charge"]),
+               ("Total", o["total_amount"])]
+        _amt = lambda v: v if isinstance(v, str) else f'{"-" if v < 0 else ""}{_money(abs(v))}'
+        tot_h = "".join(f'<tr><td style="padding:2px 0;color:{TAUPE}">{html.escape(k)}</td><td align="right">{html.escape(_amt(v))}</td></tr>' for k, v in totals)
+        tot_t = "\n".join(f'{k}: {_amt(v)}' for k, v in totals)
         title = f"Thank you - order {o['order_number']} received"
         intro_t = f"Hi {plain_name}, we've received your order. Our team will contact you to confirm it."
         table = f'<table role="presentation" width="100%" style="font-size:14px;border-top:1px solid #eadfd4;border-bottom:1px solid #eadfd4;margin:4px 0 12px">{rows_h}</table><table role="presentation" width="100%" style="font-size:14px">{tot_h}</table><p style="font-size:14px">Payment: {html.escape(o["payment_method"])}</p>'

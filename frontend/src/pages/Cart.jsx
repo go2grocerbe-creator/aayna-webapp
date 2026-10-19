@@ -7,6 +7,8 @@ import { validateCart } from "@/lib/api";
 import { formatBDT } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
 import ProductImage from "@/components/ProductImage";
+import { useSettings } from "@/hooks/useStore";
+import { deliveryPolicy, deliveryFor } from "@/lib/delivery";
 
 // D4 "The Selection" (concept-d4-the-selection). Same cart data/logic as
 // before - CartContext, validateCart, quantity/remove/subtotal - this is a
@@ -33,6 +35,10 @@ export default function Cart() {
     issueMap[v.product_id] = v;
   });
   const hasIssue = validation?.has_issue;
+  const { data: settings } = useSettings();
+  // Display mirror of the server rule (৳100, free from ৳1,500 before discounts); checkout recalculates.
+  const policy = deliveryPolicy(validation?.delivery_policy ? validation : settings);
+  const delivery = deliveryFor(subtotal, policy);
 
   if (items.length === 0) {
     return (
@@ -162,15 +168,31 @@ export default function Cart() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-aayna-taupe">Delivery</span>
-                  <span className="text-aayna-taupe">Calculated at checkout</span>
+                  <span data-testid="cart-delivery" className={delivery.free ? "font-medium text-emerald-800" : "font-medium text-aayna-charcoal"}>
+                    {delivery.free ? "Free" : formatBDT(delivery.charge)}
+                  </span>
                 </div>
               </div>
               <div className="border-t border-aayna-beige mt-4 pt-4 flex justify-between items-baseline">
                 <span className="font-display text-lg text-aayna-charcoal">Total</span>
-                <span className="font-display text-2xl font-semibold text-aayna-burgundy">
-                  {formatBDT(subtotal)}
+                <span data-testid="cart-total" className="font-display text-2xl font-semibold text-aayna-burgundy">
+                  {formatBDT(subtotal + delivery.charge)}
                 </span>
               </div>
+              {policy.free_threshold > 0 && (
+                <div data-testid="free-delivery-progress" className="mt-4" aria-live="polite">
+                  <p className="text-xs text-aayna-taupe">
+                    {delivery.free ? (
+                      <>Free delivery unlocked for this order.</>
+                    ) : (
+                      <>Add <span className="font-semibold text-aayna-charcoal">{formatBDT(delivery.remaining)}</span> more for free delivery.</>
+                    )}
+                  </p>
+                  <div className="mt-2 h-[3px] w-full bg-aayna-beige/70" aria-hidden="true">
+                    <div className={`h-full ${delivery.free ? "bg-emerald-700" : "bg-aayna-coral"} transition-[width] duration-500`} style={{ width: `${Math.round(delivery.progress * 100)}%` }} />
+                  </div>
+                </div>
+              )}
 
               {hasIssue && (
                 <p className="text-xs text-red-700 flex items-center gap-1.5 mt-4">

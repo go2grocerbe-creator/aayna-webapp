@@ -2,6 +2,7 @@ import { STATIC_PAGES } from "@/data/staticPages";
 import { useSeo } from "@/lib/seo";
 import { useSettings } from "@/hooks/useStore";
 import { formatBDT } from "@/lib/format";
+import { deliveryPolicy } from "@/lib/delivery";
 
 export default function StaticPage({ pageKey }) {
   const page = STATIC_PAGES[pageKey];
@@ -14,11 +15,17 @@ export default function StaticPage({ pageKey }) {
   // actually charges, so this page can't drift out of sync with a real order.
   let sections = page.sections;
   if (pageKey === "delivery" && settings) {
+    const p = deliveryPolicy(settings);
     const chargeSection = {
       heading: "Delivery Charges",
       list: [
-        `Inside Dhaka: ${formatBDT(settings.delivery_charge_inside_dhaka)}`,
-        `Outside Dhaka: ${formatBDT(settings.delivery_charge_outside_dhaka)}`,
+        p.free_threshold > 0
+          ? `Orders below ${formatBDT(p.free_threshold)}: ${formatBDT(p.charge)} delivery, anywhere in Bangladesh.`
+          : `Delivery: ${formatBDT(p.charge)}, anywhere in Bangladesh.`,
+        ...(p.free_threshold > 0
+          ? [`Orders of ${formatBDT(p.free_threshold)} or more: free delivery, anywhere in Bangladesh.`,
+             "The free-delivery amount is based on your products' total before any discount code."]
+          : []),
       ],
     };
     sections = [sections[0], chargeSection, ...sections.slice(1)];

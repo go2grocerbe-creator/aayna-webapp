@@ -45,6 +45,11 @@ export const updateCategory = (id, d) => api.put(`/admin/categories/${id}`, d).t
 export const getAdminOrders = (params) => api.get("/admin/orders", { params }).then((r) => r.data);
 export const getAdminOrder = (num) => api.get(`/admin/orders/${num}`).then((r) => r.data);
 export const updateOrder = (num, d) => api.put(`/admin/orders/${num}`, d).then((r) => r.data);
+// Steadfast courier (explicit admin actions; the server holds the keys)
+export const getCourierView = (num) => api.get(`/admin/orders/${num}/courier`).then((r) => r.data);
+export const courierAction = (num, action, body = {}) => api.post(`/admin/orders/${num}/courier/${action}`, body).then((r) => r.data);
+export const getCourierConfig = () => api.get("/admin/courier/config").then((r) => r.data);
+export const syncActiveCourier = () => api.post("/admin/courier/sync-active").then((r) => r.data);
 
 // Inventory
 export const getInventory = (lowOnly) =>

@@ -86,9 +86,12 @@ def env(monkeypatch):
                 "category_slug": cat, "category_name": cat.title(), "selling_price": price, "discount_price": None,
                 "cost_price": 100.0, "stock_quantity": stock, "status": "active", "images": [],
                 "created_at": "2026-10-18T00:00:00+00:00"})
+        # Legacy per-district keys (pre 2026-10-19). They must be ignored by the
+        # nationwide policy in backend/delivery.py (৳100, free from ৳1,500).
         await db.website_settings.insert_many([
             {"setting_key": "delivery_charge_inside_dhaka", "setting_value": 80},
-            {"setting_key": "delivery_charge_outside_dhaka", "setting_value": 130}])
+            {"setting_key": "delivery_charge_outside_dhaka", "setting_value": 130},
+            {"setting_key": "free_delivery_threshold", "setting_value": 1000}])
         return users
     users = run(seed())
     tok = {r: auth.create_access_token(u) for r, u in users.items()}
@@ -670,11 +673,11 @@ def test_coupon_applies_server_side_to_merchandise_only(env):
     make_promo(env, max_discount_bdt=100)
     c = client()
     v = c.post("/api/cart/validate", json={"items": [{"product_id": "p1", "quantity": 1}], "district": "Dhaka", "coupon_code": " save10 "}).json()
-    assert v["coupon"]["valid"] and v["discount_amount"] == 100 and v["total"] == 1290 - 100 + 80
+    assert v["coupon"]["valid"] and v["discount_amount"] == 100 and v["total"] == 1290 - 100 + 100
     r = checkout(c, coupon="SAVE10")
     assert r.status_code == 200, r.text
     order = run(env["db"].orders.find_one({"order_number": r.json()["order_number"]}))
-    assert order["discount_amount"] == 100 and order["delivery_charge"] == 80 and order["total_amount"] == 1270
+    assert order["discount_amount"] == 100 and order["delivery_charge"] == 100 and order["total_amount"] == 1290
     assert order["subtotal"] == 1290 and order["coupon_code"] == "SAVE10"
     red = run(env["db"].promotion_redemptions.find_one({"order_id": order["id"]}))
     assert red["discount_amount"] == 100
@@ -685,7 +688,7 @@ def test_coupon_applies_server_side_to_merchandise_only(env):
     body = {"customer_name": "M", "customer_phone": "01812345678", "district": "Dhaka", "delivery_address": "House 1, Road 2",
             "payment_method": "cod", "items": [{"product_id": "p2", "quantity": 1}], "discount_amount": 900, "total_amount": 1}
     o2 = run(env["db"].orders.find_one({"order_number": c.post("/api/checkout", json=body).json()["order_number"]}))
-    assert o2["discount_amount"] == 0 and o2["total_amount"] == 990 + 80
+    assert o2["discount_amount"] == 0 and o2["total_amount"] == 990 + 100
 
 
 def test_coupon_rules(env):
@@ -1031,7 +1034,7 @@ def test_preview_catalogue_only_on_the_isolated_preview(env, monkeypatch):
     assert sum(p["stock_quantity"] for p in public) == 46
     luna = c.get("/api/products/aayna-luna-statement-locket").json()
     luna = luna.get("product", luna)
-    assert luna["selling_price"] == 1350 and luna["color"] == "Golden" and luna["images"] == []
+    assert luna["selling_price"] == 1450 and luna["color"] == "Golden" and luna["images"] == []
     for bad in ("cost_price", "internal_notes", "source", "pricing", "preview_snapshot", "supplier"):
         assert all(bad not in p for p in public)
     # stock is kept across restarts (test orders reduce it); identity is refreshed
@@ -1045,3 +1048,89 @@ def test_preview_catalogue_only_on_the_isolated_preview(env, monkeypatch):
     # unset -> nothing happens
     monkeypatch.delenv("PREVIEW_CATALOGUE")
     assert run(pc.apply_preview_catalogue(db)) == {"mode": "off"}
+
+
+# ---------------------------------------------------------------------------
+# Delivery policy (founder decision 2026-10-19): ৳100 below ৳1,500, free from
+# ৳1,500, nationwide, on the merchandise subtotal BEFORE promotional discounts.
+# ---------------------------------------------------------------------------
+def _add_priced(env, prices):
+    async def go():
+        for pid, price in prices.items():
+            await env["db"].products.insert_one({
+                "id": pid, "sku": f"AYN-TST-{pid}", "slug": f"prod-{pid}", "product_name": f"Product {pid}",
+                "category_slug": "rings", "category_name": "Rings", "selling_price": price, "discount_price": None,
+                "cost_price": 100.0, "stock_quantity": 10, "status": "active", "images": [],
+                "created_at": "2026-10-19T00:00:00+00:00"})
+    run(go())
+
+
+def test_delivery_policy_thresholds_server_side(env):
+    import delivery
+    _add_priced(env, {"d970": 970, "d1090": 1090, "d1499": 1499, "d1500": 1500, "d1510": 1510})
+    c = client()
+    for pid, district, want in (("d970", "Dhaka", 100), ("d1090", "Sylhet", 100), ("d1499", "Khulna", 100),
+                                ("d1500", "Dhaka", 0), ("d1510", "Bandarban", 0)):
+        price = int(pid[1:])
+        v = c.post("/api/cart/validate", json={"items": [{"product_id": pid, "quantity": 1}], "district": district}).json()
+        assert v["subtotal"] == price and v["delivery_charge"] == want and v["total"] == price + want, (pid, v)
+        assert v["free_delivery"] is (want == 0)
+        assert v["amount_to_free_delivery"] == (0 if want == 0 else 1500 - price)
+        assert v["delivery_policy"] == {"charge": 100, "free_threshold": 1500}
+        r = checkout(c, items=((pid, 1),), phone="01712345678")
+        assert r.status_code == 200, r.text
+        o = run(env["db"].orders.find_one({"order_number": r.json()["order_number"]}))
+        assert (o["subtotal"], o["delivery_charge"], o["total_amount"], o["free_delivery"]) == (price, want, price + want, want == 0)
+        # the browser cannot set its own delivery charge
+        assert "delivery_charge" not in (r.request.content or b"").decode()
+    # two different products: 970 + 300 below, 970 + 1090 above; quantity 2 of one product above
+    for items, sub, want in (((("d970", 1), ("p3", 1)), 1270, 100), ((("d970", 1), ("d1090", 1)), 2060, 0),
+                             ((("d970", 2),), 1940, 0)):
+        v = c.post("/api/cart/validate", json={"items": [{"product_id": p, "quantity": q} for p, q in items]}).json()
+        assert v["subtotal"] == sub and v["delivery_charge"] == want, v
+        r = checkout(c, items=items, phone="01912345678")
+        assert r.status_code == 200, r.text
+        o = run(env["db"].orders.find_one({"order_number": r.json()["order_number"]}))
+        assert (o["subtotal"], o["delivery_charge"], o["total_amount"]) == (sub, want, sub + want)
+    # empty selection pays nothing; the public settings expose the effective policy
+    assert delivery.quote(0)["delivery_charge"] == 0
+    assert c.get("/api/settings").json()["delivery_policy"] == {"charge": 100, "free_threshold": 1500}
+    # the confirmation page and the order email say "Free"
+    conf = c.get(f"/api/orders/{r.json()['order_number']}", params={"token": r.json()["order_confirmation_token"]}).json()
+    assert conf["free_delivery"] is True and conf["delivery_charge"] == 0
+
+
+def test_delivery_policy_with_welcome_discount(env):
+    """Eligibility is on the subtotal BEFORE the discount; the welcome discount never touches delivery."""
+    _add_priced(env, {"d1090": 1090, "d1510": 1510})
+    c = client()
+    assert c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env),
+                 json={"enabled": True, "min_subtotal": 1000, "max_discount_bdt": 150, "confirm": True}).status_code == 200
+    cases = (("d1090", "maya@example.test", "01712345678", 109, 100, 1081),
+             ("d1510", "rina@example.test", "01812345678", 150, 0, 1360))
+    for pid, email, phone, disc, deliv, total in cases:
+        a = verified_client(email=email, phone=phone)
+        code = a.get("/api/account/rewards").json()["coupons"][0]["code"]
+        v = a.post("/api/cart/validate", json={"items": [{"product_id": pid, "quantity": 1}], "coupon_code": code, "phone": phone}).json()
+        assert (v["discount_amount"], v["delivery_charge"], v["total"]) == (disc, deliv, total), v
+        r = checkout(a, items=((pid, 1),), phone=phone, coupon=code, email=email)
+        assert r.status_code == 200, r.text
+        o = run(env["db"].orders.find_one({"order_number": r.json()["order_number"]}))
+        assert (o["subtotal"] - o["discount_amount"], o["delivery_charge"], o["total_amount"]) == (int(pid[1:]) - disc, deliv, total)
+        mail = [m for m in emailer.CAPTURED if m.get("template") == "order_confirmation" or "order" in m.get("subject", "").lower()][-1]
+        assert ("Delivery: Free" in mail["text"]) is (deliv == 0)
+    # ৳1,090 - 10% = ৳981 merchandise + ৳100 delivery = ৳1,081; ৳1,510 - ৳150 cap = ৳1,360, delivery free
+    # turn the campaign back off (test database only)
+    assert c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env), json={"enabled": False}).status_code == 200
+
+
+def test_delivery_settings_override_and_validation(env):
+    c = client()
+    assert c.put("/api/admin/settings", headers=admin_h(env), json={"delivery_charge_bdt": -5}).status_code == 400
+    assert c.put("/api/admin/settings", headers=admin_h(env), json={"free_delivery_min_subtotal_bdt": "abc"}).status_code == 400
+    assert c.put("/api/admin/settings", headers=admin_h(env), json={"delivery_charge_bdt": 12.5}).status_code == 400
+    assert c.put("/api/admin/settings", headers=admin_h(env, "product_manager"), json={"delivery_charge_bdt": 0}).status_code == 403
+    assert c.put("/api/admin/settings", headers=admin_h(env),
+                 json={"delivery_charge_bdt": 120, "free_delivery_min_subtotal_bdt": 2000}).status_code == 200
+    v = c.post("/api/cart/validate", json={"items": [{"product_id": "p1", "quantity": 1}]}).json()
+    assert v["delivery_charge"] == 120 and v["amount_to_free_delivery"] == 710

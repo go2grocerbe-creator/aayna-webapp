@@ -195,9 +195,10 @@ SEED_SETTINGS = {
     "hero_headline": "Everyday Luxury, Reflected.",
     "hero_subtitle": "Beautiful enough to notice. Easy enough to live in. Personal enough to feel like yours.",
     "hero_image_url": f"{_BASE}/2cbf31f9e9d3f71a5f10c8439ae11afade95867c1cab05d0ec37bb592c43c214.png",
-    "delivery_charge_inside_dhaka": 80,
-    "delivery_charge_outside_dhaka": 130,
-    "free_delivery_threshold": 0,
+    # Delivery policy (founder decision 2026-10-19, backend/delivery.py): ৳100 nationwide,
+    # free from a ৳1,500 merchandise subtotal before discounts.
+    "delivery_charge_bdt": 100,
+    "free_delivery_min_subtotal_bdt": 1500,
     "cod_available": True,
     "whatsapp_number": "+8801XXXXXXXXX",
     "support_email": "hello@aayna.xyz",

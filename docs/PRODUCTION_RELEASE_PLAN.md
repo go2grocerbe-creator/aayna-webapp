@@ -32,9 +32,12 @@ login. That step is therefore the go-live moment, after everything else is check
 | `ORDER_WEBHOOK_ENABLED` | `false` | |
 | `RESEND_API_KEY` | Sensitive | domain already verified in Resend |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sensitive; production OAuth client | see section 4 |
+| `STEADFAST_MODE` | leave unset (= off) until approved; then `live` | `docs/STEADFAST_COURIER.md` |
+| `STEADFAST_API_KEY`, `STEADFAST_SECRET_KEY` | Sensitive; NEW keys (revoke any pasted in chat) | only when Steadfast is approved |
+| `STEADFAST_REAL_BOOKINGS` | `true` only after the founder approves real parcels | |
 
 Must NOT exist in Production: `ALLOW_PRODUCTION_SEED`, `PREVIEW_ADMIN_BOOTSTRAP`,
-`EMAIL_LINK_PREVIEW_ACCESS`, `PREVIEW_CATALOGUE`, `EMAIL_MODE`, `EMAIL_CAPTURE_FILE`. `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+`EMAIL_LINK_PREVIEW_ACCESS`, `PREVIEW_CATALOGUE`, `EMAIL_MODE`, `EMAIL_CAPTURE_FILE`, and `STEADFAST_MODE=mock` (the simulator refuses `aayna_prod` anyway). `ADMIN_EMAIL`/`ADMIN_PASSWORD`
 are not needed: an admin exists, so the first-run bootstrap skips and never changes it.
 
 ## 3. Domain (Cloudflare DNS, DNS only)
@@ -81,14 +84,20 @@ does not touch products, settings or the admin account.
 
 1. Founder approvals (checklist in the release report).
 2. Backup + counts baseline (section 5).
+2b. +৳100 price update (founder-approved 2026-10-19; NOT yet applied to `aayna_prod`):
+    `python scripts/prices/apply_price_update_20261019.py --env-file <.env.prod-import>` (dry run,
+    read-only) -> `... --apply --confirm aayna_prod` -> `... --verify`. Writes only `selling_price`,
+    `previous_selling_price`, one `price_history` entry and `updated_at`; idempotent; rollback with
+    `--rollback --confirm aayna_prod`. Targets: backend/price_targets.py.
 3. Create the Production variables (section 2).
 4. Fast-forward `main` to the release commit and push. Vercel builds the production deployment
    on `aayna-webapp.vercel.app` (still behind the Vercel login).
 5. Verify on that protected URL: `/api/health` → `aayna_prod`; `/api/health/version` → release
    commit; `/api/health/ready` → ready; admin login (founder); counts unchanged (4-inspect);
    no public products; `/api/promotions/welcome` → disabled.
-6. Founder sets Admin → Settings for production (delivery charges, announcement, contact) —
-   `aayna_prod` has none yet, so the code defaults (৳80 Dhaka / ৳130 elsewhere) apply.
+6. Founder sets Admin → Settings for production (announcement, contact). Delivery needs nothing:
+   the founder's policy is the code default (backend/delivery.py) - ৳100 nationwide below a ৳1,500
+   merchandise subtotal, free from ৳1,500, measured before discounts.
 7. Go-live (separate approval): publish the approved products, attach the domain (section 3),
    verify HTTPS, redirects, robots, sitemap, Google sign-in, one order end to end.
 8. Welcome offer: the founder-approved limits (10%, ৳1,000 minimum, ৳150 cap, 30 days, one
