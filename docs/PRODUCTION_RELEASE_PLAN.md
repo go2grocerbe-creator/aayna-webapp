@@ -85,7 +85,11 @@ does not touch products, settings or the admin account.
 
 1. Founder approvals (checklist in the release report).
 2. Backup + counts baseline (section 5).
-2b. +৳100 price update (founder-approved 2026-10-19; NOT yet applied to `aayna_prod`):
+2b. +৳100 price update (founder-approved; NOT yet applied to `aayna_prod`). A verified pre-update
+    backup was taken on 2026-10-20 (read-only export, checked against server-side sizes and
+    field fingerprints, restore-tested): `aayna-private-backups\aayna-prod-20261020-before-price-update`
+    on the founder's PC. Apply either through the Atlas connection after the founder confirms
+    in chat, or with:
     `python scripts/prices/apply_price_update_20261019.py --env-file <.env.prod-import>` (dry run,
     read-only) -> `... --apply --confirm aayna_prod` -> `... --verify`. Writes only `selling_price`,
     `previous_selling_price`, one `price_history` entry and `updated_at`; idempotent; rollback with
