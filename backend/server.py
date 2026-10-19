@@ -214,6 +214,11 @@ async def on_startup():
     await seed_database()
     await seed_admin()
     await preview_admin_bootstrap()
+    try:
+        from preview_catalogue import apply_preview_catalogue  # test preview only; refuses elsewhere
+        await apply_preview_catalogue(db)
+    except Exception as exc:  # noqa: BLE001 - never block startup for a preview convenience
+        logger.warning("preview catalogue skipped: %s", type(exc).__name__)
     await ensure_indexes()
     await ensure_customer_indexes()
     await ensure_promotion_indexes()

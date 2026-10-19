@@ -59,9 +59,9 @@ Server-authoritative, separate from catalogue `discount_price`. Percentage or fi
 * Permissions: `promotions.view`/`promotions.manage` = super_admin, admin. **`promotions.activate` (making a code usable, and any welcome-campaign change) = super_admin only.** Product and order managers have no promotion access. New codes are always drafts.
 * Admin preview endpoint shows the exact discount the engine would apply.
 
-### Welcome campaign — DISABLED, awaiting founder approval
+### Welcome campaign — limits approved 2026-10-19, campaign DISABLED until launch authorisation
 
-10% off the first eligible order, personal single-use code (`WELCOME-XXXXXXXX`) per verified account, valid 30 days from issue, non-transferable, non-stackable. Issued only after email verification (or a Google sign-up with a Google-verified email), at most once per account (`welcome_issuance`). The proposed ৳1,000 minimum and ৳150 maximum are stored only as `proposed`; the campaign cannot be enabled until a super admin explicitly sets both values and confirms. While disabled the storefront popup only invites account creation and promises no discount.
+10% off the first eligible order, personal single-use code (`WELCOME-XXXXXXXX`) per verified account, valid 30 days from issue, non-transferable, non-stackable. Issued only after email verification (or a Google sign-up with a Google-verified email), at most once per account (`welcome_issuance`). Founder-approved limits (2026-10-19): minimum merchandise order ৳1,000, maximum discount ৳150, valid 30 days, one redemption per eligible customer, delivery charges excluded. They are the recorded configuration (`approved_limits`). The campaign remains disabled until a super admin enables it with an explicit confirmation; enabling with values that differ from the approved limits needs a second explicit confirmation. While disabled the storefront popup only invites account creation and promises no discount.
 
 Known limit: one person can create several accounts with different email addresses; first-order-only (account **and** phone) limits repeat use.
 

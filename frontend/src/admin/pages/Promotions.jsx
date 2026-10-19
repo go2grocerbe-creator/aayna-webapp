@@ -228,7 +228,7 @@ function WelcomeCampaign() {
   const { data: c, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-welcome"], queryFn: getWelcomeCampaign });
   const [form, setForm] = useState(null);
   useEffect(() => { if (c) setForm({ value: c.value, validity_days: c.validity_days, min_subtotal: c.min_subtotal ?? "", max_discount_bdt: c.max_discount_bdt ?? "", first_order_only: c.first_order_only }); }, [c]);
-  const sample = useMemo(() => Number(form?.min_subtotal || c?.proposed?.min_subtotal || 1000) * 2, [form, c]);
+  const sample = useMemo(() => Number(form?.min_subtotal || c?.approved_limits?.min_subtotal || 1000) * 2, [form, c]);
   const { data: preview } = useQuery({
     queryKey: ["welcome-preview", form?.value, form?.min_subtotal, form?.max_discount_bdt, sample],
     queryFn: () => previewPromotion({ type: "percent", value: Number(form.value), min_subtotal: Number(form.min_subtotal || 0),
@@ -245,6 +245,13 @@ function WelcomeCampaign() {
       body.enabled = enabled;
       if (enabled && !window.confirm(`Enable the welcome offer?\n\nEvery newly verified customer will receive a real ${form.value}% code (min ${formatBDT(form.min_subtotal || 0)}, max ${form.max_discount_bdt === "" ? "no cap" : formatBDT(form.max_discount_bdt)}, ${form.validity_days} days).`)) return;
       body.confirm = !!enabled;
+      const a = c.approved_limits;
+      const differs = a && (Number(form.value) !== a.value || Number(form.validity_days) !== a.validity_days || Number(form.min_subtotal) !== a.min_subtotal
+        || Number(form.max_discount_bdt) !== a.max_discount_bdt || form.first_order_only !== a.first_order_only);
+      if (enabled && differs) {
+        if (!window.confirm("These settings differ from the approved welcome limits. Enable with these different values anyway?")) return;
+        body.confirm_unapproved_limits = true;
+      }
     }
     try { await updateWelcomeCampaign(body); toast.success("Welcome campaign saved"); qc.invalidateQueries({ queryKey: ["admin-welcome"] }); }
     catch (e) { toast.error(errMsg(e)); }
@@ -259,11 +266,15 @@ function WelcomeCampaign() {
         </div>
         <span data-testid="welcome-status" className={`text-xs font-semibold px-2 py-0.5 rounded ${c.enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{c.enabled ? "Enabled" : "Disabled"}</span>
       </div>
-      {!c.enabled && (
-        <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-md p-3">
-          Not approved yet. Proposed limits awaiting your decision: minimum order {formatBDT(c.proposed.min_subtotal)}, maximum discount {formatBDT(c.proposed.max_discount_bdt)}.
-          Nothing is issued while disabled, and the storefront does not mention a discount.
+      {c.approved_limits && (
+        <p className="text-sm bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-3" data-testid="welcome-approved">
+          Approved limits ({c.approved_limits.decided_on}): {c.approved_limits.value}% off the first eligible order, minimum order {formatBDT(c.approved_limits.min_subtotal)},
+          maximum discount {formatBDT(c.approved_limits.max_discount_bdt)}, valid {c.approved_limits.validity_days} days, once per customer, delivery excluded.
+          {!c.enabled && " Disabled: nothing is issued and the storefront does not mention a discount until a super admin enables it."}
         </p>
+      )}
+      {c.differs_from_approved?.length > 0 && (
+        <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-md p-3">Saved settings differ from the approved limits: {c.differs_from_approved.join(", ")}.</p>
       )}
       <fieldset disabled={!editable} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <label className="text-sm">Percent off<input type="number" min="1" max="100" className={`${field} mt-1`} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></label>

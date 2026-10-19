@@ -352,8 +352,9 @@ async function addToCart(page, slug) {
   rec("new code saved as draft (not usable)", /draft/.test(await a.textContent('[data-testid="promotion-detail"]')));
   await a.click('text=Welcome offer');
   await a.waitForSelector('[data-testid="welcome-campaign"]');
-  rec("welcome campaign shown disabled with proposed (unapproved) limits",
-      (await a.textContent('[data-testid="welcome-status"]')).trim() === "Disabled" && /Not approved yet/.test(await a.textContent('[data-testid="welcome-campaign"]')));
+  rec("welcome campaign shown disabled with the founder-approved limits (10%, min 1,000, max 150, 30 days)",
+      (await a.textContent('[data-testid="welcome-status"]')).trim() === "Disabled" &&
+      /10% off .*1,000.*150.*30 days/.test(await a.textContent('[data-testid="welcome-approved"]')));
   await a.screenshot({ path: path.join(OUT, "admin-welcome-1280.png"), fullPage: true });
   await a.click('[data-testid="admin-nav-accounts"]');
   await a.waitForSelector('[data-testid="account-row"]');

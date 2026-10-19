@@ -791,14 +791,27 @@ def test_welcome_disabled_by_default_issues_nothing(env):
     a = verified_client()
     assert a.get("/api/account/rewards").json() == {"welcome_enabled": False, "coupons": []}
     cfg = client().get("/api/admin/promotions/campaigns/welcome", headers=admin_h(env)).json()
-    assert cfg["enabled"] is False and cfg["min_subtotal"] is None and cfg["proposed"] == {"min_subtotal": 1000, "max_discount_bdt": 150}
+    # founder-approved limits (2026-10-19) are recorded as the configuration; still disabled
+    assert cfg["enabled"] is False and cfg["min_subtotal"] == 1000 and cfg["max_discount_bdt"] == 150
+    assert cfg["value"] == 10 and cfg["validity_days"] == 30 and cfg["first_order_only"] is True and cfg["single_use"] is True
+    assert cfg["approved_limits"]["decided_on"] == "2026-10-19" and cfg["differs_from_approved"] == []
+    assert "proposed" not in cfg
+    assert run(env["db"].promotions.count_documents({"kind": "welcome_issued"})) == 0
 
 
 def test_welcome_enable_requires_explicit_limits_and_confirmation(env):
     c = client()
-    assert c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env), json={"enabled": True, "confirm": True}).status_code == 400
+    # no confirmation -> refused
     assert c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env),
                  json={"enabled": True, "min_subtotal": 1000, "max_discount_bdt": 150}).status_code == 400
+    # only the super admin may enable
+    assert c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env, "admin"),
+                 json={"enabled": True, "confirm": True}).status_code == 403
+    # values that differ from the founder-approved limits need an explicit second confirmation
+    r = c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env),
+              json={"enabled": True, "max_discount_bdt": 300, "confirm": True})
+    assert r.status_code == 400 and "max_discount_bdt" in r.json()["detail"]
+    assert client().get("/api/promotions/welcome").json() == {"enabled": False}
     r = c.put("/api/admin/promotions/campaigns/welcome", headers=admin_h(env),
               json={"enabled": True, "min_subtotal": 1000, "max_discount_bdt": 150, "confirm": True})
     assert r.status_code == 200 and r.json()["approved_by"] == "super_admin@example.test"
@@ -994,3 +1007,41 @@ def test_launch_categories_match_frontend():
     js = (ROOT / "frontend" / "src" / "lib" / "catalogue.js").read_text()
     front = set(re.findall(r'"([a-z-]+)"', re.search(r"LAUNCH_CATEGORY_SLUGS = \[([^\]]*)\]", js).group(1)))
     assert front == set(server.LAUNCH_CATEGORY_SLUGS) == {"earrings", "necklaces", "rings", "bracelets"}
+
+
+def test_preview_catalogue_only_on_the_isolated_preview(env, monkeypatch):
+    import preview_catalogue as pc
+    db = env["db"]
+    monkeypatch.setenv("PREVIEW_CATALOGUE", "real")
+    # refused against the production database name and on the real domain
+    for name, site in (("aayna_prod", "https://aayna-webapp-git-x.vercel.app"), ("aayna_preview", "https://shopaayna.com")):
+        monkeypatch.setenv("DB_NAME", name)
+        monkeypatch.setenv("PUBLIC_SITE_URL", site)
+        assert run(pc.apply_preview_catalogue(db)) == {"refused": True}
+    assert run(db.products.count_documents({"sku": {"$in": list(pc.REAL_SKUS)}})) == 0
+    monkeypatch.setenv("DB_NAME", "aayna_preview")
+    monkeypatch.setenv("PUBLIC_SITE_URL", "https://aayna-webapp-git-x.vercel.app")
+    run(db.categories.insert_many([{"id": "c3", "name": "Necklaces", "slug": "necklaces", "status": "active"},
+                                   {"id": "c4", "name": "Bracelets", "slug": "bracelets", "status": "active"}]))
+    r = run(pc.apply_preview_catalogue(db))
+    assert r["created"] == 10 and r["hidden"] == 3
+    c = client()
+    public = c.get("/api/products?limit=100").json()
+    assert sorted(p["sku"] for p in public) == sorted(pc.REAL_SKUS)
+    assert sum(p["stock_quantity"] for p in public) == 46
+    luna = c.get("/api/products/aayna-luna-statement-locket").json()
+    luna = luna.get("product", luna)
+    assert luna["selling_price"] == 1350 and luna["color"] == "Golden" and luna["images"] == []
+    for bad in ("cost_price", "internal_notes", "source", "pricing", "preview_snapshot", "supplier"):
+        assert all(bad not in p for p in public)
+    # stock is kept across restarts (test orders reduce it); identity is refreshed
+    run(db.products.update_one({"sku": "AYN-CUF-STN-GLD"}, {"$set": {"stock_quantity": 7}}))
+    run(pc.apply_preview_catalogue(db))
+    assert run(db.products.find_one({"sku": "AYN-CUF-STN-GLD"}))["stock_quantity"] == 7
+    # demo mode restores the hidden demo products and hides the real ones again
+    monkeypatch.setenv("PREVIEW_CATALOGUE", "demo")
+    run(pc.apply_preview_catalogue(db))
+    assert sorted(p["sku"] for p in c.get("/api/products?limit=100").json()) == ["AYN-TST-p1", "AYN-TST-p2", "AYN-TST-p3"]
+    # unset -> nothing happens
+    monkeypatch.delenv("PREVIEW_CATALOGUE")
+    assert run(pc.apply_preview_catalogue(db)) == {"mode": "off"}

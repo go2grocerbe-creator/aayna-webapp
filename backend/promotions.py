@@ -21,9 +21,13 @@ promotions.manage can restore it explicitly for a Cancelled/Returned order; the
 action is audited.
 
 Welcome campaign: configuration lives in promotion_campaigns/_id="welcome" and is
-disabled by default. The proposed monetary limits are stored as `proposed` only;
-the campaign cannot be enabled until a super admin sets the real minimum subtotal
-and maximum discount explicitly.
+disabled by default. The founder approved the limits on 2026-10-19 (10% off the
+first eligible order, merchandise minimum 1,000 BDT, maximum discount 150 BDT,
+valid 30 days from issue, one redemption per eligible customer, delivery
+excluded). They are the defaults and are recorded in `approved_limits`. The
+campaign stays disabled until a super admin enables it with an explicit
+confirmation; enabling with values that differ from the approved limits needs a
+second, explicit confirmation.
 """
 import math
 import re
@@ -45,14 +49,28 @@ promotions_admin_router = APIRouter(prefix="/api/admin/promotions")
 
 CODE_RE = re.compile(r"^[A-Z0-9][A-Z0-9-]{2,31}$")
 WELCOME_ID = "welcome"
+# Founder decision, 2026-10-19 (approved limits; the campaign itself stays disabled until launch).
+APPROVED_WELCOME_LIMITS = {"value": 10, "validity_days": 30, "min_subtotal": 1000, "max_discount_bdt": 150,
+                           "first_order_only": True, "decided_on": "2026-10-19"}
 WELCOME_DEFAULTS = {
     "_id": WELCOME_ID, "enabled": False, "type": "percent", "value": 10, "validity_days": 30,
     "first_order_only": True, "single_use": True, "non_transferable": True,
-    "min_subtotal": None, "max_discount_bdt": None,
-    # Founder brief 2026-10-18: proposed, NOT approved. Shown in admin for a decision.
-    "proposed": {"min_subtotal": 1000, "max_discount_bdt": 150},
+    "min_subtotal": 1000, "max_discount_bdt": 150,
+    "approved_limits": APPROVED_WELCOME_LIMITS,
     "approved_by": None, "approved_at": None,
 }
+_LIMIT_KEYS = ("value", "validity_days", "min_subtotal", "max_discount_bdt", "first_order_only")
+
+
+def differs_from_approved(cfg: dict) -> List[str]:
+    """Names of the welcome settings that differ from the founder-approved limits."""
+    out = []
+    for k in _LIMIT_KEYS:
+        a, b = cfg.get(k), APPROVED_WELCOME_LIMITS[k]
+        same = (a == b) if (isinstance(b, bool) or a is None) else float(a) == float(b)
+        if not same:
+            out.append(k)
+    return out
 
 
 class CouponError(Exception):
@@ -352,6 +370,7 @@ class WelcomeBody(BaseModel):
     max_discount_bdt: Optional[float] = None
     first_order_only: Optional[bool] = None
     confirm: bool = False
+    confirm_unapproved_limits: bool = False
 
 
 async def _audit(promotion_id: str, action: str, actor: str, changes: dict):
@@ -437,7 +456,8 @@ async def get_welcome(current=Depends(require("promotions.view"))):
     issued = await db.welcome_issuance.count_documents({})
     welcome_ids = [p["id"] for p in await db.promotions.find({"kind": "welcome_issued"}, {"id": 1}).to_list(100000)]
     redeemed = await db.promotion_redemptions.count_documents({"promotion_id": {"$in": welcome_ids}, "status": "redeemed"}) if welcome_ids else 0
-    return {**{k: v for k, v in cfg.items() if k != "_id"}, "issued": issued, "redeemed": redeemed}
+    return {**{k: v for k, v in cfg.items() if k != "_id"}, "issued": issued, "redeemed": redeemed,
+            "differs_from_approved": differs_from_approved(cfg)}
 
 
 @promotions_admin_router.put("/campaigns/welcome")
@@ -460,6 +480,10 @@ async def update_welcome(body: WelcomeBody, current=Depends(require("promotions.
             raise HTTPException(status_code=400, detail="Set the minimum order subtotal and the maximum discount (0 is allowed) before enabling the welcome offer.")
         if not body.confirm:
             raise HTTPException(status_code=400, detail="Confirm to enable: new verified customers will start receiving real, usable coupons.")
+        changed = differs_from_approved(merged)
+        if changed and not body.confirm_unapproved_limits:
+            raise HTTPException(status_code=400, detail="These settings differ from the founder-approved welcome limits ("
+                                + ", ".join(changed) + "). Restore the approved values, or confirm the change explicitly.")
         if not cfg.get("enabled"):
             changes.update(approved_by=current["email"], approved_at=now_iso())
     changes["updated_at"] = now_iso()
