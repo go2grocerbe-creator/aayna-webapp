@@ -27,6 +27,13 @@ const NUMBER_FIELDS = [
   ["free_delivery_min_subtotal_bdt", "Free delivery from product subtotal (৳)", 1500],
 ];
 
+// Optional, PRIVATE planning estimates for Steadfast's charges (never shown to customers).
+// Leave empty to show "pending provider confirmation" instead of a guess.
+const ESTIMATE_FIELDS = [
+  ["steadfast_estimated_delivery_fee_bdt", "Estimated Steadfast delivery fee per parcel (৳)"],
+  ["steadfast_estimated_cod_fee_pct", "Estimated Steadfast COD charge (% of COD)"],
+];
+
 const PLACEHOLDER_FIELDS = [
   ["announcement_bar_text", "Announcement bar text"],
   ["whatsapp_number", "WhatsApp number"],
@@ -60,6 +67,7 @@ export default function Settings() {
       const payload = {
         ...TEXT_FIELDS.reduce((a, [k]) => ({ ...a, [k]: form[k] ?? "" }), {}),
         ...Object.fromEntries(NUMBER_FIELDS.map(([k, , d]) => [k, form[k] === "" || form[k] == null ? d : Number(form[k])])),
+        ...Object.fromEntries(ESTIMATE_FIELDS.map(([k]) => [k, form[k] === "" || form[k] == null ? "" : Number(form[k])])),
         logo_url: form.logo_url || "",
         cod_available: Boolean(form.cod_available),
         maintenance_mode: Boolean(form.maintenance_mode),
@@ -127,6 +135,12 @@ export default function Settings() {
               <div key={k}>
                 <label htmlFor={`set-${k}`} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
                 <input id={`set-${k}`} data-testid={`set-${k}`} type="number" min="0" step="1" inputMode="numeric" className={field} value={form[k] ?? d} onChange={(e) => set(k, e.target.value)} />
+              </div>
+            ))}
+            {ESTIMATE_FIELDS.map(([k, label]) => (
+              <div key={k}>
+                <label htmlFor={`set-${k}`} className="block text-sm font-medium text-gray-700 mb-1.5">{label} <span className="text-xs text-gray-400 font-normal">optional, private</span></label>
+                <input id={`set-${k}`} data-testid={`set-${k}`} type="number" min="0" step="0.01" inputMode="decimal" className={field} value={form[k] ?? ""} onChange={(e) => set(k, e.target.value)} placeholder="Leave empty if not known" />
               </div>
             ))}
             <p className="sm:col-span-2 text-xs text-gray-500" data-testid="set-delivery-help">

@@ -20,8 +20,8 @@ const results = [];
 const rec = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "PASS" : "FAIL"}  ${n}${d ? "  — " + d : ""}`); };
 
 // Accounts = registered customer sign-ins (customers.view); Promotions = owner/ops only.
-const NAV = { super_admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
-  admin: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
+const NAV = { super_admin: ["dashboard", "orders", "courier money", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
+  admin: ["dashboard", "orders", "courier money", "products", "categories", "inventory", "customers", "accounts", "promotions", "settings"],
   product_manager: ["dashboard", "products", "categories", "inventory"],
   order_manager: ["dashboard", "orders", "products", "categories", "inventory", "customers", "accounts"] };
 const COST_ROLES = new Set(["super_admin", "admin"]);
@@ -152,12 +152,18 @@ const overflow = (page) => page.evaluate(() => document.documentElement.scrollWi
       const orders = await apiCall("GET", "/admin/orders", token);
       const ordersAllowed = role !== "product_manager";
       rec(`${tag}: API orders ${ordersAllowed ? "allowed" : "403"}`, ordersAllowed ? orders.status === 200 : orders.status === 403, `HTTP ${orders.status}`);
+      if (!NAV[role].includes("courier money")) {
+        await page.goto(`${BASE}/admin/courier-money`, { waitUntil: "networkidle" });
+        rec(`${tag}: /admin/courier-money shows "No access"`, (await page.$('[data-testid="admin-no-access"]')) !== null);
+        const fin = await apiCall("GET", "/admin/courier/finance", token);
+        rec(`${tag}: API courier money 403`, fin.status === 403, `HTTP ${fin.status}`);
+      }
       if (!NAV[role].includes("settings")) {
         await page.goto(`${BASE}/admin/settings`, { waitUntil: "networkidle" });
         rec(`${tag}: /admin/settings shows "No access"`, (await page.$('[data-testid="admin-no-access"]')) !== null);
       }
       for (const p of NAV[role].filter((n) => n !== "dashboard")) {
-        await page.goto(`${BASE}/admin/${p}`, { waitUntil: "networkidle" });
+        await page.goto(`${BASE}/admin/${p.replace(/ /g, "-")}`, { waitUntil: "networkidle" });
         await page.waitForTimeout(500);
         const ov = await overflow(page);
         const err = await page.$('[data-testid="admin-load-error"]');

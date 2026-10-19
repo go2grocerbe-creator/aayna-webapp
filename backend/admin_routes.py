@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from db import db, now_iso
 import emailer
 import delivery
+import product_content
 from auth import get_current_admin, require, has_permission
 
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
@@ -181,6 +182,17 @@ class ProductPayload(BaseModel):
     is_new_arrival: Optional[bool] = None
     images: Optional[List[dict]] = None
     tags: Optional[List[str]] = None
+    # Description & details (plain text, validated in product_content.py)
+    highlights: Optional[list] = None
+    care_note: Optional[str] = None
+    seo_title: Optional[str] = None
+    seo_description: Optional[str] = None
+
+
+def with_content_status(p: dict) -> dict:
+    if p:
+        p["content_status"] = product_content.completeness(p)
+    return p
 
 
 @admin_router.get("/products")
@@ -198,7 +210,7 @@ async def list_products(category: Optional[str] = None, status: Optional[str] = 
             {"sku": {"$regex": pattern, "$options": "i"}},
         ]
     items = await db.products.find(q, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return [for_role(i, current) for i in items]
+    return [with_content_status(for_role(i, current)) for i in items]
 
 
 @admin_router.get("/products/{product_id}")
@@ -206,7 +218,12 @@ async def get_product(product_id: str, current=Depends(require("products.view"))
     p = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    return for_role(p, current)
+    return with_content_status(for_role(p, current))
+
+
+@admin_router.get("/products/{product_id}/content-history")
+async def product_content_history(product_id: str, current=Depends(require("products.view"))):
+    return await db.product_content_history.find({"product_id": product_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
 
 
 async def _category_name(slug):
@@ -227,6 +244,7 @@ async def create_product(payload: ProductPayload, current=Depends(require("produ
     # New products start as drafts unless a status is chosen explicitly.
     status = payload.status or "draft"
     validate_product_fields({**payload.model_dump(), "status": status})
+    content = product_content.normalize_content(payload.model_dump())
     if status in ("active", "out_of_stock"):
         status = status_for_stock(status, payload.stock_quantity)
     slug = slugify(payload.slug) if payload.slug else slugify(payload.product_name)
@@ -240,14 +258,18 @@ async def create_product(payload: ProductPayload, current=Depends(require("produ
         "category_slug": payload.category_slug,
         "category_name": await _category_name(payload.category_slug),
         "category_id": None, "brand_id": None, "seller_id": None,
-        "short_description": payload.short_description or "",
-        "full_description": payload.full_description or "",
+        "short_description": content.get("short_description", ""),
+        "full_description": content.get("full_description", ""),
+        "highlights": content.get("highlights", []),
+        "care_note": content.get("care_note", ""),
+        "seo_title": content.get("seo_title", ""),
+        "seo_description": content.get("seo_description", ""),
         "cost_price": payload.cost_price or 0,
         "selling_price": payload.selling_price,
         "discount_price": payload.discount_price,
         "stock_quantity": payload.stock_quantity,
         "low_stock_alert": payload.low_stock_alert if payload.low_stock_alert is not None else 3,
-        "material": payload.material or "", "color": payload.color or "", "size": payload.size or "",
+        "material": content.get("material", ""), "color": payload.color or "", "size": content.get("size", ""),
         "weight": None,
         "status": status,
         "is_featured": bool(payload.is_featured),
@@ -283,6 +305,7 @@ async def update_product(product_id: str, payload: ProductPayload, current=Depen
         if required in updates and updates[required] in (None, ""):
             raise HTTPException(status_code=400, detail=f"{required.replace('_', ' ').capitalize()} cannot be empty")
     validate_product_fields({**product, **updates})
+    updates.update(product_content.normalize_content(updates))
     if "slug" in updates:
         updates["slug"] = slugify(updates["slug"])
         if updates["slug"] != product.get("slug") and await db.products.find_one({"slug": updates["slug"], "id": {"$ne": product_id}}):
@@ -303,8 +326,9 @@ async def update_product(product_id: str, payload: ProductPayload, current=Depen
 
     updates["updated_at"] = now_iso()
     await db.products.update_one({"id": product_id}, {"$set": updates})
+    await product_content.record_changes(db, product, updates, current.get("email"), updates["updated_at"])
     p = await db.products.find_one({"id": product_id}, {"_id": 0})
-    return for_role(p, current)
+    return with_content_status(for_role(p, current))
 
 
 @admin_router.delete("/products/{product_id}")
@@ -424,7 +448,10 @@ async def list_orders(status: Optional[str] = None, search: Optional[str] = None
             {"customer_name": {"$regex": pattern, "$options": "i"}},
             {"customer_phone": {"$regex": pattern, "$options": "i"}},
         ]
-    orders = await db.orders.find(q, {"_id": 0, "order_confirmation_token_hash": 0}).sort("created_at", -1).to_list(limit)
+    hidden = {"_id": 0, "order_confirmation_token_hash": 0}
+    if not has_permission(current, "courier.finance"):
+        hidden["courier_finance"] = 0  # courier money is for super admins / admins only
+    orders = await db.orders.find(q, hidden).sort("created_at", -1).to_list(limit)
     return orders
 
 
@@ -439,6 +466,8 @@ async def get_order(order_number: str, current=Depends(require("orders.view"))):
     order["events"] = await db.order_events.find({"order_id": order.get("id")}, {"_id": 0}).sort("created_at", 1).to_list(100)
     order["redemptions"] = await db.promotion_redemptions.find({"order_id": order.get("id")}, {"_id": 0, "usage_key": 0, "usage_keys": 0}).to_list(10)
     order.pop("order_confirmation_token_hash", None)
+    if not has_permission(current, "courier.finance"):
+        order.pop("courier_finance", None)
     return order
 
 
@@ -592,7 +621,7 @@ async def customer_detail(customer_id: str, current=Depends(require("customers.v
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
-    orders = await db.orders.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    orders = await db.orders.find({"customer_id": customer_id}, {"_id": 0, "courier_finance": 0, "order_confirmation_token_hash": 0}).sort("created_at", -1).to_list(200)
     customer["orders"] = orders
     return customer
 
@@ -616,6 +645,10 @@ async def update_settings(payload: dict, current=Depends(require("settings.edit"
         raise HTTPException(status_code=400, detail="Invalid setting key(s). Secrets belong in the hosting environment, never in settings.")
     for key, value in payload.items():
         problem = delivery.validate_setting(key, value)
+        if key in ("steadfast_estimated_delivery_fee_bdt", "steadfast_estimated_cod_fee_pct") and value not in ("", None):
+            hi = 5000 if key.endswith("_bdt") else 10
+            ok = isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= hi
+            problem = None if ok else f"{key} must be empty or a number between 0 and {hi}"
         if problem:
             raise HTTPException(status_code=400, detail=problem)
     for key, value in payload.items():
@@ -730,6 +763,12 @@ async def import_products(file: UploadFile = File(...), current=Depends(require(
             "is_new_arrival": _to_bool(norm.get("new arrival")),
             "updated_at": now_iso(),
         }
+        try:
+            fields.update(product_content.normalize_content(
+                {k: fields[k] for k in ("material", "size", "short_description", "full_description")}))
+        except HTTPException as e:
+            errors.append(f"Row {idx}: {e.detail}")
+            continue
         cost = _to_float(norm.get("cost price estimate (bdt)") or norm.get("cost price") or norm.get("cost_price"))
         if cost is not None and has_permission(current, "products.cost"):
             fields["cost_price"] = cost

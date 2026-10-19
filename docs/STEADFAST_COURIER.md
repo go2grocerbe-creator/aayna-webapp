@@ -104,11 +104,23 @@ No Steadfast fee rates are assumed anywhere.
 - Admin checks happen per order or with the Orders-list button (up to 20 unfinished parcels not
   checked in 10 minutes).
 - Live answers are cached for 60 seconds, as Steadfast caches them.
-- Optional schedule: `GET /api/internal/courier/sync`. It is 404 unless `CRON_SECRET` is set and
-  sent as `Authorization: Bearer …`. Not enabled.
-  - Vercel cron on Hobby runs **once a day** with ±59 min precision.
-  - More frequent runs need the paid **Pro** plan (check the current price on vercel.com/pricing).
-  - This is the founder's decision; manual checks cost nothing.
+- **Automatic tracking (20 Oct):** a Vercel Cron Job calls `GET /api/internal/courier/sync` once a
+  day at 02:15 UTC (08:15 Dhaka). It is in `frontend/vercel.json` and has no extra cost.
+  - Vercel runs cron jobs only for the **production** deployment.
+  - A daily schedule works on every Vercel plan. On Hobby, cron jobs may run only once a day,
+    ±59 min. Runs more often than daily need the paid Pro plan; nothing was bought.
+  - The endpoint answers 404 unless `CRON_SECRET` is set and Vercel sends it as
+    `Authorization: Bearer …`.
+  - With Steadfast off, the run is a quiet no-op.
+- **What each run checks:** only parcels that can still change. Confirmed `delivered` parcels and
+  received returns are never polled again.
+  - It skips anything checked in the last 10 minutes.
+  - At most 20 parcels per run, inside a 22-second budget (functions here stop at 30 s).
+  - It stops on a rate-limit answer.
+  - A failed check backs off for that parcel: 10 min, 20, 40 … up to 24 h.
+  - The last run's result shows in `GET /api/admin/courier/config`.
+- **Manual checks stay** for urgent cases: "Check delivery status" on the order and "Check Steadfast
+  parcels" on the Orders list.
 - Each order keeps the raw status, the accepted status, the provider timestamp if any, when it
   was checked, the result, and an append-only history.
 - Emails use the existing deduplicated status emails ("Handed to courier", "Delivered"). Polls
@@ -120,6 +132,57 @@ No Steadfast fee rates are assumed anywhere.
     another customer's data.
   - Ownership checks are unchanged.
 
+## Steadfast financials (order level, admin only)
+
+Code: `backend/courier_finance.py`, the "Steadfast financials" panel on the order, and Admin →
+Courier money.
+
+- **Where it is stored:** each order has one `courier_finance` record, the single source of
+  truth, plus an append-only `courier_finance_events` log (who, when, before/after, source,
+  reference, reason).
+- **What it never touches:** the order total and anything the customer sees.
+
+| Concept | How it is worked out |
+|---|---|
+| Customer payable | From the saved order: subtotal − approved discount + customer delivery charge − verified prepayment. It never uses current catalogue prices |
+| COD requested | The amount sent at booking (the same customer payable) |
+| COD collected | The amount confirmed by Steadfast or a statement. Otherwise an estimate from the delivery outcome (delivered → full, cancelled → 0, partial → unknown) |
+| Courier charges | Delivery fee, COD fee, return fee, other deductions and adjustments. Each has a basis: from Steadfast / from statement / estimate / pending |
+| Expected settlement | COD collected − delivery fee − COD fee − return fee − deductions + adjustments. Blank ("pending provider confirmation") while any part is unknown |
+| Actual settlement | The payout amount, payment reference and date, as recorded or imported |
+| Difference | Actual − expected |
+| Profit | Not worked out here: purchase and packaging costs are separate |
+
+- **Statuses:**
+  - NOT_AVAILABLE: no booking, or not enough known.
+  - ESTIMATED: worked out with at least one estimate.
+  - PROVIDER_CONFIRMED: all charges confirmed, no payout yet.
+  - SETTLED: payout recorded.
+  - RECONCILED: an admin accepted the payout; a reason is needed if it differs.
+  - DISPUTED.
+  - A delivered parcel never counts as paid.
+- **Estimates:** they exist only if the founder fills the two optional private settings: estimated
+  delivery fee per parcel and estimated COD %. Both are blank by default, so nothing is assumed;
+  the ৳60/৳115/৳135 screenshot rates are not used.
+- **Safeguards:**
+  - Each submission carries an idempotency key, so a double click or a repeated payment event
+    changes nothing.
+  - Changing a confirmed amount, replacing a payout or voiding an entry needs a reason. The
+    previous value is kept.
+  - Only the super admin and admins (`courier.finance`) can see or change any of this; order and
+    product managers get 403.
+  - Customer pages and the tracking API never include it.
+- **Views:** Awaiting settlement · Settled · Mismatch · Delivery exception · Return pending.
+- **Payout import (`GET /payments`, `/payments/{id}`):**
+  - The importer accepts one explicit format, a payment plus per-consignment COD and charges, and
+    matches rows by consignment ID. Anything else is reported "unreadable" for manual
+    reconciliation.
+  - The founder's guide does not define these response fields. So in live mode the import stays off
+    until `STEADFAST_PAYMENTS_SCHEMA_VERIFIED=true` is set after checking a real answer.
+  - The simulator uses that format so the matching logic is tested.
+  - Until then: record charges and payouts by hand from the Steadfast statement (the panel's
+    "Record charges / COD" and "Record payout").
+
 ## Permissions
 
 | Action | Who |
@@ -127,6 +190,7 @@ No Steadfast fee rates are assumed anywhere.
 | Book, reconcile, link and simulator controls (`courier.book`) | super admin, admin, order manager |
 | Check status | anyone with `orders.edit` |
 | View the panel | anyone with `orders.view` |
+| Courier money: view, record, reconcile, import (`courier.finance`) | super admin, admin |
 | Any courier action | product managers: none |
 
 ## Credentials and switches (server environment only; never in React, the repo, logs or responses)
@@ -137,7 +201,8 @@ No Steadfast fee rates are assumed anywhere.
 | `STEADFAST_API_KEY`, `STEADFAST_SECRET_KEY` | Sensitive. Use **new** keys. Keys pasted into any chat must be revoked first |
 | `STEADFAST_BASE_URL` | optional; must be https; defaults to the guide's URL |
 | `STEADFAST_REAL_BOOKINGS` | `true` allows real consignments, and only on `aayna_prod`. Founder approval |
-| `CRON_SECRET` | only if a scheduled sync is approved |
+| `CRON_SECRET` | Sensitive, Production: any long random string; enables the daily tracking run |
+| `STEADFAST_PAYMENTS_SCHEMA_VERIFIED` | `true` only after a real `/payments/{id}` answer has been checked against the importer's fields |
 
 The preview uses `STEADFAST_MODE=mock`. Production has none of these until approved.
 

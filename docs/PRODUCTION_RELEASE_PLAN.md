@@ -35,6 +35,7 @@ login. That step is therefore the go-live moment, after everything else is check
 | `STEADFAST_MODE` | leave unset (= off) until approved; then `live` | `docs/STEADFAST_COURIER.md` |
 | `STEADFAST_API_KEY`, `STEADFAST_SECRET_KEY` | Sensitive; NEW keys (revoke any pasted in chat) | only when Steadfast is approved |
 | `STEADFAST_REAL_BOOKINGS` | `true` only after the founder approves real parcels | |
+| `CRON_SECRET` | Sensitive; any long random string | turns on the daily Steadfast tracking run (`frontend/vercel.json` crons, production only) |
 
 Must NOT exist in Production: `ALLOW_PRODUCTION_SEED`, `PREVIEW_ADMIN_BOOTSTRAP`,
 `EMAIL_LINK_PREVIEW_ACCESS`, `PREVIEW_CATALOGUE`, `EMAIL_MODE`, `EMAIL_CAPTURE_FILE`, and `STEADFAST_MODE=mock` (the simulator refuses `aayna_prod` anyway). `ADMIN_EMAIL`/`ADMIN_PASSWORD`

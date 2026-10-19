@@ -50,6 +50,7 @@ def test_dry_run_writes_nothing_then_apply_is_idempotent():
     for d in db.products.find({}, {"_id": 0}):
         old, new = PRICE_TARGETS[d["sku"]]
         assert d["selling_price"] == new and d["previous_selling_price"] == old
+        assert isinstance(d["selling_price"], float)  # type preserved (production stores doubles)
         assert len(d["price_history"]) == 1 and d["price_history"][0]["from"] == old and d["price_history"][0]["to"] == new
         orig = next(b for b in before if b["sku"] == d["sku"])
         assert strip(d) == strip(orig)  # cost, pricing, stock, status, images untouched

@@ -34,6 +34,8 @@ PERMISSIONS = {
     "orders.edit": _OPS | {"order_manager"},
     # Booking a real courier parcel (Steadfast) - order handling staff only.
     "courier.book": _OPS | {"order_manager"},
+    # Courier money (fees, expected and actual Steadfast payouts) - owner and admins only.
+    "courier.finance": _OPS,
     "customers.view": _OPS | {"order_manager"},
     "settings.view": _OPS,
     "settings.edit": _OPS,

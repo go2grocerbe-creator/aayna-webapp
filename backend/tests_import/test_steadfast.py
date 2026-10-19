@@ -22,11 +22,13 @@ import emailer  # noqa: E402
 @pytest.fixture()
 def sf(env, monkeypatch):
     monkeypatch.setattr(steadfast, "db", env["db"])
+    import courier_finance
+    monkeypatch.setattr(courier_finance, "db", env["db"])
     monkeypatch.setenv("STEADFAST_MODE", "mock")
     for k in ("STEADFAST_API_KEY", "STEADFAST_SECRET_KEY", "STEADFAST_REAL_BOOKINGS", "CRON_SECRET", "STEADFAST_BASE_URL"):
         monkeypatch.delenv(k, raising=False)
     steadfast.MockSteadfast.FAULTS.clear()
-    for c in ("steadfast_mock_parcels", "courier_state"):
+    for c in ("steadfast_mock_parcels", "courier_state", "steadfast_mock_payments", "courier_finance_events", "courier_payment_imports"):
         run(env["db"][c].delete_many({}))
     run(steadfast.ensure_courier_indexes())
     return env
@@ -346,3 +348,36 @@ def test_live_transport_headers_and_timeouts(sf, monkeypatch, caplog):
     monkeypatch.setenv("STEADFAST_BASE_URL", "http://insecure.example.test/api/v1")
     assert run(steadfast._live_call("GET", "/status_by_cid/1")).outcome == "not_sent"
     assert "live-key-AAAA" not in caplog.text and "live-secret-BBBB" not in caplog.text
+
+
+def test_scheduled_tracking_polls_only_open_parcels_with_backoff(sf, monkeypatch):
+    monkeypatch.setenv("CRON_SECRET", "cron-secret-for-tests-0123456789")
+    H = {"Authorization": "Bearer cron-secret-for-tests-0123456789"}
+    a = packed_order(sf); book(sf, a)                              # open parcel
+    b = packed_order(sf, phone="01812345678"); book(sf, b)         # will be delivered (final)
+    c = packed_order(sf, phone="01912345678"); book(sf, c)         # cancelled, return not yet received
+    set_mock(sf, b, "delivered"); sync(sf, b)
+    set_mock(sf, c, "cancelled"); sync(sf, c)
+    old = "2000-01-01T00:00:00+00:00"
+    run(sf["db"].orders.update_many({}, {"$set": {"courier.last_sync_at": old}}))
+    set_mock(sf, a, "pending")
+    r = client().get("/api/internal/courier/sync", headers=H).json()
+    assert r["checked"] == 2 and r["failed"] == 0                  # a + c; delivered b is never polled again
+    assert order(sf, a)["courier"]["status_raw"] == "pending"
+    # nothing is re-polled within 10 minutes
+    assert client().get("/api/internal/courier/sync", headers=H).json()["checked"] == 0
+    # provider failure -> back-off, then skipped until the back-off ends
+    run(sf["db"].orders.update_many({}, {"$set": {"courier.last_sync_at": old}}))
+    steadfast.MockSteadfast.FAULTS["status_by_cid"] = "server_error"
+    r = client().get("/api/internal/courier/sync", headers=H).json()
+    fa = order(sf, a)["courier"]
+    assert fa["sync_failures"] == 1 and fa["next_sync_after"] > steadfast.now_iso()
+    run(sf["db"].orders.update_many({}, {"$set": {"courier.last_sync_at": old}}))
+    r = client().get("/api/internal/courier/sync", headers=H).json()
+    assert r["checked"] == 1  # only c; a waits for its back-off
+    # the result of the last scheduled run is visible to admins
+    cfg = client().get("/api/admin/courier/config", headers=admin_h(sf)).json()
+    assert cfg["last_bulk_sync_by"] == "scheduled sync" and cfg["scheduled_sync"].startswith("daily")
+    # unconfigured: quiet no-op
+    monkeypatch.setenv("STEADFAST_MODE", "off")
+    assert client().get("/api/internal/courier/sync", headers=H).json() == {"skipped": "Steadfast is not configured"}

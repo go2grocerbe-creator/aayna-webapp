@@ -8,6 +8,9 @@
       "excludeFiles": "{build/**,src/**,public/**,plugins/**,node_modules/**,aayna_backend/tests/**}"
     }
   },
+  "crons": [
+    { "path": "/api/internal/courier/sync", "schedule": "15 2 * * *" }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/robots.txt", "destination": "/api/index" },

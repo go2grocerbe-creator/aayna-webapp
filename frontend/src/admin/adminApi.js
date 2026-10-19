@@ -41,6 +41,7 @@ export const getAdminCategories = () => api.get("/admin/categories").then((r) =>
 export const createCategory = (d) => api.post("/admin/categories", d).then((r) => r.data);
 export const updateCategory = (id, d) => api.put(`/admin/categories/${id}`, d).then((r) => r.data);
 
+export const getProductContentHistory = (id) => api.get(`/admin/products/${id}/content-history`).then((r) => r.data);
 // Orders
 export const getAdminOrders = (params) => api.get("/admin/orders", { params }).then((r) => r.data);
 export const getAdminOrder = (num) => api.get(`/admin/orders/${num}`).then((r) => r.data);
@@ -49,6 +50,10 @@ export const updateOrder = (num, d) => api.put(`/admin/orders/${num}`, d).then((
 export const getCourierView = (num) => api.get(`/admin/orders/${num}/courier`).then((r) => r.data);
 export const courierAction = (num, action, body = {}) => api.post(`/admin/orders/${num}/courier/${action}`, body).then((r) => r.data);
 export const getCourierConfig = () => api.get("/admin/courier/config").then((r) => r.data);
+export const getCourierFinance = (num) => api.get(`/admin/orders/${num}/courier/finance`).then((r) => r.data);
+export const courierFinanceAction = (num, body) => api.post(`/admin/orders/${num}/courier/finance`, body).then((r) => r.data);
+export const getCourierFinanceList = (view) => api.get("/admin/courier/finance", { params: view ? { view } : {} }).then((r) => r.data);
+export const importCourierPayouts = () => api.post("/admin/courier/finance/import-payouts").then((r) => r.data);
 export const syncActiveCourier = () => api.post("/admin/courier/sync-active").then((r) => r.data);
 
 // Inventory

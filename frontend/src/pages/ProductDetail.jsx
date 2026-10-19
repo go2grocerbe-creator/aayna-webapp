@@ -13,6 +13,7 @@ import ProductImage from "@/components/ProductImage";
 import { productImages, primaryImage } from "@/lib/productImages";
 import { useSeo, useJsonLd } from "@/lib/seo";
 import { LAUNCH_CATEGORY_SLUGS } from "@/lib/catalogue";
+import ProductDescription, { paragraphs } from "@/components/ProductDescription";
 
 // Matches the same launch-scope allowlist used by Shop.jsx/Category.jsx (D2
 // "The Edit"). A product outside these categories is real catalogue, just
@@ -58,10 +59,13 @@ export default function ProductDetail() {
   const isLaunchCategory = !!product && EDIT_CATEGORY_SLUGS.includes(product.category_slug);
   const pageUrl = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
 
+  // Meta description: the founder's SEO description when written, else a factual line
+  // built from verified fields only (name, category, short description, price).
   useSeo({
-    title: product?.product_name,
+    title: product ? product.seo_title || product.product_name : undefined,
     description: product
-      ? `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
+      ? product.seo_description ||
+        `${product.product_name}${product.category_name ? " — " + product.category_name : ""} at AAYNA, women's accessories in Bangladesh. ${product.short_description || ""} Price: ${formatBDT(effectivePrice(product))}.`.replace(/\s+/g, " ").trim()
       : undefined,
     image: product ? primaryImage(product).src : undefined,
     noindex: notFound || loadFailed ? true : !isLaunchCategory,
@@ -76,8 +80,10 @@ export default function ProductDetail() {
           name: product.product_name,
           url: pageUrl,
           image: productImages(product).map((i) => i.src),
-          description: product.short_description || product.full_description || product.product_name,
+          description: product.seo_description || product.short_description || paragraphs(product.full_description)[0] || product.product_name,
           sku: product.sku,
+          ...(product.color ? { color: product.color } : {}),
+          ...(product.material ? { material: product.material } : {}),
           brand: { "@type": "Brand", name: "AAYNA" },
           category: product.category_name,
           offers: {
@@ -163,14 +169,6 @@ export default function ProductDetail() {
   const waLink = waAvailable
     ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hi AAYNA, I'm interested in "${product.product_name}" (${product.sku}).`)}`
     : null;
-
-  const detailRows = [
-    ["Material", product.material],
-    ["Color", product.color],
-    ["Size", product.size],
-    ["Weight", product.weight],
-    ["SKU", product.sku],
-  ].filter(([, v]) => v);
 
   return (
     <div className="bg-aayna-cream pb-24 md:pb-0">
@@ -337,38 +335,13 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      {/* ================= DESCRIPTION ================= */}
-      {product.full_description && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <div className="md:max-w-2xl">
-            <h2 className="font-display font-semibold text-xl text-aayna-burgundy-dark mb-2.5">Description</h2>
-            <p className="text-aayna-taupe text-sm leading-[1.85] max-w-prose">{product.full_description}</p>
-          </div>
-        </section>
-      )}
-
-      {/* ================= THE DETAILS ================= */}
-      {detailRows.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 md:py-14 border-t border-aayna-beige">
-          <div className="md:max-w-md">
-            <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-5">The Details</p>
-            <dl>
-              {detailRows.map(([k, v]) => (
-                <div key={k} className="flex justify-between py-3 border-b border-aayna-beige text-sm">
-                  <dt className="text-aayna-taupe">{k}</dt>
-                  <dd className="text-aayna-charcoal font-semibold">{v}</dd>
-                </div>
-              ))}
-              <div className="flex justify-between py-3 text-sm">
-                <dt className="text-aayna-taupe">Availability</dt>
-                <dd className={`font-semibold ${oos ? "text-red-700" : "text-green-700"}`}>
-                  {oos ? "Out of stock" : `${product.stock_quantity} in stock`}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-      )}
+      {/* ================= DESCRIPTION & DETAILS ================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <ProductDescription
+          product={product}
+          availability={{ oos, label: oos ? "Out of stock" : `${product.stock_quantity} in stock` }}
+        />
+      </section>
 
       {/* ================= CONTINUE THE EDIT ================= */}
       {related.length > 0 && (

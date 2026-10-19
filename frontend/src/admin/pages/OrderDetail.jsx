@@ -8,10 +8,13 @@ import { getAdminOrder, updateOrder } from "@/admin/adminApi";
 import { formatBDT } from "@/lib/format";
 import { statusStyle, ORDER_STATUSES } from "@/admin/statusColors";
 import SteadfastPanel from "@/admin/SteadfastPanel";
+import SteadfastFinancePanel from "@/admin/SteadfastFinancePanel";
+import { useAdminAuth } from "@/admin/AdminAuthContext";
 
 export default function OrderDetail() {
   const { orderNumber } = useParams();
   const qc = useQueryClient();
+  const { can } = useAdminAuth();
   const { data: order, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-order", orderNumber], queryFn: () => getAdminOrder(orderNumber) });
 
   const [form, setForm] = useState({ order_status: "", courier_name: "", courier_tracking_code: "", admin_note: "" });
@@ -105,6 +108,7 @@ export default function OrderDetail() {
           </div>
 
           <SteadfastPanel orderNumber={order.order_number} />
+          {can("courier.finance") && order.courier?.state === "booked" && <SteadfastFinancePanel orderNumber={order.order_number} />}
 
           {/* Notifications */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">

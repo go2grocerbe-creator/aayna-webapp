@@ -89,8 +89,9 @@ def apply(db, plans, out):
             continue
         res = db.products.update_one(
             {"id": p["id"], "sku": p["sku"], "selling_price": p["before"]},  # still at the old price -> never twice
-            {"$set": {"selling_price": p["target"], "previous_selling_price": p["before"], "updated_at": at},
-             "$push": {"price_history": {"from": p["before"], "to": p["target"], "reason": REASON,
+            # floats: aayna_prod stores selling_price as a double; keep the type unchanged
+            {"$set": {"selling_price": float(p["target"]), "previous_selling_price": float(p["before"]), "updated_at": at},
+             "$push": {"price_history": {"from": float(p["before"]), "to": float(p["target"]), "reason": REASON,
                                          "update_id": PRICE_UPDATE_ID, "at": at, "by": BY}}})
         changed += res.modified_count
         out(f"  {p['sku']}: {'updated' if res.modified_count else 'NOT updated (price changed meanwhile)'}")
@@ -103,7 +104,7 @@ def rollback(db, out):
     for sku, (old, new) in sorted(PRICE_TARGETS.items()):
         res = db.products.update_one(
             {"sku": sku, "selling_price": new},
-            {"$set": {"selling_price": old, "previous_selling_price": new, "updated_at": at},
+            {"$set": {"selling_price": float(old), "previous_selling_price": float(new), "updated_at": at},
              "$push": {"price_history": {"from": new, "to": old, "reason": "Rollback of " + PRICE_UPDATE_ID,
                                          "update_id": PRICE_UPDATE_ID + "-rollback", "at": at, "by": BY}}})
         n += res.modified_count

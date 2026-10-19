@@ -35,6 +35,7 @@ import promotions
 import delivery
 from customer_auth import (customer_router, customer_admin_router, optional_customer,
                            ensure_customer_indexes, order_timeline)
+from courier_finance import finance_router, ensure_finance_indexes
 from steadfast import courier_admin_router, courier_internal_router, ensure_courier_indexes, customer_courier_status
 from promotions import promotions_router, promotions_admin_router, ensure_promotion_indexes, CouponError
 
@@ -100,6 +101,7 @@ PUBLIC_PRODUCT_FIELDS = {
     "product_name": 1, "category_name": 1, "category_slug": 1,
     "selling_price": 1, "discount_price": 1, "images": 1,
     "short_description": 1, "full_description": 1,
+    "highlights": 1, "care_note": 1, "seo_title": 1, "seo_description": 1,
     "material": 1, "color": 1, "size": 1, "weight": 1,
     "status": 1, "stock_quantity": 1,
     "is_featured": 1, "is_best_seller": 1, "is_new_arrival": 1,
@@ -225,6 +227,7 @@ async def on_startup():
     await ensure_customer_indexes()
     await ensure_promotion_indexes()
     await ensure_courier_indexes()
+    await ensure_finance_indexes()
     init_storage_safe()
 
 
@@ -1111,6 +1114,7 @@ app.include_router(promotions_router)
 app.include_router(promotions_admin_router)
 app.include_router(courier_admin_router)
 app.include_router(courier_internal_router)
+app.include_router(finance_router)
 
 @app.middleware("http")
 async def json_errors_inside_cors(request, call_next):

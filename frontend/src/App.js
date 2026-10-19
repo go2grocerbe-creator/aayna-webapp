@@ -34,6 +34,7 @@ import Products from "@/admin/pages/Products";
 import ProductForm from "@/admin/pages/ProductForm";
 import Categories from "@/admin/pages/Categories";
 import Orders from "@/admin/pages/Orders";
+import CourierFinance from "@/admin/pages/CourierFinance";
 import OrderDetail from "@/admin/pages/OrderDetail";
 import Inventory from "@/admin/pages/Inventory";
 import Customers from "@/admin/pages/Customers";
@@ -103,6 +104,7 @@ function App() {
                   <Route path="categories" element={<RequirePermission perm="products.view"><Categories /></RequirePermission>} />
                   <Route path="orders" element={<RequirePermission perm="orders.view"><Orders /></RequirePermission>} />
                   <Route path="orders/:orderNumber" element={<RequirePermission perm="orders.view"><OrderDetail /></RequirePermission>} />
+                  <Route path="courier-money" element={<RequirePermission perm="courier.finance"><CourierFinance /></RequirePermission>} />
                   <Route path="inventory" element={<RequirePermission perm="inventory.view"><Inventory /></RequirePermission>} />
                   <Route path="customers" element={<RequirePermission perm="customers.view"><Customers /></RequirePermission>} />
                   <Route path="customers/:id" element={<RequirePermission perm="customers.view"><CustomerDetail /></RequirePermission>} />

@@ -120,7 +120,7 @@ def config() -> dict:
     db_name = _env("DB_NAME")
     keys = bool(_env("STEADFAST_API_KEY") and _env("STEADFAST_SECRET_KEY"))
     out = {"mode": mode, "keys_present": keys, "real_bookings": False, "reason": None,
-           "polling": "manual (admin) + optional protected sync endpoint", "webhooks": "not enabled (no documented authentication)"}
+           "polling": "automatic once a day (Vercel Cron) + manual checks", "webhooks": "not enabled (no documented authentication)"}
     if mode not in ("off", "mock", "live"):
         out.update(mode="off", reason="STEADFAST_MODE is not one of off / mock / live")
     elif mode == "mock" and db_name == "aayna_prod":
@@ -497,12 +497,17 @@ async def sync_one(order_number: str, actor: str = "system", force: bool = False
             await _block(AUTH_BLOCK_SECONDS, f"HTTP {ans.status}")
         elif ans.status == 429:
             await _block(RATE_BLOCK_SECONDS, "HTTP 429")
-        await _set_courier(order_number, claim, {"last_sync_at": now_iso(), "last_sync_result": f"failed: {_message(ans)}"},
+        fails = int(c.get("sync_failures") or 0) + 1
+        wait = min(24 * 3600, 600 * 2 ** (fails - 1))  # 10 min, 20, 40 ... capped at a day
+        await _set_courier(order_number, claim, {"last_sync_at": now_iso(), "last_sync_result": f"failed: {_message(ans)}",
+                                                 "sync_failures": fails,
+                                                 "next_sync_after": (datetime.now(timezone.utc) + timedelta(seconds=wait)).isoformat()},
                            _hist("sync_failed", http=ans.status, note=ans.note))
         return await _get_order(order_number)
     raw = _delivery_status(ans.body)
     info = status_info(raw)
-    fields = {"last_sync_at": now_iso(), "observed_raw": raw, "provider_updated_at": ans.body.get("updated_at")}
+    fields = {"last_sync_at": now_iso(), "observed_raw": raw, "provider_updated_at": ans.body.get("updated_at"),
+              "sync_failures": 0, "next_sync_after": None}
     history = None
     if raw != c.get("observed_raw") and raw != c.get("status_raw"):
         history = _hist("status_seen", status=raw)
@@ -547,17 +552,27 @@ async def sync_one(order_number: str, actor: str = "system", force: bool = False
     return await _get_order(order_number)
 
 
-async def sync_active(actor: str, limit: int = 20) -> dict:
-    """Check booked, unfinished parcels not checked in the last 10 minutes (oldest first)."""
+async def sync_active(actor: str, limit: int = 20, budget_seconds: float = 22.0) -> dict:
+    """Check booked parcels that can still change: not confirmed delivered and not a return
+    already received (so finished parcels are never polled again), not checked in the last
+    10 minutes, and not in failure back-off. Oldest check first; stops inside the time budget
+    (Vercel functions here run for at most 30 s) and on a rate-limit answer."""
+    import time
+    started = time.monotonic()
     if config()["mode"] == "off":
         raise HTTPException(status_code=503, detail=config()["reason"])
-    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+    now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(minutes=10)).isoformat()
     finals = [s for s, i in STATUS_INFO.items() if i[1] in FINAL_KINDS]
     q = {"courier.state": "booked", "courier.status_raw": {"$nin": finals},
-         "$or": [{"courier.last_sync_at": {"$lt": cutoff}}, {"courier.last_sync_at": None}]}
+         "$and": [{"$or": [{"courier.last_sync_at": {"$lt": cutoff}}, {"courier.last_sync_at": None}]},
+                  {"$or": [{"courier.next_sync_after": None}, {"courier.next_sync_after": {"$lt": now.isoformat()}}]}]}
     orders = await db.orders.find(q, {"_id": 0, "order_number": 1}).sort("courier.last_sync_at", 1).to_list(limit)
-    done, failed = [], []
+    done, failed, skipped = [], [], 0
     for o in orders:
+        if time.monotonic() - started > budget_seconds:
+            skipped += 1
+            continue
         try:
             after = await sync_one(o["order_number"], actor=actor, force=True)
             done.append({"order_number": o["order_number"], "status": (after.get("courier") or {}).get("status_raw")})
@@ -565,7 +580,10 @@ async def sync_active(actor: str, limit: int = 20) -> dict:
             failed.append({"order_number": o["order_number"], "error": e.detail})
             if e.status_code == 429:
                 break
-    return {"checked": done, "failed": failed}
+    await db.courier_state.update_one({"_id": STATE_DOC}, {"$set": {"last_bulk_sync_at": now_iso(), "last_bulk_sync_by": actor,
+                                                                   "last_bulk_sync_result": {"checked": len(done), "failed": len(failed), "deferred": skipped}}},
+                                      upsert=True)
+    return {"checked": done, "failed": failed, "deferred": skipped}
 
 
 # --- deterministic simulator (STEADFAST_MODE=mock; never on aayna_prod) --------
@@ -616,6 +634,18 @@ class MockSteadfast:
             if op == "status_with_return_status_by_cid" and p.get("return_status"):
                 st = p["return_status"]
             return ProviderAnswer(status=200, body={"status": 200, "delivery_status": st, "updated_at": p.get("updated_at")})
+        if method == "GET" and op == "payments":
+            parts = path.strip("/").split("/")
+            if len(parts) == 1:
+                items = await db.steadfast_mock_payments.find({}, {"_id": 0, "id": 1, "amount": 1, "created_at": 1}).sort("created_at", -1).to_list(50)
+                return ProviderAnswer(status=200, body={"status": 200, "data": items})
+            pay = await db.steadfast_mock_payments.find_one({"id": parts[1]}, {"_id": 0})
+            if not pay:
+                return ProviderAnswer(status=404, body={"status": 404, "message": "Payment not found"})
+            if pay.get("unreadable"):  # simulate a provider answer in an unexpected shape
+                return ProviderAnswer(status=200, body={"status": 200, "data": {"something": "else"}})
+            return ProviderAnswer(status=200, body={"status": 200, "payment": {"id": pay["id"], "amount": pay["amount"], "paid_at": pay["created_at"]},
+                                                    "consignments": pay["consignments"]})
         return ProviderAnswer(status=404, body={"status": 404, "message": "simulated: unknown endpoint"})
 
     @classmethod
@@ -665,8 +695,13 @@ class LinkBody(BaseModel):
 
 
 class MockBody(BaseModel):
-    action: str  # set_status | fail_next
+    action: str  # set_status | fail_next | create_payout
     status: Optional[str] = None
+    delivery_charge: Optional[float] = None
+    cod_charge: Optional[float] = None
+    return_charge: Optional[float] = None
+    cod_collected: Optional[float] = None
+    unreadable: Optional[bool] = False
     return_status: Optional[str] = None
     fault: Optional[str] = None
     op: Optional[str] = "create_order"
@@ -676,7 +711,9 @@ class MockBody(BaseModel):
 async def courier_config(current=Depends(require("orders.view"))):
     cfg = config()
     until = await _blocked_until()
-    return {**cfg, "paused_until": until}
+    st = await db.courier_state.find_one({"_id": STATE_DOC}, {"_id": 0, "last_bulk_sync_at": 1, "last_bulk_sync_by": 1, "last_bulk_sync_result": 1}) or {}
+    return {**cfg, "paused_until": until, "scheduled_sync": "daily (Vercel Cron, production only, needs CRON_SECRET)" if _env("CRON_SECRET") else "not enabled",
+            **st}
 
 
 @courier_admin_router.get("/orders/{order_number}/courier")
@@ -750,6 +787,22 @@ async def courier_mock(order_number: str, body: MockBody, current=Depends(requir
         if not res.matched_count:
             raise HTTPException(status_code=404, detail="No simulated parcel for this order")
         return {"ok": True}
+    if body.action == "create_payout":
+        # Simulated Steadfast payment for this parcel, in the importer's expected (UNVERIFIED) schema.
+        order = await _get_order(order_number)
+        c = order.get("courier") or {}
+        if c.get("state") != "booked":
+            raise HTTPException(status_code=409, detail="Book the simulated parcel first")
+        if body.delivery_charge is None or body.cod_charge is None:
+            raise HTTPException(status_code=400, detail="Enter the simulated delivery and COD charges (no fee is assumed)")
+        cod = body.cod_collected if body.cod_collected is not None else c.get("cod_amount")
+        ret = body.return_charge or 0
+        pid = "SIMPAY-" + uuid.uuid4().hex[:8].upper()
+        row = {"consignment_id": int(c["consignment_id"]), "cod_amount": cod, "delivery_charge": body.delivery_charge,
+               "cod_charge": body.cod_charge, "return_charge": ret}
+        await db.steadfast_mock_payments.insert_one({"id": pid, "amount": cod - body.delivery_charge - body.cod_charge - ret,
+                                                     "created_at": now_iso(), "consignments": [row], "unreadable": bool(body.unreadable)})
+        return {"ok": True, "payment_id": pid}
     raise HTTPException(status_code=400, detail="Unknown action")
 
 
@@ -762,5 +815,7 @@ async def courier_cron(request: Request):
     got = request.headers.get("authorization", "")
     if not secret or not hmac.compare_digest(got.encode(), f"Bearer {secret}".encode()):
         raise HTTPException(status_code=404, detail="Not found")
+    if config()["mode"] == "off":
+        return {"skipped": "Steadfast is not configured"}
     result = await sync_active("scheduled sync")
-    return {"checked": len(result["checked"]), "failed": len(result["failed"])}
+    return {"checked": len(result["checked"]), "failed": len(result["failed"]), "deferred": result["deferred"]}

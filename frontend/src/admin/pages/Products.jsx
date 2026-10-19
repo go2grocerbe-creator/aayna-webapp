@@ -139,7 +139,14 @@ export default function Products() {
                   <td className="px-4 py-3 text-gray-500">{p.category_name}</td>
                   <td className="px-4 py-3">{p.stock_quantity}</td>
                   <td className="px-4 py-3 font-medium text-aayna-burgundy">{formatBDT(effectivePrice(p))}</td>
-                  <td className="px-4 py-3"><span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span></td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded ${statusStyle(p.status)}`}>{p.status.replace("_", " ")}</span>
+                    {p.content_status && (
+                      <span data-testid={`content-status-${p.sku}`} className={`block w-max mt-1 text-[11px] px-2 py-0.5 rounded ${p.content_status.status === "complete" ? "bg-green-50 text-green-800" : p.content_status.status === "partial" ? "bg-amber-50 text-amber-900" : "bg-gray-100 text-gray-600"}`}>
+                        {p.content_status.status === "complete" ? "Description ✓" : p.content_status.status === "partial" ? "Description partial" : "No description"}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Link to={`/admin/products/${p.id}`} data-testid={`edit-product-${p.sku}`} aria-label={`Edit ${p.product_name}`} className="h-11 w-11 inline-flex items-center justify-center text-gray-500 hover:text-aayna-burgundy" title="Edit"><Pencil className="h-4 w-4" /></Link>
