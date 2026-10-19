@@ -79,6 +79,11 @@ def _site_url() -> str:
     return _env("PUBLIC_SITE_URL", "http://localhost:3000").rstrip("/")
 
 
+def site_base() -> str:
+    """The public site origin with no preview access code (OAuth redirect URIs)."""
+    return _site_url()
+
+
 def _support() -> str:
     return _env("SUPPORT_CONTACT") or _env("EMAIL_REPLY_TO", DEFAULT_REPLY_TO)
 

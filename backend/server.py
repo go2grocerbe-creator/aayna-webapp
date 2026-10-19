@@ -273,6 +273,8 @@ async def health_version():
         "app": "aayna",
         "environment": _current_env(),
         "version": (os.environ.get("APP_VERSION") or "1.0.0").strip(),
+        # Short git commit of this deployment (Vercel system variable); empty locally.
+        "commit": (os.environ.get("VERCEL_GIT_COMMIT_SHA") or "").strip()[:7],
     }
 
 

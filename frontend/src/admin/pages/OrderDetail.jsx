@@ -78,15 +78,15 @@ export default function OrderDetail() {
           <div className="bg-white border border-gray-200 rounded-lg p-5">
             <h2 className="font-semibold text-aayna-charcoal mb-3">Items</h2>
             <table className="w-full text-sm">
-              <thead className="text-gray-400 text-left text-xs"><tr><th className="py-2">Product</th><th className="py-2">SKU</th><th className="py-2 text-center">Qty</th><th className="py-2 text-right">Unit</th><th className="py-2 text-right">Total</th></tr></thead>
+              <thead className="text-gray-400 text-left text-xs"><tr><th className="py-2">Product</th><th className="py-2">SKU</th><th className="py-2 text-center">Qty</th><th className="py-2 pl-3 text-right">Unit</th><th className="py-2 pl-3 text-right">Total</th></tr></thead>
               <tbody className="divide-y divide-gray-100">
                 {order.items.map((it, i) => (
                   <tr key={i}>
                     <td className="py-2.5 text-aayna-charcoal">{it.product_name_snapshot}</td>
                     <td className="py-2.5 text-gray-400">{it.sku_snapshot}</td>
                     <td className="py-2.5 text-center">{it.quantity}</td>
-                    <td className="py-2.5 text-right">{formatBDT(it.unit_price)}</td>
-                    <td className="py-2.5 text-right font-medium">{formatBDT(it.total_price)}</td>
+                    <td className="py-2.5 pl-3 text-right whitespace-nowrap">{formatBDT(it.unit_price)}</td>
+                    <td className="py-2.5 pl-3 text-right font-medium whitespace-nowrap">{formatBDT(it.total_price)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -96,7 +96,7 @@ export default function OrderDetail() {
               <div className="flex justify-between"><span className="text-gray-500">Delivery</span><span>{formatBDT(order.delivery_charge)}</span></div>
               {order.discount_amount > 0 && <div className="flex justify-between" data-testid="admin-order-discount"><span className="text-gray-500">Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>-{formatBDT(order.discount_amount)}</span></div>}
               <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-aayna-burgundy">{formatBDT(order.total_amount)}</span></div>
-              <div className="flex justify-between pt-1"><span className="text-gray-500">Payment</span><span>{order.payment_method} · {order.payment_status}</span></div>
+              <div className="flex justify-between pt-1"><span className="text-gray-500">Payment</span><span className="text-right">{order.payment_method} · {String(order.payment_status || "").replace(/_/g, " ")}</span></div>
             </div>
           </div>
 
@@ -150,6 +150,12 @@ export default function OrderDetail() {
               <select data-testid="order-status-select" className={`${field} bg-white`} value={form.order_status} onChange={(e) => set("order_status", e.target.value)}>
                 {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+              {["Cancelled", "Returned"].includes(form.order_status) && (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2" data-testid="order-restock-hint">
+                  Stock is not returned automatically. If the items are back and saleable, add them in Inventory → Adjust stock
+                  (type “return”, reason: {order.order_number}). A discount code used on this order can be given back from Promotions.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Courier Name</label>

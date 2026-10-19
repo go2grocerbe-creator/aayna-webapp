@@ -119,7 +119,7 @@ function OrderRow({ o }) {
           <StatusPill status={o.order_status} />
         </div>
         <p className="text-xs text-aayna-taupe mt-1 truncate">
-          {date(o.created_at)} · {o.items.reduce((n, it) => n + it.quantity, 0)} item(s) · {o.items.map((it) => it.product_name).join(", ")}
+          {date(o.created_at)} · {(() => { const n = o.items.reduce((t, it) => t + it.quantity, 0); return `${n} ${n === 1 ? "item" : "items"}`; })()} · {o.items.map((it) => it.product_name).join(", ")}
         </p>
       </div>
       <span className="font-semibold text-aayna-burgundy whitespace-nowrap">{formatBDT(o.total_amount)}</span>
@@ -144,7 +144,7 @@ export function AccountHome() {
                  action={<Link to="/shop" className="inline-flex min-h-[44px] items-center px-6 bg-aayna-coral text-white font-semibold">Shop the Edit</Link>} />
         ) : (
           <div>
-            {active.length > 0 && <p className="text-sm text-aayna-taupe mb-2">{active.length} order(s) in progress</p>}
+            {active.length > 0 && <p className="text-sm text-aayna-taupe mb-2">{active.length} {active.length === 1 ? "order" : "orders"} in progress</p>}
             {(orders.data || []).slice(0, 3).map((o) => <OrderRow key={o.order_number} o={o} />)}
           </div>
         )}

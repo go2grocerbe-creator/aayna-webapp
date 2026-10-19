@@ -305,8 +305,8 @@ export default function Promotions() {
         ))}
       </div>
       {tab === "welcome" ? <WelcomeCampaign /> : (
-        <div className="grid lg:grid-cols-5 gap-6">
-          <div className={editing || open ? "lg:col-span-2" : "lg:col-span-5"}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className={`min-w-0 ${editing || open ? "lg:col-span-2" : "lg:col-span-5"}`}>
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -329,7 +329,7 @@ export default function Promotions() {
             </div>
           </div>
           {(editing || open) && (
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 min-w-0">
               {editing ? <PromotionForm initial={editing.id ? editing : null} onCancel={() => setEditing(null)}
                                         onSaved={(p) => { setEditing(null); setOpen(p.id); qc.invalidateQueries({ queryKey: ["admin-promos"] }); }} />
                 : <PromotionDetail id={open} onClose={() => setOpen(null)} onEdit={(p) => setEditing(p)} />}

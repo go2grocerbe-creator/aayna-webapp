@@ -436,7 +436,7 @@ async def get_order(order_number: str, current=Depends(require("orders.view"))):
     order["notifications"] = notifs
     order["emails"] = await db.email_logs.find({"order_number": order_number}, {"_id": 0, "to_hash": 0, "dedupe_key": 0}).sort("created_at", -1).to_list(50)
     order["events"] = await db.order_events.find({"order_id": order.get("id")}, {"_id": 0}).sort("created_at", 1).to_list(100)
-    order["redemptions"] = await db.promotion_redemptions.find({"order_id": order.get("id")}, {"_id": 0, "usage_key": 0}).to_list(10)
+    order["redemptions"] = await db.promotion_redemptions.find({"order_id": order.get("id")}, {"_id": 0, "usage_key": 0, "usage_keys": 0}).to_list(10)
     order.pop("order_confirmation_token_hash", None)
     return order
 
@@ -565,14 +565,11 @@ async def list_customers(search: Optional[str] = None, current=Depends(require("
     customer_ids = [c["id"] for c in customers]
     last_map = {}
     if customer_ids:
-        last_orders = await db.orders.aggregate(
-            [
-                {"$match": {"customer_id": {"$in": customer_ids}}},
-                {"$sort": {"created_at": -1}},
-                {"$group": {"_id": "$customer_id", "created_at": {"$first": "$created_at"}}},
-            ]
-        ).to_list(length=None)
-        last_map = {o["_id"]: o["created_at"] for o in last_orders}
+        # Latest order per customer, newest first (plain find: portable across
+        # MongoDB-compatible servers and cheap at this catalogue's order volume).
+        async for o in db.orders.find({"customer_id": {"$in": customer_ids}},
+                                      {"_id": 0, "customer_id": 1, "created_at": 1}).sort("created_at", -1):
+            last_map.setdefault(o["customer_id"], o.get("created_at"))
     for c in customers:
         c["last_order_date"] = last_map.get(c["id"])
     return customers

@@ -595,9 +595,13 @@ def test_claim_by_recorded_email_link(env):
     assert b.post("/api/account/orders/confirm-claim", headers=CSRF, json={"token": raw}).status_code == 400
     a2 = client()
     a2.post("/api/customer/login", headers=CSRF, json={"email": "maya@example.test", "password": PW})
-    run(env["db"].customer_tokens.update_many({"purpose": "order_claim"}, {"$set": {"used_at": None}}))
+    # the other account's attempt did not spend the owner's single-use link
     assert a2.post("/api/account/orders/confirm-claim", headers=CSRF, json={"token": raw}).status_code == 200
     assert [o["order_number"] for o in a2.get("/api/account/orders").json()] == [num]
+    replay = a2.post("/api/account/orders/confirm-claim", headers=CSRF, json={"token": raw})
+    assert replay.status_code == 400 and replay.json()["detail"]["code"] == "used"
+    # once linked, the confirmation token cannot move the order to another account
+    assert b.get("/api/account/orders").json() == []
 
 
 def test_tracking_timeline_records_real_transitions_and_rate_limit(env):
@@ -940,3 +944,47 @@ def test_preview_access_code_only_on_vercel_preview_links(env, monkeypatch):
     # anything that is not a Vercel share code is ignored
     monkeypatch.setenv("EMAIL_LINK_PREVIEW_ACCESS", "x-vercel-protection-bypass=secret&evil=1")
     assert emailer.site_link("/login") == "https://aayna-webapp-git-x-go2-grocer.vercel.app/login"
+
+
+def test_per_customer_limit_counts_account_and_phone_together(env):
+    p = make_promo(env, code="ONEEACH", usage_limit_per_customer=1)
+    # used as a guest with this phone -> refused after signing in with the same order phone
+    assert checkout(client(), coupon="ONEEACH").status_code == 200
+    a = verified_client()
+    r = checkout(a, items=(("p2", 1),), coupon="ONEEACH")
+    assert r.status_code == 400 and "already used" in r.json()["detail"]
+    v = a.post("/api/cart/validate", json={"items": [{"product_id": "p2", "quantity": 1}], "coupon_code": "ONEEACH",
+                                           "phone": "01712345678"}).json()["coupon"]
+    assert v["valid"] is False and v["reason"] == "used"
+    # used while signed in with another phone -> that account cannot use it again with a third phone
+    b = verified_client(email="b@example.test", phone="01812345678")
+    num = checkout(b, phone="01812345678", coupon="ONEEACH").json()["order_number"]
+    assert checkout(b, items=(("p2", 1),), phone="01912345678", coupon="ONEEACH").status_code == 400
+    # ...and the same phone signed out cannot use it either
+    assert checkout(client(), items=(("p2", 1),), phone="01812345678", coupon="ONEEACH").status_code == 400
+    # restoring a cancelled order's redemption frees both identities
+    c = client()
+    c.put(f"/api/admin/orders/{num}", headers=admin_h(env), json={"order_status": "Cancelled"})
+    red = run(env["db"].promotion_redemptions.find_one({"order_number": num}))
+    assert sorted(red["usage_keys"]) == sorted([f"{p['id']}|acct:{run(env['db'].customer_accounts.find_one({'email': 'b@example.test'}))['id']}",
+                                                f"{p['id']}|phone:+8801812345678"])
+    assert c.post(f"/api/admin/promotions/redemptions/{red['id']}/restore", headers=admin_h(env), json={"confirm": True}).status_code == 200
+    assert checkout(client(), items=(("p2", 1),), phone="01812345678", coupon="ONEEACH").status_code == 200
+    detail = c.get(f"/api/admin/orders/{num}", headers=admin_h(env)).json()
+    assert all("usage_key" not in r and "usage_keys" not in r for r in detail["redemptions"])
+
+
+def test_google_redirect_uri_never_carries_preview_access_code(env, monkeypatch):
+    monkeypatch.setenv("EMAIL_LINK_PREVIEW_ACCESS", "_vercel_share=" + "A1b2C3d4E5f6G7h8I9j0")
+    monkeypatch.setenv("PUBLIC_SITE_URL", "https://aayna-webapp-git-x-go2-grocer.vercel.app")
+    assert ca.google_redirect_uri() == "https://aayna-webapp-git-x-go2-grocer.vercel.app/api/auth/google/callback"
+    assert "_vercel_share" in emailer.site_link("/login")  # email links still carry it
+
+
+def test_admin_customers_list_shows_latest_order_date(env):
+    first = checkout(client()).json()["order_number"]
+    second = checkout(client(), items=(("p2", 1),)).json()["order_number"]
+    newest = run(env["db"].orders.find_one({"order_number": second}))["created_at"]
+    rows = client().get("/api/admin/customers", headers=admin_h(env)).json()
+    assert len(rows) == 1 and rows[0]["total_orders"] == 2 and rows[0]["last_order_date"] == newest
+    assert first != second

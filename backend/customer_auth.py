@@ -457,7 +457,9 @@ def google_config():
 
 
 def google_redirect_uri() -> str:
-    return emailer.site_link("/api/auth/google/callback")
+    # Must equal the URI registered with Google exactly: never carries the
+    # preview share code that site_link() may add to email links.
+    return emailer.site_base() + "/api/auth/google/callback"
 
 
 @customer_router.get("/customer/config")
@@ -1195,6 +1197,12 @@ async def claim_order_by_email(body: ClaimBody, request: Request, account=Depend
 
 @customer_router.post("/account/orders/confirm-claim", dependencies=[Depends(csrf_guard)])
 async def confirm_claim(body: TokenBody, request: Request, account=Depends(current_customer)):
+    # Check the owner BEFORE spending the single-use link, so opening it while
+    # signed in to another account does not burn the real owner's link.
+    pending = await db.customer_tokens.find_one({"token_hash": _sha(body.token or ""), "purpose": "order_claim"},
+                                                {"_id": 0, "account_id": 1})
+    if pending and pending["account_id"] != account["id"]:
+        raise HTTPException(status_code=400, detail={"code": "invalid", "message": "Sign in to the account that requested this link."})
     tok = await consume_token(body.token, "order_claim")
     if tok["account_id"] != account["id"]:
         raise HTTPException(status_code=400, detail={"code": "invalid", "message": "Sign in to the account that requested this link."})

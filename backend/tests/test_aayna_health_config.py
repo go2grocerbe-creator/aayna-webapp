@@ -164,4 +164,5 @@ def test_version_endpoint_safe():
     assert r.status_code == 200
     d = r.json()
     assert d["app"] == "aayna" and "version" in d and "environment" in d
-    assert set(d.keys()) == {"app", "environment", "version"}
+    assert set(d.keys()) == {"app", "environment", "version", "commit"}
+    assert len(d["commit"]) <= 7  # short git SHA only

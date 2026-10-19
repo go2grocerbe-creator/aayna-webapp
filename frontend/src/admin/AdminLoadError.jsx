@@ -23,7 +23,7 @@ export default function AdminLoadError({ error, onRetry, what = "this data", com
     <div
       role="alert"
       data-testid="admin-load-error"
-      className={`flex flex-col items-center text-center gap-3 ${compact ? "py-8" : "py-20"}`}
+      className={`flex flex-col items-center text-center gap-3 ${compact ? "py-8 px-4 sticky left-0 max-w-[calc(100vw-2rem)] lg:max-w-none" : "py-20"}`}
     >
       <AlertTriangle className="h-6 w-6 text-amber-500" aria-hidden="true" />
       <p className="text-sm font-medium text-gray-800">Couldn't load {what}. {info.title}</p>

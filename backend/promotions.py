@@ -134,6 +134,17 @@ def _who(account: Optional[dict], phone: Optional[str]) -> Optional[str]:
     return None
 
 
+def _who_keys(account: Optional[dict], phone: Optional[str]) -> List[str]:
+    """Every identity a per-customer limit is counted against: the account (when
+    signed in) AND the order phone, so signing in or out does not reset a limit."""
+    keys = []
+    if account:
+        keys.append("acct:" + account["id"])
+    if phone:
+        keys.append("phone:" + phone)
+    return keys
+
+
 async def evaluate(code: str, account: Optional[dict], phone: Optional[str], lines: List[dict]) -> dict:
     """Validate a code for this cart. Raises CouponError with a customer-safe message."""
     norm = normalize_code(code)
@@ -154,11 +165,13 @@ async def evaluate(code: str, account: Optional[dict], phone: Optional[str], lin
         if account["id"] not in restricted or not account.get("email_verified"):
             raise CouponError("This code isn't valid.")
     who = _who(account, phone)
+    who_keys = _who_keys(account, phone)
     limit = p.get("usage_limit_per_customer")
-    if who and limit:
-        used = await db.promotion_usage.find_one({"_id": f"{p['id']}|{who}"})
-        if used and int(used.get("count", 0)) >= int(limit):
-            raise CouponError("You've already used this code.", "used")
+    if who_keys and limit:
+        for key in who_keys:
+            used = await db.promotion_usage.find_one({"_id": f"{p['id']}|{key}"})
+            if used and int(used.get("count", 0)) >= int(limit):
+                raise CouponError("You've already used this code.", "used")
     if p.get("first_order_only") and await _prior_orders(account["id"] if account else None, phone):
         raise CouponError("This code is for your first order only.", "first_order")
     result = compute_discount(p, lines)
@@ -169,7 +182,7 @@ async def evaluate(code: str, account: Optional[dict], phone: Optional[str], lin
         raise CouponError(f"Add eligible items worth at least ৳{minimum:,.0f} to use this code.", "minimum")
     if result["discount"] <= 0:
         raise CouponError("This code doesn't apply to the items in your cart.", "not_applicable")
-    return {"promotion": p, "code": norm, "who": who, **result}
+    return {"promotion": p, "code": norm, "who": who, "who_keys": who_keys, **result}
 
 
 async def reserve(ev: dict) -> dict:
@@ -185,21 +198,24 @@ async def reserve(ev: dict) -> dict:
     took = await db.promotions.find_one_and_update(q, {"$inc": inc}, return_document=ReturnDocument.AFTER)
     if not took:
         raise CouponError("This code has just reached its usage limit.", "exhausted")
-    handle = {"promotion_id": p["id"], "limited": p.get("remaining_uses") is not None, "usage_key": None}
+    handle = {"promotion_id": p["id"], "limited": p.get("remaining_uses") is not None, "usage_key": None, "usage_keys": []}
     limit = p.get("usage_limit_per_customer")
-    if ev["who"] and limit:
-        key = f"{p['id']}|{ev['who']}"
-        ok = False
-        try:
-            await db.promotion_usage.insert_one({"_id": key, "count": 1, "created_at": now_iso()})
-            ok = True
-        except DuplicateKeyError:
-            ok = bool(await db.promotion_usage.find_one_and_update(
-                {"_id": key, "count": {"$lt": int(limit)}}, {"$inc": {"count": 1}}))
-        if not ok:
-            await release(handle)
-            raise CouponError("You've already used this code.", "used")
-        handle["usage_key"] = key
+    keys = ev.get("who_keys") or ([ev["who"]] if ev.get("who") else [])
+    if keys and limit:
+        for who in keys:
+            key = f"{p['id']}|{who}"
+            ok = False
+            try:
+                await db.promotion_usage.insert_one({"_id": key, "count": 1, "created_at": now_iso()})
+                ok = True
+            except DuplicateKeyError:
+                ok = bool(await db.promotion_usage.find_one_and_update(
+                    {"_id": key, "count": {"$lt": int(limit)}}, {"$inc": {"count": 1}}))
+            if not ok:
+                await release(handle)
+                raise CouponError("You've already used this code.", "used")
+            handle["usage_keys"].append(key)
+        handle["usage_key"] = handle["usage_keys"][0]
     return handle
 
 
@@ -210,15 +226,15 @@ async def release(handle: Optional[dict]):
     if handle.get("limited"):
         inc["remaining_uses"] = 1
     await db.promotions.update_one({"id": handle["promotion_id"]}, {"$inc": inc})
-    if handle.get("usage_key"):
-        await db.promotion_usage.update_one({"_id": handle["usage_key"], "count": {"$gt": 0}}, {"$inc": {"count": -1}})
+    for key in handle.get("usage_keys") or ([handle["usage_key"]] if handle.get("usage_key") else []):
+        await db.promotion_usage.update_one({"_id": key, "count": {"$gt": 0}}, {"$inc": {"count": -1}})
 
 
 async def record_redemption(ev: dict, handle: dict, order: dict):
     await db.promotion_redemptions.insert_one({
         "id": str(uuid.uuid4()), "promotion_id": ev["promotion"]["id"], "code": ev["code"],
         "order_id": order["id"], "order_number": order["order_number"], "account_id": order.get("account_id"),
-        "usage_key": handle.get("usage_key"), "limited": handle.get("limited"),
+        "usage_key": handle.get("usage_key"), "usage_keys": handle.get("usage_keys") or [], "limited": handle.get("limited"),
         "discount_amount": order["discount_amount"], "eligible_subtotal": ev["eligible_subtotal"],
         "status": "redeemed", "created_at": now_iso(),
     })
@@ -460,7 +476,7 @@ async def get_promotion(promotion_id: str, current=Depends(require("promotions.v
     if not p:
         raise HTTPException(status_code=404, detail="Promotion not found")
     emails = [a["email"] for a in await db.customer_accounts.find({"id": {"$in": p.get("customer_account_ids") or []}}, {"email": 1}).to_list(500)]
-    redemptions = await db.promotion_redemptions.find({"promotion_id": promotion_id}, {"_id": 0, "usage_key": 0}).sort("created_at", -1).to_list(500)
+    redemptions = await db.promotion_redemptions.find({"promotion_id": promotion_id}, {"_id": 0, "usage_key": 0, "usage_keys": 0}).sort("created_at", -1).to_list(500)
     audit = await db.promotion_audit.find({"promotion_id": promotion_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return {**await _summary(p), "customer_emails": emails, "redemption_list": redemptions, "audit": audit}
 
@@ -567,7 +583,8 @@ async def restore_redemption(redemption_id: str, body: ConfirmBody, current=Depe
     res = await db.promotion_redemptions.update_one({"id": redemption_id, "status": "redeemed"},
                                                     {"$set": {"status": "restored", "restored_by": current["email"], "restored_at": now_iso()}})
     if res.modified_count:
-        await release({"promotion_id": r["promotion_id"], "limited": r.get("limited"), "usage_key": r.get("usage_key")})
+        await release({"promotion_id": r["promotion_id"], "limited": r.get("limited"), "usage_key": r.get("usage_key"),
+                       "usage_keys": r.get("usage_keys") or []})
         await _audit(r["promotion_id"], "redemption_restored", current["email"], {"order_number": r["order_number"], "note": (body.note or "")[:200]})
     return {"ok": True}
 
