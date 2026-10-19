@@ -13,7 +13,7 @@ waits for the founder's explicit approval.
 | Deployment protection | Vercel login on every deployment except custom domains (`all_except_custom_domains`) |
 | Production environment variables | none exist yet (every variable is Preview-scoped) |
 | `shopaayna.com`, `www` | Cloudflare nameservers; A records point at Cloudflare proxy IPs; not attached to Vercel |
-| `aayna_prod` (last read-only report, 2026-10-18) | 10 products, all draft, 46 units; 4 categories; 1 super admin; 0 orders, 0 customers; 10 stock-in logs; unique index `sku_unique`; no `website_settings` |
+| `aayna_prod` (read-only check, 2026-10-19 21:20) | 10 products, all draft, 46 units; 4 categories; 1 super admin; 0 orders, 0 customers; 10 stock-in logs (+46); unique index `sku_unique`; no `website_settings`. Matches the 2026-10-18 import exactly |
 
 Attaching `shopaayna.com` makes the shop public, because custom domains are not behind the Vercel
 login. That step is therefore the go-live moment, after everything else is checked.
@@ -34,7 +34,7 @@ login. That step is therefore the go-live moment, after everything else is check
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sensitive; production OAuth client | see section 4 |
 
 Must NOT exist in Production: `ALLOW_PRODUCTION_SEED`, `PREVIEW_ADMIN_BOOTSTRAP`,
-`EMAIL_LINK_PREVIEW_ACCESS`, `EMAIL_MODE`, `EMAIL_CAPTURE_FILE`. `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+`EMAIL_LINK_PREVIEW_ACCESS`, `PREVIEW_CATALOGUE`, `EMAIL_MODE`, `EMAIL_CAPTURE_FILE`. `ADMIN_EMAIL`/`ADMIN_PASSWORD`
 are not needed: an admin exists, so the first-run bootstrap skips and never changes it.
 
 ## 3. Domain (Cloudflare DNS, DNS only)
@@ -91,7 +91,9 @@ does not touch products, settings or the admin account.
    `aayna_prod` has none yet, so the code defaults (৳80 Dhaka / ৳130 elsewhere) apply.
 7. Go-live (separate approval): publish the approved products, attach the domain (section 3),
    verify HTTPS, redirects, robots, sitemap, Google sign-in, one order end to end.
-8. Welcome offer: enable only when separately authorised.
+8. Welcome offer: the founder-approved limits (10%, ৳1,000 minimum, ৳150 cap, 30 days, one
+   redemption per customer, delivery excluded) are the recorded configuration; enable only when
+   separately authorised.
 
 ## 7. Rollback
 
