@@ -13,7 +13,7 @@ waits for the founder's explicit approval.
 | Deployment protection | Vercel login on every deployment except custom domains (`all_except_custom_domains`) |
 | Production environment variables | none exist yet (every variable is Preview-scoped) |
 | `shopaayna.com`, `www` | Cloudflare nameservers; A records point at Cloudflare proxy IPs; not attached to Vercel |
-| `aayna_prod` (read-only check, 2026-10-19 21:20) | 10 products, all draft, 46 units; 4 categories; 1 super admin; 0 orders, 0 customers; 10 stock-in logs (+46); unique index `sku_unique`; no `website_settings`. Matches the 2026-10-18 import exactly |
+| `aayna_prod` (read-only check, 2026-10-19 21:20) | 10 products, all draft, 46 units (+৳100 prices applied 20 Oct); 4 categories; 1 super admin; 0 orders, 0 customers; 10 stock-in logs (+46); unique index `sku_unique`; no `website_settings`. Matches the 2026-10-18 import exactly |
 
 Attaching `shopaayna.com` makes the shop public, because custom domains are not behind the Vercel
 login. That step is therefore the go-live moment, after everything else is checked.
@@ -85,15 +85,13 @@ does not touch products, settings or the admin account.
 
 1. Founder approvals (checklist in the release report).
 2. Backup + counts baseline (section 5).
-2b. +৳100 price update (founder-approved; NOT yet applied to `aayna_prod`). A verified pre-update
-    backup was taken on 2026-10-20 (read-only export, checked against server-side sizes and
-    field fingerprints, restore-tested): `aayna-private-backups\aayna-prod-20261020-before-price-update`
-    on the founder's PC. Apply either through the Atlas connection after the founder confirms
-    in chat, or with:
-    `python scripts/prices/apply_price_update_20261019.py --env-file <.env.prod-import>` (dry run,
-    read-only) -> `... --apply --confirm aayna_prod` -> `... --verify`. Writes only `selling_price`,
-    `previous_selling_price`, one `price_history` entry and `updated_at`; idempotent; rollback with
-    `--rollback --confirm aayna_prod`. Targets: backend/price_targets.py.
+2b. DONE 2026-10-20 06:13 UTC: +৳100 price update applied to `aayna_prod` (founder confirmed in chat).
+    Verified pre-update backup: `aayna-private-backups\aayna-prod-20261020-before-price-update` on the
+    founder's PC. Ten conditional writes (only while each product still had its old price),
+    `selling_price` kept as a double, `previous_selling_price` + one `price_history` entry each.
+    Read-back: all 10 at target, 46 units, all drafts; every other product field, categories, the
+    admin account and inventory logs identical to the backup; 0 orders, 0 customers. Rollback:
+    `scripts/prices/apply_price_update_20261019.py --rollback --confirm aayna_prod`.
 3. Create the Production variables (section 2).
 4. Fast-forward `main` to the release commit and push. Vercel builds the production deployment
    on `aayna-webapp.vercel.app` (still behind the Vercel login).
