@@ -41,5 +41,6 @@ policies. The items below are flagged and were not invented:
 2. Retention: no fixed periods are stated, and account deletion has no promised timeline.
 3. The courier is named only as "our courier partner". Vercel, MongoDB Atlas and Resend are named as processors because the app uses them.
 4. The terms add standard clauses not covered by earlier policy text: order acceptance on confirmation, account suspension for fraud/misuse, and site content ownership.
-5. Not included until decided: governing law, limitation of liability, warranties, delivery time promises, refund method and timing.
-6. If analytics or new payment methods are enabled, update the Privacy Policy first.
+5. Exchanges/returns: no exchange window or refund promise is offered (founder decision, 20 Oct). Terms only say to email AAYNA about a damaged or incorrect order, and that the policy will be published before the shop opens. Note: the shop's own `frontend/src/data/staticPages.js` still has a 7-day returns page; update it before launch.
+6. Not included until decided: governing law, limitation of liability, warranties, delivery time promises, refund method and timing.
+7. If analytics or new payment methods are enabled, update the Privacy Policy first.
