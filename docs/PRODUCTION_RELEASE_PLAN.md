@@ -43,6 +43,14 @@ are not needed: an admin exists, so the first-run bootstrap skips and never chan
 
 ## 3. Domain (Cloudflare DNS, DNS only)
 
+> **Update 20 Oct 2026:** `shopaayna.com` + `www` now point at the separate static project
+> `aayna-public` (brand/Privacy/Terms holding site for Google OAuth branding). DNS already uses
+> Vercel values (apex A 216.198.79.1 / 64.29.17.1 / 76.76.21.21, `www` CNAME
+> d9ee1270fa51e1a4.vercel-dns-017.com, DNS only). At launch the DNS does **not** need to change:
+> remove both domains from `aayna-public`, add them to `aayna-webapp` (production, `www` 308 → apex)
+> and confirm Vercel reports them configured. The shop must serve `/privacy` and `/terms` with the
+> brand site's wording first (copy from `brand-site/*.html` on branch `public/brand-site`).
+
 1. Vercel → project → Domains: add `shopaayna.com` (production) and `www.shopaayna.com`
    with a 308 redirect to `shopaayna.com`. Canonical = `https://shopaayna.com`.
 2. Cloudflare → DNS: replace only the apex `A` records with the address Vercel's Domains page
@@ -114,3 +122,22 @@ does not touch products, settings or the admin account.
 - Public access: remove the domain from the project or restore the previous Cloudflare A records.
 - Data: the release only adds collections and indexes; they can stay. Restore from the
   section-5 backup only if production data was damaged, per `RESTORE.txt`.
+
+## 8. Launch decisions still open (status 20 Oct 2026, evening)
+
+Only these need the founder before the shop goes public; everything else is ready or automated.
+1. **Product copy:** approve or edit the 10 descriptions now on preview (`docs/PRODUCT_COPY_IMPORT_20261020.md`),
+   choose one naming (catalogue names vs the copy's SEO names), and keep/reword/drop the
+   "Bangladesh-inspired editorial story; not product origin" detail line. Material and care stay blank until verified.
+2. **Returns policy:** none is offered now (7-day wording withdrawn; `/returns` says so). Decide the policy
+   before launch, or launch with the current neutral wording.
+3. **Production environment variables:** none are set in Vercel Production yet (section 2), including the
+   Google client ID/secret, `CRON_SECRET`, Steadfast keys/mode and the production `MONGO_URL`.
+4. **Fresh production backup** right before go-live (section 5); the last verified one predates the 20 Oct price update.
+5. **Steadfast:** new API keys, live mode only after a redacted real `/payments` response is checked
+   (`STEADFAST_PAYMENTS_SCHEMA_VERIFIED`), real bookings only with explicit approval.
+6. **Welcome offer:** stays disabled (10%, min ৳1,000, cap ৳150, 30 days) until approved.
+7. **Vercel housekeeping (recommended):** preview env vars scoped to the old branch
+   `chore/production-consolidation-20261015` point a preview at `aayna_prod` (`DB_NAME=aayna_prod`, `MONGO_URL`);
+   delete them if that branch is no longer used. `EMAIL_LINK_PREVIEW_ACCESS` (expired share code) can also be removed.
+
