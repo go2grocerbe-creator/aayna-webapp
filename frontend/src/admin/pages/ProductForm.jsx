@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import ImageUpload from "@/admin/ImageUpload";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { productImages } from "@/lib/productImages";
+import { withBrand } from "@/lib/seo";
 import ProductDescription from "@/components/ProductDescription";
 import { getProductContentHistory } from "@/admin/adminApi";
 
@@ -195,7 +196,7 @@ export default function ProductForm() {
             </div>
             <div className="sm:col-span-2 rounded-md bg-gray-50 px-3 py-2 min-w-0" data-testid="pf-seo-preview">
               <p className="text-[11px] text-gray-400 mb-0.5">Search result preview</p>
-              <p className="text-sm text-[#1a0dab] truncate">{(form.seo_title || form.product_name || "Product name")} | AAYNA</p>
+              <p className="text-sm text-[#1a0dab] truncate">{withBrand(form.seo_title || form.product_name || "Product name")}</p>
               <p className="text-xs text-gray-600 line-clamp-2 break-words">{form.seo_description || form.short_description || "Built from the product name, category, short description and price."}</p>
             </div>
           </div>

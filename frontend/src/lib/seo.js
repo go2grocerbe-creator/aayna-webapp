@@ -31,9 +31,16 @@ function upsertCanonical(href) {
   link.setAttribute("href", href);
 }
 
+// Appends " | AAYNA" unless the title already ends with the brand (e.g. a founder-written
+// SEO title "Luna Locket Necklace — Golden | AAYNA"), so titles never read "| AAYNA | AAYNA".
+export function withBrand(title) {
+  const t = String(title || "").trim();
+  return /(^|[\s|—–-])AAYNA\s*$/i.test(t) ? t : `${t} | ${SITE_NAME}`;
+}
+
 // Lightweight, dependency-free SEO hook. Call once per page (before any early return).
 export function useSeo({ title, description, image, noindex } = {}) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE;
+  const fullTitle = title ? withBrand(title) : DEFAULT_TITLE;
   const desc = description || DEFAULT_DESC;
 
   useEffect(() => {

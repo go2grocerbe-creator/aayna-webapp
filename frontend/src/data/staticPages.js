@@ -25,30 +25,21 @@ export const STATIC_PAGES = {
     ],
   },
   returns: {
-    // L3.1, founder-approved rules only. Deliberately not specified because
-    // no founder decision exists yet: who pays return shipping, packaging/
-    // tags requirements, what evidence (e.g. photos) is needed, refund
-    // processing time, refund method, courier collection process, or any
-    // category exclusions. None of that is invented here - see
-    // LAUNCH_BUSINESS_SETTINGS_AUDIT.md.
-    title: "Return & Exchange Policy",
-    intro: "Here is how exchanges and refunds work at AAYNA.",
+    // 20 Oct 2026: the founder withdrew the 7-day exchange wording ("not offering or
+    // promising a 7-day exchange policy at this stage"). Until a policy is approved this
+    // page states no exchange window, refund promise, timing or exclusion - it only tells
+    // customers how to report a damaged or incorrect order. Same wording as the public
+    // brand site (shopaayna.com/terms). Do not add a MerchantReturnPolicy to JSON-LD.
+    title: "Returns & Exchanges",
+    intro: "Here is what to do if there is a problem with your AAYNA order.",
     sections: [
       {
-        heading: "Exchange Window",
-        body: "You may request an exchange within 7 days of delivery.",
+        heading: "Damaged or Incorrect Order",
+        body: "If an order arrives damaged or incorrect, please contact AAYNA at shopaayna.bd@gmail.com so we can review the issue and explain the available options.",
       },
       {
-        heading: "Condition for a Standard Exchange",
-        body: "For a standard exchange, the item must be undamaged and in the condition you received it.",
-      },
-      {
-        heading: "Damaged or Wrong Item",
-        body: "If your order arrives damaged, or you received the wrong item, it's eligible for assessment. Depending on the outcome, we will offer a replacement or a refund.",
-      },
-      {
-        heading: "Refunds",
-        body: "Refund eligibility is determined after assessment of the reported damage or quality issue.",
+        heading: "Exchange and Return Policy",
+        body: "Exchange and return eligibility and procedures will be published on this page. We do not currently offer a fixed exchange window.",
       },
       {
         heading: "How to Reach Us",

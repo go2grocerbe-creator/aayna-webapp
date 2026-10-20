@@ -222,7 +222,35 @@ def _check_amount(name, v, allow_negative=False):
     return round(float(v), 2)
 
 
+MAX_WRITE_ATTEMPTS = 4
+CONFLICT = object()
+
+
+async def _flush_outbox(order_number: str):
+    """Publish audit events saved on the order (same atomic write as the change) to the
+    append-only log. Idempotent: one event per (order_number, key), whatever the replays."""
+    order = await db.orders.find_one({"order_number": order_number}, {"_id": 0, "courier_finance.outbox": 1})
+    for ev in ((order or {}).get("courier_finance") or {}).get("outbox") or []:
+        doc = {k: v for k, v in ev.items() if k not in ("order_number", "key")}
+        await db.courier_finance_events.update_one({"order_number": order_number, "key": ev["key"]},
+                                                   {"$setOnInsert": doc}, upsert=True)
+        await db.orders.update_one({"order_number": order_number}, {"$pull": {"courier_finance.outbox": {"key": ev["key"]}}})
+
+
 async def apply_action(order_number: str, body: FinanceAction, actor: str, provider: bool = False) -> dict:
+    """One finance change, safe under concurrency: each write is a compare-and-set on
+    courier_finance.revision, so two different actions on the same order can never overwrite
+    each other (the loser re-reads and re-applies, bounded), and the same key never applies
+    twice. The audit event is written in the SAME update (outbox) and then published, so a
+    failure between the two can never leave a change without history."""
+    for _ in range(MAX_WRITE_ATTEMPTS):
+        res = await _apply_once(order_number, body, actor, provider)
+        if res is not CONFLICT:
+            return res
+    raise HTTPException(status_code=409, detail="This order's courier money record was changed at the same moment. Please try again.")
+
+
+async def _apply_once(order_number: str, body: FinanceAction, actor: str, provider: bool):
     order = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -232,6 +260,7 @@ async def apply_action(order_number: str, body: FinanceAction, actor: str, provi
         raise HTTPException(status_code=400, detail="Unknown source")
     fin = dict(order.get("courier_finance") or {})
     if body.key in (fin.get("applied_keys") or []):
+        await _flush_outbox(order_number)
         return {"duplicate": True, "finance": compute(order, await _settings())}
     basis = "provider_confirmed" if provider else "statement"
     at = now_iso()
@@ -306,16 +335,24 @@ async def apply_action(order_number: str, body: FinanceAction, actor: str, provi
     else:
         raise HTTPException(status_code=400, detail="Unknown action")
 
+    event = {"id": str(uuid.uuid4()), "order_number": order_number, "action": body.action, "key": body.key, "basis": basis,
+             "source": body.source, "reference": body.reference, "note": body.note, "before": before, "after": after,
+             "actor": actor, "created_at": at}
+    revision = fin.get("revision")
     fin.update(calc_version=CALC_VERSION, updated_at=at, last_verified_source=body.source,
-               applied_keys=(list(fin.get("applied_keys") or []) + [body.key])[-200:])
-    res = await db.orders.update_one({"order_number": order_number, "courier_finance.applied_keys": {"$ne": body.key}},
-                                     {"$set": {"courier_finance": fin}})
+               applied_keys=(list(fin.get("applied_keys") or []) + [body.key])[-200:],
+               revision=int(revision or 0) + 1, outbox=list(fin.get("outbox") or []) + [event])
+    guard = {"order_number": order_number, "courier_finance.applied_keys": {"$ne": body.key},
+             # compare-and-set: only if nobody changed the record since we read it
+             "courier_finance.revision": revision if revision is not None else {"$exists": False}}
+    res = await db.orders.update_one(guard, {"$set": {"courier_finance": fin}})
     if res.modified_count != 1:
         fresh = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
-        return {"duplicate": True, "finance": compute(fresh, await _settings())}
-    await db.courier_finance_events.insert_one({"id": str(uuid.uuid4()), "order_number": order_number, "action": body.action,
-                                                "key": body.key, "basis": basis, "source": body.source, "reference": body.reference,
-                                                "note": body.note, "before": before, "after": after, "actor": actor, "created_at": at})
+        if body.key in (((fresh or {}).get("courier_finance") or {}).get("applied_keys") or []):
+            await _flush_outbox(order_number)
+            return {"duplicate": True, "finance": compute(fresh, await _settings())}
+        return CONFLICT
+    await _flush_outbox(order_number)
     fresh = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
     return {"duplicate": False, "finance": compute(fresh, await _settings())}
 
@@ -403,6 +440,8 @@ async def finance_view(order_number: str, current=Depends(require("courier.finan
     order = await db.orders.find_one({"order_number": order_number}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    if (order.get("courier_finance") or {}).get("outbox"):
+        await _flush_outbox(order_number)   # publish an audit event left pending by an interrupted write
     events = await db.courier_finance_events.find({"order_number": order_number}, {"_id": 0}).sort("created_at", -1).to_list(100)
     settings = await _settings()
     return {"finance": compute(order, settings), "events": events,
@@ -446,8 +485,12 @@ def strip_finance(order: dict, user: dict) -> dict:
 
 
 async def ensure_finance_indexes():
-    try:
-        await db.courier_finance_events.create_index([("order_number", 1), ("created_at", -1)], name="finance_events_order")
-        await db.courier_payment_imports.create_index("payment_id", unique=True, name="payment_import_unique")
-    except Exception:  # noqa: BLE001
-        pass
+    for coll, keys, opts in (
+        ("courier_finance_events", [("order_number", 1), ("created_at", -1)], {"name": "finance_events_order"}),
+        ("courier_finance_events", [("order_number", 1), ("key", 1)], {"name": "finance_events_order_key_unique", "unique": True}),
+        ("courier_payment_imports", "payment_id", {"name": "payment_import_unique", "unique": True}),
+    ):
+        try:
+            await db[coll].create_index(keys, **opts)
+        except Exception as e:  # noqa: BLE001
+            print(f"[courier_finance] index {opts['name']} not created: {type(e).__name__}")
