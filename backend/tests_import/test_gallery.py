@@ -71,6 +71,17 @@ def test_backend_copy_matches_the_reviewed_static_gallery_31_photos():
             )
 
 
+def test_vercel_function_manifest_includes_gallery_runtime_dependencies():
+    requirements = {
+        line.split("==", 1)[0].strip().lower()
+        for line in (ROOT / "frontend/requirements.txt")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    assert {"boto3", "pillow"} <= requirements
+
+
 def test_reorder_sets_cover_everywhere_and_is_audited(env):
     v = g(env).json()
     assert (
