@@ -6,7 +6,10 @@ import axios from "axios";
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
 export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
-const client = axios.create({ baseURL: API, timeout: 10000 });
+// Preview serverless functions can occasionally need a cold boot. Keep the UI
+// waiting long enough for a healthy first response instead of showing a false
+// catalogue failure while the function starts.
+const client = axios.create({ baseURL: API, timeout: 25000 });
 
 export const getSettings = () => client.get("/settings").then((r) => r.data);
 export const getCategories = () => client.get("/categories").then((r) => r.data);

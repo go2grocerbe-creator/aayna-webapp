@@ -15,7 +15,9 @@ Founder-authorised on 2026-10-19 for the protected preview only. Photos come fro
 (frontend/src/data/productGallery.json), exactly as on the live site.
 
 What it does (idempotent, reversible):
-- upserts the 10 products by SKU: identity fields are refreshed each start, stock
+- verifies the approved catalogue with read-only queries and returns immediately
+  when it is already current (important for serverless cold starts);
+- otherwise upserts the 10 products by SKU: identity fields are refreshed, stock
   is set only when the product is first created (test orders then reduce it);
 - hides every other (demo) product by setting status "draft" and marking it
   preview_hidden_demo=True. PREVIEW_CATALOGUE=demo restores those products.
@@ -86,6 +88,42 @@ async def apply_preview_catalogue(db) -> dict:
         return {"mode": "demo", "restored": res.modified_count}
 
     cats = {c["slug"]: c for c in await db.categories.find({}, {"_id": 0, "slug": 1, "name": 1}).to_list(100)}
+
+    # Vercel may start several independent functions for one page load. Rewriting
+    # every fixture from each cold instance delayed otherwise healthy catalogue
+    # responses beyond the browser timeout. A current preview needs no writes.
+    existing = await db.products.find(
+        {"sku": {"$in": list(REAL_SKUS)}},
+        {"_id": 0, "sku": 1, "product_name": 1, "slug": 1, "category_slug": 1,
+         "category_name": 1, "color": 1, "size": 1, "selling_price": 1,
+         "discount_price": 1, "images": 1, "status": 1, "preview_snapshot": 1,
+         "stock_quantity": 1},
+    ).to_list(len(REAL_SKUS))
+    by_sku = {p["sku"]: p for p in existing}
+
+    def is_current(item: dict) -> bool:
+        saved = by_sku.get(item["sku"])
+        cat = cats.get(item["category_slug"])
+        if not saved or not cat:
+            return False
+        stock = int(saved.get("stock_quantity", 0))
+        expected = {
+            "product_name": item["product_name"], "slug": item["slug"],
+            "category_slug": cat["slug"], "category_name": cat["name"],
+            "color": item["color"], "size": item["size"],
+            "selling_price": float(item["selling_price"]), "discount_price": None,
+            "images": [], "status": "active" if stock > 0 else "out_of_stock",
+            "preview_snapshot": True,
+        }
+        return all(saved.get(key) == value for key, value in expected.items())
+
+    active_demo_count = await db.products.count_documents({
+        "sku": {"$nin": list(REAL_SKUS)}, "status": {"$in": ["active", "out_of_stock"]}
+    })
+    if active_demo_count == 0 and all(is_current(item) for item in REAL_CATALOGUE):
+        logger.info("PREVIEW_CATALOGUE=real: approved catalogue already current; no writes needed")
+        return {"mode": "real", "created": 0, "updated": 0, "hidden": 0, "unchanged": True}
+
     created = updated = 0
     for p in REAL_CATALOGUE:
         cat = cats.get(p["category_slug"])

@@ -1037,9 +1037,14 @@ def test_preview_catalogue_only_on_the_isolated_preview(env, monkeypatch):
     assert luna["selling_price"] == 1450 and luna["color"] == "Golden" and luna["images"] == []
     for bad in ("cost_price", "internal_notes", "source", "pricing", "preview_snapshot", "supplier"):
         assert all(bad not in p for p in public)
-    # stock is kept across restarts (test orders reduce it); identity is refreshed
+    # A current catalogue takes the read-only fast path on subsequent serverless
+    # starts. Stock remains untouched when test orders reduce it.
+    before = run(db.products.find_one({"sku": "AYN-CUF-STN-GLD"}))
+    unchanged = run(pc.apply_preview_catalogue(db))
+    after = run(db.products.find_one({"sku": "AYN-CUF-STN-GLD"}))
+    assert unchanged["unchanged"] is True and after["updated_at"] == before["updated_at"]
     run(db.products.update_one({"sku": "AYN-CUF-STN-GLD"}, {"$set": {"stock_quantity": 7}}))
-    run(pc.apply_preview_catalogue(db))
+    assert run(pc.apply_preview_catalogue(db))["unchanged"] is True
     assert run(db.products.find_one({"sku": "AYN-CUF-STN-GLD"}))["stock_quantity"] == 7
     # demo mode restores the hidden demo products and hides the real ones again
     monkeypatch.setenv("PREVIEW_CATALOGUE", "demo")
