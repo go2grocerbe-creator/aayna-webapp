@@ -41,7 +41,7 @@ Admin: **Accounts** (list/filter/detail, suspend/reactivate), **Promotions** (co
 
 ## 3. Transactional email (Resend)
 
-`backend/emailer.py` renders and sends every message (HTML + plain text, AAYNA layout, escaped content, one action, expiry, unsolicited-request explanation, support contact = Reply-To). Senders: `accounts@shopaayna.com` (verification, reset, password changed, email change, order claim) and `orders@shopaayna.com` (order confirmation, status updates for Confirmed, Handed to courier, Delivered, Cancelled). Reply-To `shopaayna.bd@gmail.com`. `support@shopaayna.com` is **not** used as a receiving inbox.
+`backend/emailer.py` renders and sends every message (HTML + plain text, AAYNA layout, escaped content, one action, expiry, unsolicited-request explanation, support contact = Reply-To). Senders: `accounts@shopaayna.com` (verification, reset, password changed, email change, order claim) and `orders@shopaayna.com` (order confirmation, status updates for Confirmed, Handed to courier, Delivered, Cancelled). Reply-To `support@shopaayna.com` (21 Oct 2026: founder-approved alias; inbound mail for the shopaayna.com aliases is routed by Cloudflare Email Routing).
 
 * Up to 3 attempts on 429/5xx/network, Resend `Idempotency-Key`, 8 s timeout.
 * `email_logs` keeps event, template, masked recipient, status, provider id, attempts, error class — never bodies, links, tokens or the key.

@@ -29,7 +29,7 @@ This is a session/browser-local mechanism (`localStorage`), not a login, not a r
 
 Source of truth: AAYNA Brand Book 2026 (`E:\Obsidian_Second_Brain\KJ OS Template\03 Projects\AAYNA\06 Tofail Files\AAYNA - Brand Book.html`, read in full for this and prior work in this project).
 
-- Colors (research-defined by the Brand Book): Deep Burgundy `#5A0E1A`, Slate Blue `#1A365D`, Warm Coral `#E06D53`, plus proposed supporting neutrals Mirror Ivory `#F8F3EC` and Muted Gold `#C9A66B`.
+- Colors (research-defined by the Brand Book): Deep Burgundy `#5A0E1A`, Slate Blue `#1A365D`, Coral Blue `#397F8C` (replaced the earlier coral on 21 Oct 2026, founder decision), plus proposed supporting neutrals Mirror Ivory `#F8F3EC` and Muted Gold `#C9A66B`.
 - Usage principle (Brand Book, verbatim intent): *Burgundy anchors. Ivory breathes. Blue sharpens. Coral activates. Gold finishes.*
 - Primary line: **"Reflect Your Aura."** Bangla: আপনার আভাকে প্রতিফলিত করুন। AAYNA = mirror / আয়না.
 - The Brand Book's own mirror philosophy, worth building the whole site around, not just quoting: *"AAYNA should feel like a mirror — not a mask. The brand reflects confidence, individuality and an evolving personal style."* Its strongest emotional territory is **recognition**, not transformation: "this is me, seen more clearly." Avoid any copy implying the site changes who the visitor is.
@@ -379,8 +379,9 @@ All values below are **already implemented** in `frontend/tailwind.config.js` an
 |---|---|---|
 | brand-anchor | `aayna-burgundy` | `#5A0E1A` |
 | brand-anchor (deep) | `aayna-burgundy-dark` | `#3B0811` |
-| action (CTA) | `aayna-coral` | `#E06D53` |
-| action hover | `aayna-coral-dark` | `#C85A42` |
+| action (CTA) | `aayna-coral` (Coral Blue) | `#397F8C` |
+| action hover | `aayna-coral-dark` | `#306B76` |
+| action pressed | `aayna-coral-pressed` | `#275963` |
 | informational-accent | `aayna-blue` | `#1A365D` |
 | background-primary | `aayna-cream` (Mirror Ivory) | `#F8F3EC` |
 | background-secondary / small accent | `aayna-mist` | `#F4E8EA` |
