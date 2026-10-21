@@ -9,10 +9,7 @@ import uuid
 from typing import List
 from urllib.parse import quote, urlparse
 
-import boto3
-from botocore.config import Config
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
 from auth import require
@@ -88,6 +85,10 @@ def _require_uploads():
 
 
 def _r2_client():
+    # Keep upload-only SDKs out of the public catalogue cold-start path.
+    import boto3
+    from botocore.config import Config
+
     account = os.environ["R2_ACCOUNT_ID"].strip()
     return boto3.client(
         "s3",
@@ -118,6 +119,10 @@ def _delete_r2(key):
 
 
 def _inspect_image(data, declared_type):
+    # Pillow is sizeable on Vercel. Import it only for an authenticated upload,
+    # not while booting every public catalogue request.
+    from PIL import Image, UnidentifiedImageError
+
     if not data:
         raise HTTPException(status_code=400, detail="The selected file is empty.")
     if len(data) > MAX_UPLOAD_BYTES:

@@ -108,7 +108,7 @@ export default function Home() {
     queryFn: () =>
       committed
         ? getProducts({ category: committed, sort: "best_seller", limit: 20 })
-        : getProducts({ new_arrival: true, sort: "newest", limit: 20 }),
+        : getProducts({ sort: "newest", limit: 20 }),
     // L2.2: launch discovery is in-stock Earrings/Necklaces/Rings only.
     // Confirmed live before this fix - the uncommitted "New This Season"
     // query has no category scope at all, and with the current catalogue
