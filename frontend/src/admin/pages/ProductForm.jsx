@@ -5,10 +5,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getAdminProduct, createProduct, updateProduct, getAdminCategories } from "@/admin/adminApi";
 import { Switch } from "@/components/ui/switch";
-import ImageUpload from "@/admin/ImageUpload";
 import GalleryManager from "@/admin/GalleryManager";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
-import { productImages } from "@/lib/productImages";
 import { withBrand } from "@/lib/seo";
 import ProductDescription from "@/components/ProductDescription";
 import { getProductContentHistory } from "@/admin/adminApi";
@@ -99,6 +97,9 @@ export default function ProductForm() {
     };
     delete payload.highlights_text;
     delete payload.content_status;
+    // Gallery writes are revision-checked through GalleryManager. Never let a stale
+    // product form overwrite a newer photo upload/order change.
+    delete payload.images;
     // Purchase cost: only sent by roles allowed to see it, and only with a value.
     if (canCost && form.cost_price !== "") payload.cost_price = Number(form.cost_price);
     else delete payload.cost_price;
@@ -271,12 +272,8 @@ export default function ProductForm() {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="font-semibold text-aayna-charcoal mb-4">Images</h2>
           {/* Reviewed static photos: order + cover chosen here (backend/gallery.py, revision-checked). */}
-          {isEdit && !(form.images || []).length && <GalleryManager productId={id} canEdit={canEdit} />}
-          {/* Uploaded images (only products that already have them, or new products): the upload itself
-              refuses honestly (503) while no permanent storage is configured. */}
-          {(!isEdit || (form.images || []).length > 0 || productImages(product).length === 0) && (
-            <ImageUpload images={form.images} onChange={(imgs) => set("images", imgs)} />
-          )}
+          {isEdit ? <GalleryManager productId={id} canEdit={canEdit} /> :
+            <p className="text-sm text-gray-600">Save the product as a draft first, then upload and arrange its photos.</p>}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">

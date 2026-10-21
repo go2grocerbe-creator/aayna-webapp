@@ -243,6 +243,8 @@ async def create_product(payload: ProductPayload, current=Depends(require("produ
         raise HTTPException(status_code=400, detail="Selling price and stock quantity are required")
     if payload.cost_price is not None and not has_permission(current, "products.cost"):
         raise HTTPException(status_code=403, detail="You do not have permission to set purchase costs")
+    if payload.images:
+        raise HTTPException(status_code=400, detail="Create the product first, then add images in its gallery.")
     if await db.products.find_one({"sku": payload.sku.strip()}):
         raise HTTPException(status_code=409, detail="Another product already uses this SKU")
     # New products start as drafts unless a status is chosen explicitly.
@@ -297,6 +299,9 @@ async def update_product(product_id: str, payload: ProductPayload, current=Depen
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     updates = payload.model_dump(exclude_unset=True)
+    if "images" in updates and updates["images"] != product.get("images", []):
+        raise HTTPException(status_code=400, detail="Images can only be changed in the product gallery.")
+    updates.pop("images", None)
     # SKU is the product's identity (orders, inventory logs, importer): never changed here.
     if "sku" in updates and str(updates["sku"] or "").strip() != str(product.get("sku") or ""):
         raise HTTPException(status_code=400, detail="SKU cannot be changed")

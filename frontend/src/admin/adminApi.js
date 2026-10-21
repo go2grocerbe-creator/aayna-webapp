@@ -39,6 +39,15 @@ export const deleteProduct = (id) => api.delete(`/admin/products/${id}`).then((r
 export const getProductGallery = (id) => api.get(`/admin/products/${id}/gallery`).then((r) => r.data);
 export const saveProductGalleryOrder = (id, expected_revision, ordered_ids) =>
   api.put(`/admin/products/${id}/gallery/order`, { expected_revision, ordered_ids }).then((r) => r.data);
+export const uploadProductGalleryImage = (id, expected_revision, file, request_id) => {
+  const fd = new FormData();
+  fd.append("expected_revision", String(expected_revision));
+  fd.append("request_id", request_id);
+  fd.append("file", file);
+  return api.post(`/admin/products/${id}/gallery/images`, fd).then((r) => r.data);
+};
+export const deleteProductGalleryImage = (id, imageId, expected_revision) =>
+  api.delete(`/admin/products/${id}/gallery/images/${imageId}`, { data: { expected_revision } }).then((r) => r.data);
 export const getProductGalleryHistory = (id) => api.get(`/admin/products/${id}/gallery/history`).then((r) => r.data);
 
 // Categories
