@@ -34,7 +34,7 @@ function roleForPosition(pos) {
 }
 
 function CategoryLetter({ hovered }) {
-  const color = hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#C85A42" : "#5A0E1A";
+  const color = hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#306B76" : "#5A0E1A";
   const letter = { earrings: "E", necklaces: "N", rings: "R" }[hovered];
   return (
     <div aria-hidden="true" className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none">

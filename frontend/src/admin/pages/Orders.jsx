@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLoadError from "@/admin/AdminLoadError";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Download, Loader2, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,9 @@ import { formatBDT } from "@/lib/format";
 import { statusStyle, ORDER_STATUSES } from "@/admin/statusColors";
 
 export default function Orders() {
-  const [status, setStatus] = useState("all");
+  const [params] = useSearchParams();
+  // Dashboard cards link here as /admin/orders?status=<exact order_status>.
+  const [status, setStatus] = useState(() => (ORDER_STATUSES.includes(params.get("status")) ? params.get("status") : "all"));
   const [search, setSearch] = useState("");
 
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
@@ -28,6 +30,7 @@ export default function Orders() {
       const r = await syncActiveCourier();
       toast.success(`Checked ${r.checked.length} Steadfast parcel(s)${r.failed.length ? `, ${r.failed.length} could not be checked` : ""}`);
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Could not check Steadfast");
     } finally { setSyncing(false); }

@@ -1,20 +1,13 @@
 import { Link } from "react-router-dom";
-import { MessageCircle, Phone, Instagram, Facebook } from "lucide-react";
+import { MessageCircle, Phone, Mail, Instagram, Facebook } from "lucide-react";
 import { useSettings } from "@/hooks/useStore";
 import { useSeo } from "@/lib/seo";
 import { isPlaceholder } from "@/lib/format";
+import { CONTACT } from "@/constants/contact";
 
-// L3.1: only ever render a contact method that actually works. Previously
-// this page rendered the raw placeholder WhatsApp number ungated, and its
-// wa.me link was silently broken (stripping non-digits from
-// "+8801XXXXXXXXX" leaves only "8801" - every X is a letter, not a digit).
-// Support email is intentionally withheld too: the founder has not
-// approved a production support inbox yet, which is a launch-readiness
-// decision isPlaceholder() can't express on its own (the stored value
-// isn't placeholder-shaped, it just isn't approved) - see
-// LAUNCH_BUSINESS_SETTINGS_AUDIT.md. If no channel is available yet, this
-// page stays honest and minimal rather than inventing "WhatsApp us" /
-// "Email us" copy for something that doesn't work.
+// 21 Oct 2026: the founder-approved phone and email aliases are always shown
+// (constants/contact.js). WhatsApp still appears only once a real WhatsApp number is
+// saved in Admin -> Settings (never a placeholder, never assumed to be the phone).
 export default function Contact() {
   const { data: settings } = useSettings();
   useSeo({ title: "Contact Us", description: "Get in touch with AAYNA." });
@@ -30,12 +23,26 @@ export default function Contact() {
       href: `https://wa.me/${waDigits}`,
       cta: "Chat with us",
     },
-    hasWhatsapp && {
+    {
       icon: Phone,
       title: "Call Us",
-      value: settings.whatsapp_number,
-      href: `tel:${settings.whatsapp_number}`,
+      value: CONTACT.phoneDisplay,
+      href: `tel:${CONTACT.phoneE164}`,
       cta: "Call now",
+    },
+    {
+      icon: Mail,
+      title: "Email",
+      value: CONTACT.general,
+      href: `mailto:${CONTACT.general}`,
+      cta: "Write to us",
+    },
+    {
+      icon: Mail,
+      title: "Orders",
+      value: CONTACT.orders,
+      href: `mailto:${CONTACT.orders}`,
+      cta: "Ask about an order",
     },
   ].filter(Boolean);
 
@@ -49,14 +56,14 @@ export default function Contact() {
       </div>
 
       {cards.length > 0 ? (
-        <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {cards.map((c) => (
             <a
               key={c.title}
               data-testid={`contact-${c.title.toLowerCase().replace(/\s/g, "-")}`}
               href={c.href}
-              target="_blank"
-              rel="noopener noreferrer"
+              target={c.href.startsWith("http") ? "_blank" : undefined}
+              rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined}
               className="bg-white border border-aayna-beige p-6 text-center hover:border-aayna-burgundy transition-colors group"
             >
               <span className="h-12 w-12 rounded-full bg-aayna-mist flex items-center justify-center mx-auto mb-3 group-hover:bg-aayna-burgundy transition-colors">

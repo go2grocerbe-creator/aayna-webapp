@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
 import { getAdminSettings, updateAdminSettings } from "@/admin/adminApi";
 import { Switch } from "@/components/ui/switch";
-import ImageUpload from "@/admin/ImageUpload";
+import BrandLogo from "@/components/BrandLogo";
 import AdminLoadError from "@/admin/AdminLoadError";
 
 const TEXT_FIELDS = [
@@ -13,8 +13,6 @@ const TEXT_FIELDS = [
   ["announcement_bar_text", "Announcement Bar Text"],
   ["whatsapp_number", "WhatsApp Number"],
   ["support_email", "Support Email"],
-  ["bkash_number", "bKash Number"],
-  ["nagad_number", "Nagad Number"],
   ["facebook_url", "Facebook Link"],
   ["instagram_url", "Instagram Link"],
   ["tiktok_url", "TikTok Link"],
@@ -36,9 +34,6 @@ const ESTIMATE_FIELDS = [
 
 const PLACEHOLDER_FIELDS = [
   ["announcement_bar_text", "Announcement bar text"],
-  ["whatsapp_number", "WhatsApp number"],
-  ["bkash_number", "bKash number"],
-  ["nagad_number", "Nagad number"],
   ["support_email", "Support email"],
 ];
 
@@ -87,7 +82,9 @@ export default function Settings() {
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-aayna-charcoal mb-2">Website Settings</h1>
       <p data-testid="settings-scope-note" className="text-sm text-gray-500 mb-6">
-        These values are <strong>public</strong>: they appear on the storefront (contact details, payment numbers, delivery charges).
+        These values are <strong>public</strong>: they appear on the storefront (announcement, social links, delivery charges).
+        The approved phone (+880 1348-243169) and email aliases are built into the website. Only Cash on Delivery is offered,
+        so bKash/Nagad fields are not shown.
         Private configuration such as the database connection, login keys and passwords is never stored or shown here;
         it lives only in the hosting provider&apos;s environment settings.
       </p>
@@ -109,9 +106,16 @@ export default function Settings() {
                 <input data-testid={`set-${k}`} className={field} value={form[k] ?? ""} onChange={(e) => set(k, e.target.value)} />
               </div>
             ))}
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Logo</label>
-              <ImageUpload images={form.logo_url ? [{ image_url: form.logo_url, alt_text: "logo", is_main: true }] : []} onChange={(imgs) => set("logo_url", imgs[0]?.image_url || "")} />
+            <div className="sm:col-span-2" data-testid="settings-brand-assets">
+              <p className="block text-sm font-medium text-gray-700 mb-1.5">Logo and favicon</p>
+              <div className="flex flex-wrap items-center gap-4 border border-gray-200 rounded-md p-4 bg-aayna-cream">
+                <BrandLogo className="h-14 w-auto" alt="AAYNA logo (approved)" />
+                <img src="/favicon-32x32.png" width="32" height="32" alt="AAYNA favicon" />
+                <p className="text-xs text-gray-600 flex-1 min-w-[12rem]">
+                  Brand assets are managed in the website build: the approved original logo and favicons ship with the site.
+                  They cannot be replaced from this page, because the website has no permanent file storage for uploads yet.
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -200,15 +200,17 @@ SEED_SETTINGS = {
     "delivery_charge_bdt": 100,
     "free_delivery_min_subtotal_bdt": 1500,
     "cod_available": True,
-    "whatsapp_number": "+8801XXXXXXXXX",
-    "support_email": "hello@aayna.xyz",
-    "bkash_number": "01XXXXXXXXX",
-    "nagad_number": "01XXXXXXXXX",
+    # 21 Oct 2026 founder decisions: approved support alias; WhatsApp not set up yet (left
+    # empty so nothing is shown); only Cash on Delivery is approved, so no bKash/Nagad numbers.
+    "whatsapp_number": "",
+    "support_email": "support@shopaayna.com",
+    "bkash_number": "",
+    "nagad_number": "",
     "instagram_handle": "@shopaayna.bd",
     "instagram_url": "https://instagram.com/shopaayna.bd",
     "facebook_url": "https://facebook.com/AAYNA-Bangladesh",
     "tiktok_url": "https://tiktok.com/@shopaayna.bd",
-    "website_domain": "www.aayna.xyz",
+    "website_domain": "shopaayna.com",
     "currency": "BDT",
 }
 

@@ -46,6 +46,7 @@ export default function OrderDetail() {
       toast.success("Order updated");
       qc.invalidateQueries({ queryKey: ["admin-order", orderNumber] });
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
       qc.invalidateQueries({ queryKey: ["admin-courier", orderNumber] });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Update failed");

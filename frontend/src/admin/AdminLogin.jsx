@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { useSeo } from "@/lib/seo";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function AdminLogin() {
   useSeo({ title: "Admin Login", noindex: true });
@@ -41,7 +42,7 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-aayna-cream flex items-center justify-center px-4 font-body">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <span className="font-display text-4xl font-extrabold text-aayna-charcoal tracking-tight">AAYNA</span>
+          <BrandLogo className="h-20 w-auto mx-auto" alt="AAYNA" data-testid="admin-login-logo" />
           <p className="text-gray-500 mt-1">Admin Dashboard</p>
         </div>
         <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg p-7 shadow-sm">

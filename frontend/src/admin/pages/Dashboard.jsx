@@ -3,7 +3,7 @@ import AdminLoadError from "@/admin/AdminLoadError";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart, Clock, CheckCircle2, Truck, XCircle, TrendingUp, AlertTriangle, BellOff, Loader2,
-  Package, FileEdit, Eye, PackageX, Boxes,
+  Package, FileEdit, Eye, PackageX, Boxes, PackageCheck, Undo2,
 } from "lucide-react";
 import { getDashboard } from "@/admin/adminApi";
 import { formatBDT } from "@/lib/format";
@@ -24,7 +24,8 @@ function Card({ icon: Icon, label, value, accent, to, testid }) {
 }
 
 export default function Dashboard() {
-  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getDashboard });
+  // Always re-read on open/focus so order counts never lag behind the Orders list.
+  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getDashboard, refetchOnMount: "always", refetchOnWindowFocus: true });
 
   if (isError) return <AdminLoadError what="the dashboard" error={error} onRetry={refetch} />;
 
@@ -51,12 +52,15 @@ export default function Dashboard() {
         <p data-testid="dash-no-orders" className="text-sm text-gray-500 mb-3">No orders yet. Order figures will appear here once customers start ordering.</p>
       )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card testid="dash-card-todays_orders" icon={ShoppingCart} label="Today's Orders" value={data.todays_orders} accent="bg-blue-100 text-blue-700" to="/admin/orders" />
+        <Card testid="dash-card-todays_orders" icon={ShoppingCart} label="Today's Orders (Dhaka time)" value={data.todays_orders} accent="bg-blue-100 text-blue-700" to="/admin/orders" />
         <Card testid="dash-card-total_sales_today" icon={TrendingUp} label="Sales Today" value={formatBDT(data.total_sales_today)} accent="bg-aayna-mist text-aayna-burgundy" />
-        <Card testid="dash-card-new_orders" icon={Clock} label="New / Pending" value={data.new_orders} accent="bg-amber-100 text-amber-700" to="/admin/orders" />
-        <Card testid="dash-card-confirmed_orders" icon={CheckCircle2} label="Confirmed" value={data.confirmed_orders} accent="bg-indigo-100 text-indigo-700" to="/admin/orders" />
-        <Card testid="dash-card-delivered_orders" icon={Truck} label="Delivered" value={data.delivered_orders} accent="bg-green-100 text-green-700" to="/admin/orders" />
-        <Card testid="dash-card-cancelled_orders" icon={XCircle} label="Cancelled" value={data.cancelled_orders} accent="bg-red-100 text-red-600" to="/admin/orders" />
+        <Card testid="dash-card-new_orders" icon={Clock} label="New" value={data.new_orders} accent="bg-amber-100 text-amber-700" to="/admin/orders?status=New" />
+        <Card testid="dash-card-confirmed_orders" icon={CheckCircle2} label="Confirmed" value={data.confirmed_orders} accent="bg-indigo-100 text-indigo-700" to="/admin/orders?status=Confirmed" />
+        <Card testid="dash-card-packed_orders" icon={PackageCheck} label="Packed" value={data.packed_orders ?? 0} accent="bg-sky-100 text-sky-700" to="/admin/orders?status=Packed" />
+        <Card testid="dash-card-with_courier_orders" icon={Truck} label="With courier" value={data.with_courier_orders ?? 0} accent="bg-teal-100 text-teal-700" to="/admin/orders?status=Sent%20to%20Courier" />
+        <Card testid="dash-card-delivered_orders" icon={CheckCircle2} label="Delivered" value={data.delivered_orders} accent="bg-green-100 text-green-700" to="/admin/orders?status=Delivered" />
+        <Card testid="dash-card-cancelled_orders" icon={XCircle} label="Cancelled" value={data.cancelled_orders} accent="bg-red-100 text-red-600" to="/admin/orders?status=Cancelled" />
+        <Card testid="dash-card-returned_orders" icon={Undo2} label="Returned" value={data.returned_orders ?? 0} accent="bg-gray-100 text-gray-600" to="/admin/orders?status=Returned" />
         <Card testid="dash-card-low_stock_count" icon={AlertTriangle} label="Low Stock" value={data.low_stock_count} accent="bg-orange-100 text-orange-700" to="/admin/inventory" />
         <Card testid="dash-card-failed_notifications" icon={BellOff} label="Failed Notifications" value={data.failed_notifications} accent="bg-gray-100 text-gray-600" />
       </div>
@@ -116,7 +120,12 @@ export default function Dashboard() {
               ))}
             </ul>
           ) : <p className="text-sm text-gray-400">No orders yet.</p>}
-          <p className="text-xs text-gray-400 mt-3">Delivered sales to date: {formatBDT(data.delivered_sales_total || 0)} · Pending: {data.pending_orders ?? 0}</p>
+          <p className="text-xs text-gray-400 mt-3">Delivered sales to date: {formatBDT(data.delivered_sales_total || 0)} · Open (New to With courier): {data.pending_orders ?? 0}</p>
+          {data.status_counts && Object.keys(data.status_counts.unknown || {}).length > 0 && (
+            <p data-testid="dash-unknown-statuses" className="text-xs text-amber-700 mt-1">
+              Unrecognised order statuses: {Object.entries(data.status_counts.unknown).map(([k, v]) => `${k} (${v})`).join(", ")}
+            </p>
+          )}
         </section>
       </div>
 

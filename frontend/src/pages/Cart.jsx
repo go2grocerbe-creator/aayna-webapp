@@ -205,7 +205,7 @@ export default function Cart() {
                 data-testid="proceed-to-checkout"
                 aria-disabled={hasIssue || undefined}
                 className={`mt-6 w-full h-12 md:h-14 flex items-center justify-center font-semibold text-white transition-colors ${
-                  hasIssue ? "bg-aayna-beige text-aayna-taupe pointer-events-none" : "bg-aayna-coral hover:bg-aayna-coral-dark"
+                  hasIssue ? "bg-aayna-beige text-aayna-taupe pointer-events-none" : "bg-aayna-coral hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed"
                 }`}
               >
                 Proceed to Checkout

@@ -57,6 +57,7 @@ export default function SteadfastPanel({ orderNumber }) {
       qc.invalidateQueries({ queryKey: ["admin-courier", orderNumber] });
       qc.invalidateQueries({ queryKey: ["admin-order", orderNumber] });
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
     }
   };
 

@@ -99,7 +99,7 @@ export default function TrackOrder() {
               type="submit"
               disabled={loading}
               aria-busy={loading}
-              className="h-12 px-6 bg-aayna-coral text-white font-semibold flex items-center justify-center gap-2 hover:bg-aayna-coral-dark transition-colors disabled:opacity-60 min-h-[44px]"
+              className="h-12 px-6 bg-aayna-coral text-white font-semibold flex items-center justify-center gap-2 hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors disabled:opacity-60 min-h-[44px]"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Search className="h-4 w-4" aria-hidden="true" />}
               Track

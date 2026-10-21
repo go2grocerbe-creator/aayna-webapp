@@ -35,7 +35,7 @@ export const STATIC_PAGES = {
     sections: [
       {
         heading: "Damaged or Incorrect Order",
-        body: "If an order arrives damaged or incorrect, please contact AAYNA at shopaayna.bd@gmail.com so we can review the issue and explain the available options.",
+        body: "If an order arrives damaged or incorrect, please contact AAYNA at support@shopaayna.com so we can review the issue and explain the available options.",
       },
       {
         heading: "Exchange and Return Policy",

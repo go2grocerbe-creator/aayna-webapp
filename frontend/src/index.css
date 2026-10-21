@@ -12,8 +12,9 @@
     --aayna-burgundy: #5A0E1A;
     --aayna-burgundy-dark: #3B0811;
     --aayna-blue: #1A365D;
-    --aayna-coral: #E06D53;
-    --aayna-coral-dark: #C85A42;
+    --aayna-coral: #397F8C;          /* Coral Blue (replaced Warm Coral #E06D53, 21 Oct 2026) */
+    --aayna-coral-dark: #306B76;     /* hover */
+    --aayna-coral-pressed: #275963;  /* pressed */
     --aayna-cream: #F8F3EC;
     --aayna-mist: #F4E8EA;
     --aayna-gold: #C9A66B;
@@ -75,7 +76,7 @@ h1, h2, h3.font-display, .font-display {
         --card-foreground: 342 12% 12%;
         --popover: 0 0% 100%;
         --popover-foreground: 342 12% 12%;
-        --primary: 11 69% 60%;
+        --primary: 189 42% 39%;
         --primary-foreground: 0 0% 100%;
         --secondary: 350 35% 93%;
         --secondary-foreground: 350 73% 20%;
@@ -87,7 +88,7 @@ h1, h2, h3.font-display, .font-display {
         --destructive-foreground: 0 0% 100%;
         --border: 356 29% 88%;
         --input: 356 29% 88%;
-        --ring: 11 69% 60%;
+        --ring: 189 42% 39%;
         --radius: 0.5rem;
     }
 }

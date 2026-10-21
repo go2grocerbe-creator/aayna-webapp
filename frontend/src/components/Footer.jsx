@@ -1,26 +1,18 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Phone } from "lucide-react";
+import { Instagram, Facebook, Phone, Mail } from "lucide-react";
 import { useSettings, useCategories } from "@/hooks/useStore";
-import { isPlaceholder } from "@/lib/format";
+import BrandLogo from "@/components/BrandLogo";
+import { CONTACT, PARENT_COMPANY } from "@/constants/contact";
 
 export default function Footer() {
   const { data: settings } = useSettings();
   const { data: categories = [] } = useCategories();
   const year = new Date().getFullYear();
 
-  // L3.1: WhatsApp/phone only renders once it's a real, non-placeholder
-  // number - same isPlaceholder() gate WhatsAppFloat/PDP already use, now
-  // applied here too. Support email is intentionally not shown as a launch
-  // contact channel yet - founder has not approved one for production (not
-  // a placeholder-detection question, a launch-readiness one); see
-  // LAUNCH_BUSINESS_SETTINGS_AUDIT.md. "We accept" only lists methods that
-  // are actually selectable at checkout today, instead of a hardcoded list
-  // that claimed bKash/Nagad were accepted while Checkout disabled both.
-  const hasWhatsapp = !isPlaceholder(settings?.whatsapp_number);
+  // 21 Oct 2026: phone and email are the founder-approved public contacts (constants/contact.js).
+  // 21 Oct 2026: only Cash on Delivery is approved; bKash/Nagad are not offered or shown.
   const paymentBadges = [
     settings?.cod_available !== false && "Cash on Delivery",
-    !isPlaceholder(settings?.bkash_number) && "bKash",
-    !isPlaceholder(settings?.nagad_number) && "Nagad",
   ].filter(Boolean);
 
   // Header and footer both hide categories with nothing to buy.
@@ -33,8 +25,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           <div className="col-span-2 md:col-span-1">
-            {/* FOUNDER ASSET REQUIRED — FINAL LOGO: text wordmark, see Header.jsx */}
-            <span className="font-display text-2xl font-semibold text-aayna-cream tracking-[0.08em]">AAYNA</span>
+            {/* Founder-approved logo, golden version for the dark footer (see BrandLogo.jsx). */}
+            <BrandLogo variant="golden" className="h-14 w-auto" alt="AAYNA" data-testid="footer-logo" />
             <p className="mt-3 text-sm text-aayna-beige/80 leading-relaxed max-w-xs">
               {settings?.tagline || "Reflect Your Aura."} Modern jewellery and
               accessories for the everyday Bangladeshi woman — delivered
@@ -74,11 +66,16 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-aayna-cream mb-1">Contact</h4>
             <ul>
-              {hasWhatsapp && (
-                <li className="flex items-center gap-2 min-h-[44px] text-sm text-aayna-beige/85">
-                  <Phone className="h-4 w-4 text-aayna-gold" /> {settings.whatsapp_number}
-                </li>
-              )}
+              <li>
+                <a href={`tel:${CONTACT.phoneE164}`} data-testid="footer-phone" className={`${linkCls} gap-2`}>
+                  <Phone className="h-4 w-4 text-aayna-gold" /> {CONTACT.phoneDisplay}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${CONTACT.general}`} data-testid="footer-email" className={`${linkCls} gap-2 break-all`}>
+                  <Mail className="h-4 w-4 text-aayna-gold shrink-0" /> {CONTACT.general}
+                </a>
+              </li>
               <li><Link to="/contact" className={linkCls}>Contact Us</Link></li>
             </ul>
             <div className="mt-4">
@@ -100,7 +97,10 @@ export default function Footer() {
           <p className="text-xs text-aayna-beige/60 py-2">
             <span className="block md:inline">© {year} AAYNA. All rights reserved.</span>
             <span className="hidden md:inline"> · </span>
-            <span className="block md:inline">Contemporary, proudly Bangladeshi.</span>
+            <span className="block md:inline">
+              <a href={PARENT_COMPANY.url} target="_blank" rel="noopener noreferrer" data-testid="footer-parent-company"
+                 className="underline underline-offset-2 hover:text-aayna-gold">{PARENT_COMPANY.text}</a>
+            </span>
           </p>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-6">
             <Link to="/privacy" className={legalCls}>Privacy Policy</Link>

@@ -74,7 +74,7 @@ export default function WelcomePopup() {
         </p>
         <div className="flex items-center gap-4 mt-4">
           <Link to="/register" onClick={() => { setOpen(false); writePref({ dismissedAt: Date.now() }); }} data-testid="welcome-popup-cta"
-                className="inline-flex items-center min-h-[44px] px-5 bg-aayna-coral text-white text-sm font-semibold hover:bg-aayna-coral-dark">
+                className="inline-flex items-center min-h-[44px] px-5 bg-aayna-coral text-white text-sm font-semibold hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed">
             Create account
           </Link>
           <button type="button" onClick={dismiss} className="min-h-[44px] text-sm text-aayna-taupe hover:text-aayna-burgundy">Not now</button>

@@ -927,7 +927,7 @@ def test_resend_client_handles_errors_without_leaking(env, monkeypatch):
     log = run(env["db"].email_logs.find_one({"id": res["log_id"]}))
     assert res["status"] == "sent" and log["provider_id"] == "msg-123" and log["attempts"] == 2
     payload, headers = calls[-1]
-    assert payload["from"] == "AAYNA Accounts <accounts@shopaayna.com>" and payload["reply_to"] == "shopaayna.bd@gmail.com"
+    assert payload["from"] == "AAYNA Accounts <accounts@shopaayna.com>" and payload["reply_to"] == "support@shopaayna.com"
     assert payload["text"] and payload["html"] and "re_test" not in str(log)
 
 

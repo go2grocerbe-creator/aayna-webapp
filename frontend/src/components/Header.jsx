@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/context/CartContext";
 import { useCategories } from "@/hooks/useStore";
 import { useCustomer } from "@/context/CustomerAuthContext";
+import BrandLogo from "@/components/BrandLogo";
 
 // Restrained D1.6-D3 header treatment (AAYNA / nav / Search / Bag; Home via
 // the wordmark). Phase 3: phones AND tablets (< lg) use the menu sheet, so
@@ -51,15 +52,16 @@ export default function Header() {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-aayna-cream w-[82%] border-aayna-beige p-0">
-                {/* FOUNDER ASSET REQUIRED — FINAL LOGO: restrained text wordmark until an
-                    approved logo file exists (Brand Book gives a direction, not a final asset). */}
+                {/* Founder-approved logo (original designer file, see BrandLogo.jsx). */}
                 <div className="p-6 border-b border-aayna-beige">
                   <Link
                     to="/"
                     onClick={() => setMobileOpen(false)}
-                    className="inline-flex items-center min-h-[44px] font-display text-2xl font-semibold text-aayna-burgundy tracking-[0.08em]"
+                    aria-label="AAYNA home"
+                    data-testid="mobile-menu-logo"
+                    className="inline-flex items-center min-h-[44px]"
                   >
-                    AAYNA
+                    <BrandLogo className="h-11 w-auto" alt="AAYNA" />
                   </Link>
                 </div>
                 <nav className="flex flex-col p-4">
@@ -103,13 +105,9 @@ export default function Header() {
             </Sheet>
           </div>
 
-          {/* Logo — FOUNDER ASSET REQUIRED: FINAL LOGO. Restrained editorial text
-              wordmark per the Brand Book's proposed direction until an approved
-              logo file exists; do not treat this as a final identity mark. */}
+          {/* Founder-approved logo (original designer file, see BrandLogo.jsx). */}
           <Link to="/" data-testid="logo-link" aria-label="AAYNA home" className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start min-h-[44px]">
-            <span className="font-display text-2xl md:text-3xl font-semibold text-aayna-burgundy tracking-[0.08em]">
-              AAYNA
-            </span>
+            <BrandLogo className="h-12 md:h-14 w-auto" alt="AAYNA" data-testid="header-logo" />
           </Link>
 
           {/* Desktop nav (lg+): Shop, in-stock categories, Track Order. Contact

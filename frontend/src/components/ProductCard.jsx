@@ -109,7 +109,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
             data-testid={`hero-add-to-cart-${product.slug}`}
             onClick={handleAdd}
             disabled={oos}
-            className="mt-2 h-11 px-6 w-fit bg-aayna-coral text-white text-sm font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-2 h-11 px-6 w-fit bg-aayna-coral text-white text-sm font-semibold hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {oos ? "Out of Stock" : "Add to Cart"}
           </button>
@@ -154,7 +154,7 @@ export default function ProductCard({ product, variant = "commerce" }) {
             data-testid={`quick-add-${product.slug}`}
             onClick={handleAdd}
             aria-label="Add to cart"
-            className="absolute bottom-3 right-3 h-11 w-11 bg-aayna-coral text-white rounded-full flex items-center justify-center transition-[opacity,transform,background-color] duration-300 hover:bg-aayna-coral-dark [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:translate-y-0 focus-visible:opacity-100 focus-visible:translate-y-0"
+            className="absolute bottom-3 right-3 h-11 w-11 bg-aayna-coral text-white rounded-full flex items-center justify-center transition-[opacity,transform,background-color] duration-300 hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:translate-y-0 focus-visible:opacity-100 focus-visible:translate-y-0"
           >
             <ShoppingBag className="h-4 w-4" />
           </button>

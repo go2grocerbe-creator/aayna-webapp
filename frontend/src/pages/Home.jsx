@@ -223,7 +223,7 @@ export default function Home() {
             style={{
               fontSize: "36vw",
               color:
-                hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#C85A42" : hovered === "bracelets" ? "#8C6A2B" : "#5A0E1A",
+                hovered === "necklaces" ? "#1A365D" : hovered === "rings" ? "#306B76" : hovered === "bracelets" ? "#8C6A2B" : "#5A0E1A",
               opacity: hovered ? 0.06 : 0,
             }}
           >

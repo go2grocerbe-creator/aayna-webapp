@@ -89,7 +89,7 @@ export default function OrderConfirmation() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
           <Link
             to="/track-order"
-            className="inline-flex items-center justify-center h-12 px-6 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors min-h-[44px]"
+            className="inline-flex items-center justify-center h-12 px-6 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors min-h-[44px]"
           >
             Track an order
           </Link>
@@ -191,7 +191,7 @@ export default function OrderConfirmation() {
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
         <Link
           to="/shop"
-          className="flex-1 h-12 bg-aayna-coral text-white font-semibold flex items-center justify-center hover:bg-aayna-coral-dark transition-colors min-h-[44px]"
+          className="flex-1 h-12 bg-aayna-coral text-white font-semibold flex items-center justify-center hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors min-h-[44px]"
         >
           Continue the Edit
         </Link>

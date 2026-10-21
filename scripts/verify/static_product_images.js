@@ -107,7 +107,7 @@ async function ownership(page, label) {
       await main.waitFor();
       const m = await main.evaluate((el) => ({ src: el.getAttribute("src"), cur: el.currentSrc, w: el.naturalWidth, alt: el.alt }));
       if (p.kind === "db") {
-        rec(`${vp.name} ${p.slug}: database image wins over the static gallery`, m.src === "/favicon.svg" && !groupOf(m.cur), m.src);
+        rec(`${vp.name} ${p.slug}: database image wins over the static gallery`, m.src === "/brand/aayna-logo-180.png" && !groupOf(m.cur), m.src);
         continue;
       }
       const thumbs = await page.$$eval('[data-testid^="product-thumb-"] img', (els) => els.map((e) => e.getAttribute("src")));

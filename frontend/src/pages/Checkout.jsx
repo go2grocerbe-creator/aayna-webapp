@@ -409,7 +409,9 @@ export default function Checkout() {
             <p className="text-aayna-coral-dark text-xs font-bold tracking-[0.22em] uppercase mb-1">03 — Payment</p>
             <h2 className="font-display text-xl font-semibold text-aayna-burgundy-dark mb-4 pb-3 border-b border-aayna-beige">Payment Method</h2>
             <RadioGroup value={form.payment_method} onValueChange={(v) => set("payment_method", v)} className="space-y-3">
-              {PAYMENTS.map((p) => {
+              {PAYMENTS.filter((p) => p.value === "cod" || !isPlaceholder(p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number)).map((p) => {
+                // 21 Oct 2026: only Cash on Delivery is approved. bKash/Nagad stay hidden
+                // unless a real number is configured (and a separate founder decision enables them).
                 const manualNumber = p.value === "bkash" ? settings?.bkash_number : settings?.nagad_number;
                 // L3.1: cod_available now actually gates COD, not just bKash/Nagad's
                 // existing placeholder-number gate. Fails OPEN (available) while
@@ -532,7 +534,7 @@ export default function Checkout() {
               type="submit"
               disabled={submitting}
               aria-busy={submitting}
-              className="mt-5 w-full h-12 md:h-14 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="mt-5 w-full h-12 md:h-14 bg-aayna-coral text-white font-semibold hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {submitting ? "Placing Order..." : "Place Order"}

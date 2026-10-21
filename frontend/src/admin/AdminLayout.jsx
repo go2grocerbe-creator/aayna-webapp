@@ -7,6 +7,7 @@ import {
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useSeo } from "@/lib/seo";
+import BrandLogo from "@/components/BrandLogo";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
@@ -39,7 +40,7 @@ function SidebarContent({ onNavigate, user, onLogout }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-5 border-b border-gray-200">
-        <span className="font-display text-2xl font-extrabold text-aayna-charcoal tracking-tight">AAYNA</span>
+        <BrandLogo className="h-10 w-auto" alt="AAYNA" data-testid="admin-sidebar-logo" />
         <p className="text-xs text-gray-400 mt-0.5">Admin Panel</p>
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

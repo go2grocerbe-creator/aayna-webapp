@@ -14,7 +14,7 @@ Configuration (environment only, never the frontend):
                           the process; refused in production).
     EMAIL_FROM_ACCOUNTS   default "AAYNA Accounts <accounts@shopaayna.com>"
     EMAIL_FROM_ORDERS     default "AAYNA Orders <orders@shopaayna.com>"
-    EMAIL_REPLY_TO        default "shopaayna.bd@gmail.com"
+    EMAIL_REPLY_TO        default "support@shopaayna.com"
     SUPPORT_CONTACT       shown in footers; default the Reply-To address
 
 What is stored (collection email_logs): event, template, masked recipient,
@@ -39,7 +39,7 @@ logger = logging.getLogger("aayna.email")
 RESEND_URL = "https://api.resend.com/emails"
 DEFAULT_FROM_ACCOUNTS = "AAYNA Accounts <accounts@shopaayna.com>"
 DEFAULT_FROM_ORDERS = "AAYNA Orders <orders@shopaayna.com>"
-DEFAULT_REPLY_TO = "shopaayna.bd@gmail.com"
+DEFAULT_REPLY_TO = "support@shopaayna.com"  # founder-approved alias (21 Oct 2026)
 MAX_ATTEMPTS = 3
 TIMEOUT_SECONDS = 8
 

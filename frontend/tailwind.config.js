@@ -21,8 +21,11 @@ module.exports = {
           burgundy: '#5A0E1A',
           'burgundy-dark': '#3B0811',
           blue: '#1A365D',
-          coral: '#E06D53',
-          'coral-dark': '#C85A42',
+          // 21 Oct 2026 founder decision: Warm Coral #E06D53 retired -> Coral Blue #397F8C
+          // (key name kept so existing classes inherit it). white on coral = 4.58:1 (AA).
+          coral: '#397F8C',
+          'coral-dark': '#306B76',     // hover
+          'coral-pressed': '#275963',  // pressed / active
           cream: '#F8F3EC',
           mist: '#F4E8EA',
           gold: '#C9A66B',

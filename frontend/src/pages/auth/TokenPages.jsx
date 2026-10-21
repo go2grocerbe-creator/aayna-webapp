@@ -63,7 +63,7 @@ export function VerifyEmail() {
     return (
       <AuthShell testid="verify-success" title="Email confirmed" intro="Your AAYNA account is active and you're signed in.">
         <div className="space-y-3">
-          <Link to="/account" data-testid="verify-continue" className="w-full min-h-[48px] bg-aayna-coral text-white font-semibold flex items-center justify-center hover:bg-aayna-coral-dark">Go to my account</Link>
+          <Link to="/account" data-testid="verify-continue" className="w-full min-h-[48px] bg-aayna-coral text-white font-semibold flex items-center justify-center hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed">Go to my account</Link>
           <Link to="/shop" className="w-full min-h-[48px] border border-aayna-burgundy text-aayna-burgundy font-semibold flex items-center justify-center hover:bg-aayna-mist">Continue shopping</Link>
         </div>
       </AuthShell>

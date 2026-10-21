@@ -68,7 +68,7 @@ export function PasswordField({ label = "Password", error, hint, id, ...props })
 
 export function SubmitButton({ loading, children, className = "", variant = "primary", ...props }) {
   const styles = variant === "primary"
-    ? "bg-aayna-coral text-white hover:bg-aayna-coral-dark"
+    ? "bg-aayna-coral text-white hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed"
     : "border border-aayna-burgundy text-aayna-burgundy hover:bg-aayna-mist";
   return (
     <button type="submit" disabled={loading} aria-busy={loading}

@@ -293,7 +293,7 @@ export default function ProductDetail() {
                 data-testid="add-to-cart-button"
                 onClick={handleAddToCart}
                 disabled={oos}
-                className="bg-aayna-coral text-white font-semibold text-sm px-8 h-12 hover:bg-aayna-coral-dark transition-colors disabled:bg-aayna-taupe disabled:cursor-not-allowed"
+                className="bg-aayna-coral text-white font-semibold text-sm px-8 h-12 hover:bg-aayna-coral-dark active:bg-aayna-coral-pressed transition-colors disabled:bg-aayna-taupe disabled:cursor-not-allowed"
               >
                 {oos ? "Out of Stock" : "Add to Cart"}
               </button>

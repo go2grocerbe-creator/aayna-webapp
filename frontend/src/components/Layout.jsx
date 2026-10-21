@@ -8,6 +8,7 @@ import WelcomePopup from "@/components/WelcomePopup";
 import { useSettings } from "@/hooks/useStore";
 import { useJsonLd } from "@/lib/seo";
 import { isPlaceholder } from "@/lib/format";
+import { CONTACT } from "@/constants/contact";
 
 function MaintenanceScreen({ settings }) {
   return (
@@ -22,11 +23,10 @@ function MaintenanceScreen({ settings }) {
       <p className="text-aayna-taupe mt-3 max-w-md">
         Our store is briefly down for maintenance. Please check back soon — thank you for your patience.
       </p>
-      {settings?.whatsapp_number && (
-        <p className="text-sm text-aayna-taupe mt-6">
-          Need help? Message us on WhatsApp at <span className="font-medium text-aayna-charcoal">{settings.whatsapp_number}</span>.
-        </p>
-      )}
+      <p className="text-sm text-aayna-taupe mt-6">
+        Need help? Call <a href={`tel:${CONTACT.phoneE164}`} className="font-medium text-aayna-charcoal">{CONTACT.phoneDisplay}</a> or
+        email <a href={`mailto:${CONTACT.support}`} className="font-medium text-aayna-charcoal">{CONTACT.support}</a>.
+      </p>
     </div>
   );
 }
@@ -52,7 +52,7 @@ export default function Layout() {
     "@type": "Organization",
     name: "AAYNA",
     url: origin + "/",
-    logo: origin + "/favicon.svg",
+    logo: origin + "/brand/aayna-logo-720.png",
     ...(sameAs.length ? { sameAs } : {}),
   });
   useJsonLd("website", {

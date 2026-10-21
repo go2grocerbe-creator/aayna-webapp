@@ -13,6 +13,7 @@ from db import db, now_iso
 import emailer
 import delivery
 import product_content
+import dashboard_metrics
 from auth import get_current_admin, require, has_permission
 
 admin_router = APIRouter(prefix="/api/admin", dependencies=[Depends(get_current_admin)])
@@ -95,14 +96,13 @@ def clean(doc: dict) -> dict:
 # ---------------------------------------------------------------------------
 @admin_router.get("/dashboard")
 async def dashboard(current=Depends(require("dashboard.view"))):
-    # Midnight in Bangladesh, expressed in UTC (orders store UTC ISO timestamps).
-    local_now = datetime.now(timezone.utc) + BUSINESS_UTC_OFFSET
-    today_start = (local_now.replace(hour=0, minute=0, second=0, microsecond=0) - BUSINESS_UTC_OFFSET).isoformat()
+    # Midnight in Bangladesh (Asia/Dhaka), expressed in UTC (orders store UTC ISO timestamps).
+    today_start = dashboard_metrics.dhaka_day_start_utc()
     todays_orders = await db.orders.find({"created_at": {"$gte": today_start}}, {"_id": 0}).to_list(2000)
     sales_today = sum(o["total_amount"] for o in todays_orders if o.get("order_status") != "Cancelled")
-
-    async def count(status):
-        return await db.orders.count_documents({"order_status": status})
+    # One pass over the real order_status values (same values the Orders list filters on).
+    statuses = dashboard_metrics.count_statuses(
+        [o.get("order_status") async for o in db.orders.find({}, {"_id": 0, "order_status": 1})])
 
     low_stock = len(await _low_stock_products({"_id": 0, "stock_quantity": 1, "low_stock_alert": 1}))
     failed_notifications = await db.notification_logs.count_documents({"status": "failed"})
@@ -141,18 +141,22 @@ async def dashboard(current=Depends(require("dashboard.view"))):
         "low_stock_items": low_stock_items,
         "recent_inventory": recent_inventory,
         "recent_orders": recent_orders,
-        "pending_orders": await db.orders.count_documents({"order_status": {"$in": ["New", "Confirmed", "Packed", "Sent to Courier"]}}),
+        "status_counts": statuses,
+        "pending_orders": statuses["open"],   # open = New + Confirmed + Packed + Sent to Courier
         "delivered_sales_total": delivered_sales,
         "todays_orders": len(todays_orders),
-        "new_orders": await count("New"),
-        "confirmed_orders": await count("Confirmed"),
-        "packed_orders": await count("Packed"),
-        "delivered_orders": await count("Delivered"),
-        "cancelled_orders": await count("Cancelled"),
+        "today_starts_at": today_start,
+        "new_orders": statuses["new"],
+        "confirmed_orders": statuses["confirmed"],
+        "packed_orders": statuses["packed"],
+        "with_courier_orders": statuses["with_courier"],
+        "delivered_orders": statuses["delivered"],
+        "cancelled_orders": statuses["cancelled"],
+        "returned_orders": statuses["returned"],
         "total_sales_today": sales_today,
         "low_stock_count": low_stock,
         "failed_notifications": failed_notifications,
-        "total_orders": await db.orders.count_documents({}),
+        "total_orders": statuses["total"],
         "total_products": await db.products.count_documents({}),
         "total_customers": await db.customers.count_documents({}),
     }
