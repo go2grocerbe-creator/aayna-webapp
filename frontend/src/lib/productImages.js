@@ -35,6 +35,21 @@ export function staticImagesForSku(sku) {
   return entry ? entry.images : [];
 }
 
+// The admin can reorder a product's reviewed static photos (Admin -> Products -> Photos);
+// the saved order arrives as product.gallery_order (list of photo URLs, first = cover).
+// Photos missing from the saved order keep their reviewed position after the ordered ones;
+// unknown URLs are ignored, so a stale order can never add or hide a photo.
+export function orderedStatic(product) {
+  const base = staticImagesForSku(product?.sku);
+  const order = Array.isArray(product?.gallery_order) ? product.gallery_order : [];
+  if (!order.length) return base;
+  const rank = new Map(order.map((u, k) => [u, k]));
+  return base
+    .map((img, i) => ({ img, i }))
+    .sort((a, b) => (rank.has(a.img.src) ? rank.get(a.img.src) : order.length + a.i) - (rank.has(b.img.src) ? rank.get(b.img.src) : order.length + b.i))
+    .map(({ img }) => img);
+}
+
 export function productImages(product) {
   const name = product?.product_name || "Product";
   const fromDb = (product?.images || [])
@@ -46,7 +61,7 @@ export function productImages(product) {
       a.i - b.i)
     .map(({ img }) => ({ src: img.image_url, alt: img.alt_text }));
   if (fromDb.length) return describe(fromDb, name);
-  return describe(staticImagesForSku(product?.sku).map((img) => ({ ...img, alt: "" })), name);
+  return describe(orderedStatic(product).map((img) => ({ ...img, alt: "" })), name);
 }
 
 export function primaryImage(product) {

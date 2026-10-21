@@ -35,6 +35,11 @@ export const getAdminProduct = (id) => api.get(`/admin/products/${id}`).then((r)
 export const createProduct = (d) => api.post("/admin/products", d).then((r) => r.data);
 export const updateProduct = (id, d) => api.put(`/admin/products/${id}`, d).then((r) => r.data);
 export const deleteProduct = (id) => api.delete(`/admin/products/${id}`).then((r) => r.data);
+// Product photo order / cover (backend/gallery.py)
+export const getProductGallery = (id) => api.get(`/admin/products/${id}/gallery`).then((r) => r.data);
+export const saveProductGalleryOrder = (id, expected_revision, ordered_ids) =>
+  api.put(`/admin/products/${id}/gallery/order`, { expected_revision, ordered_ids }).then((r) => r.data);
+export const getProductGalleryHistory = (id) => api.get(`/admin/products/${id}/gallery/history`).then((r) => r.data);
 
 // Categories
 export const getAdminCategories = () => api.get("/admin/categories").then((r) => r.data);

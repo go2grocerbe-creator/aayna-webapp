@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { getAdminProduct, createProduct, updateProduct, getAdminCategories } from "@/admin/adminApi";
 import { Switch } from "@/components/ui/switch";
 import ImageUpload from "@/admin/ImageUpload";
+import GalleryManager from "@/admin/GalleryManager";
 import { useAdminAuth } from "@/admin/AdminAuthContext";
 import { productImages } from "@/lib/productImages";
 import { withBrand } from "@/lib/seo";
@@ -269,18 +270,13 @@ export default function ProductForm() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="font-semibold text-aayna-charcoal mb-4">Images</h2>
-          {isEdit && !(form.images || []).length && productImages(product).length > 0 && (
-            <div data-testid="pf-static-gallery" className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Storefront photos ({productImages(product).length}), from the reviewed photo set for this SKU:</p>
-              <div className="flex flex-wrap gap-2">
-                {productImages(product).map((img, i) => (
-                  <img key={img.src} src={img.src} alt={img.alt} className={`h-20 w-16 object-cover rounded border ${i === 0 ? "border-aayna-burgundy" : "border-gray-200"}`} />
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 mt-2">The first photo is the main image. Uploading new photos needs image storage, which is not configured yet: an upload attempt will show an error instead of pretending to succeed.</p>
-            </div>
+          {/* Reviewed static photos: order + cover chosen here (backend/gallery.py, revision-checked). */}
+          {isEdit && !(form.images || []).length && <GalleryManager productId={id} canEdit={canEdit} />}
+          {/* Uploaded images (only products that already have them, or new products): the upload itself
+              refuses honestly (503) while no permanent storage is configured. */}
+          {(!isEdit || (form.images || []).length > 0 || productImages(product).length === 0) && (
+            <ImageUpload images={form.images} onChange={(imgs) => set("images", imgs)} />
           )}
-          <ImageUpload images={form.images} onChange={(imgs) => set("images", imgs)} />
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">

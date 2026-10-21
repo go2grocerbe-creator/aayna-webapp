@@ -36,6 +36,8 @@ import delivery
 from customer_auth import (customer_router, customer_admin_router, optional_customer,
                            ensure_customer_indexes, order_timeline)
 from courier_finance import finance_router, ensure_finance_indexes
+import gallery
+from gallery import gallery_router
 from steadfast import courier_admin_router, courier_internal_router, ensure_courier_indexes, customer_courier_status
 from promotions import promotions_router, promotions_admin_router, ensure_promotion_indexes, CouponError
 
@@ -106,6 +108,7 @@ PUBLIC_PRODUCT_FIELDS = {
     "status": 1, "stock_quantity": 1,
     "is_featured": 1, "is_best_seller": 1, "is_new_arrival": 1,
     "tags": 1,
+    "gallery_order": 1,   # admin-chosen order of the reviewed static photos (first = cover)
 }
 
 # Only these statuses are ever visible or purchasable on the storefront.
@@ -443,7 +446,7 @@ async def validate_cart(req: CartValidateRequest, request: Request):
             "slug": product["slug"],
             "name": product["product_name"],
             "sku": product["sku"],
-            "image": (product.get("images") or [{}])[0].get("image_url"),
+            "image": gallery.cover_url(product),
             "unit_price": price,
             "selling_price": product["selling_price"],
             "discount_price": product.get("discount_price"),
@@ -718,7 +721,7 @@ async def _place_order(req: CheckoutRequest, account: Optional[dict] = None):
             "product_id": product["id"],
             "product_name_snapshot": product["product_name"],
             "sku_snapshot": product["sku"],
-            "image": (product.get("images") or [{}])[0].get("image_url"),
+            "image": gallery.cover_url(product),
             "quantity": line.quantity,
             "unit_price": price,
             "total_price": line_total,
@@ -1115,6 +1118,7 @@ app.include_router(promotions_admin_router)
 app.include_router(courier_admin_router)
 app.include_router(courier_internal_router)
 app.include_router(finance_router)
+app.include_router(gallery_router)
 
 @app.middleware("http")
 async def json_errors_inside_cors(request, call_next):
